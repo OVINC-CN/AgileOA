@@ -252,22 +252,20 @@ export function AuditCharts({
           valueSize="large"
         />
       </div>
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.8fr)_minmax(300px,1fr)]">
-        <Trend
-          tableID="audit-trend-tooltip"
-          title="操作结果趋势"
-          days={
-            data?.days.map((day) => ({
-              date: day.date,
-              first: day.failure,
-              second: day.success,
-            })) ?? []
-          }
-          first="失败"
-          second="成功"
-          loading={loading}
-        />
-      </div>
+      <Trend
+        tableID="audit-trend-tooltip"
+        title="操作结果趋势"
+        days={
+          data?.days.map((day) => ({
+            date: day.date,
+            first: day.failure,
+            second: day.success,
+          })) ?? []
+        }
+        first="失败"
+        second="成功"
+        loading={loading}
+      />
     </div>
   );
 }
