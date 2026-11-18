@@ -155,10 +155,13 @@ beat 当前无周期业务任务，无需启动；后续启用周期任务时，
 
 ### 邮件回调
 
-在腾讯云配置回调地址 `POST /v1/callback/email`，并在部署 YAML 设置：
+在部署 YAML 中将 `email.callback_sign` 设为随机密钥，并在腾讯云的回调地址末尾填写
+`/v1/callback/email?sign=<URL 编码后的密钥>`。API 收到 POST 请求时逐字匹配解码后的签名。
+配置留空、签名缺失、重复或不匹配时，API 返回 401。
 
 ```yaml
 email:
+  callback_sign: "" # 启用回调时填写随机密钥
   abnormal_events: [dropped, bounce, spamreport, unsubscribe]
 ```
 

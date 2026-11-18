@@ -30,6 +30,7 @@ type config struct {
 }
 
 type emailConfig struct {
+	CallbackSign   string   `yaml:"callback_sign"`
 	AbnormalEvents []string `yaml:"abnormal_events"`
 }
 

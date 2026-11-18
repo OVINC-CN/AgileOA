@@ -173,7 +173,7 @@ func check() error {
 			expectedStatuses = []string{"200", "400", "401", "403", "429", "503"}
 		}
 		if path == "/v1/callback/email" {
-			expectedStatuses = []string{"200", "400", "503"}
+			expectedStatuses = []string{"200", "400", "401", "503"}
 		}
 		if path == "/v1/workspaces/{workspace_id}/student-service" {
 			expectedStatuses = []string{"200", "400", "401", "403", "503"}

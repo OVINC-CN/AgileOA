@@ -63,6 +63,13 @@
                 "summary": "接收邮件事件回调",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "与 email.callback_sign 一致的回调签名",
+                        "name": "sign",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
                         "description": "腾讯云邮件通知事件",
                         "name": "body",
                         "in": "body",
@@ -81,6 +88,12 @@
                     },
                     "400": {
                         "description": "回调参数无效",
+                        "schema": {
+                            "$ref": "#/definitions/emailModels.EmptyResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "回调签名无效",
                         "schema": {
                             "$ref": "#/definitions/emailModels.EmptyResponse"
                         }
