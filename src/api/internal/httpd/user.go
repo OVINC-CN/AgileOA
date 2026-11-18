@@ -94,7 +94,7 @@ func validOrigin(c echo.Context) bool {
 }
 
 func passwordLimiter(action string) echo.MiddlewareFunc {
-	// 使用直连 IP，避免未经配置的 X-Forwarded-For 绕过限流。
+	// 按可信代理规则解析客户端 IP，使同一代理后的不同地址独立限流。
 	return middleware.RateLimiterWithConfig(middleware.RateLimiterConfig{
 		Store: middleware.NewRateLimiterMemoryStoreWithConfig(
 			middleware.RateLimiterMemoryStoreConfig{
@@ -104,7 +104,7 @@ func passwordLimiter(action string) echo.MiddlewareFunc {
 			},
 		),
 		IdentifierExtractor: func(c echo.Context) (string, error) {
-			return echo.ExtractIPDirect()(c.Request()), nil
+			return c.RealIP(), nil
 		},
 		DenyHandler: rejectRateLimit(action),
 	})
