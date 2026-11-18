@@ -1,0 +1,248 @@
+# 开发配置。部署时通过 --config 指定独立文件，凭据不要提交到仓库。
+app:
+  debug: false
+  # 追踪服务名优先使用非空 OTEL_SERVICE_NAME，未设置或为空时使用此名称。
+  name: agile-workspace
+  environment: development
+  addr: 127.0.0.1:8080
+  log_level: info
+  shutdown_timeout: 10s
+
+# HTTP 运行参数集中配置，不在代码中额外设置固定值。
+http:
+  default_page_size: 10
+  max_page_size: 100
+  cors_allow_origins:
+    - http://127.0.0.1:5173
+    - http://localhost:5173
+  trusted_proxy_cidrs:
+    - 10.0.0.0/12
+  request_timeout: 30s
+  read_header_timeout: 5s
+  read_timeout: 30s
+  write_timeout: 31s
+  idle_timeout: 60s
+  health_check_timeout: 2s
+  body_limit: 16M
+  max_header_bytes: 1048576
+
+# MCP 复用工作空间查询接口；请求限制、超时和工具目录分页沿用 HTTP 配置。
+mcp:
+  enabled: true
+  max_response_bytes: 33554432
+
+email:
+  # 以下回调事件直接拉黑收件邮箱，空列表不新增拉黑；已有黑名单继续生效。
+  abnormal_events: [dropped, bounce, spamreport, unsubscribe]
+
+# 首次 API 启动创建管理员；先手工执行 SQL，再在独立 YAML 中设置初始密码。
+# 初始化后不会重置密码或重建管理员。生产环境 HTTPS 必须启用 cookie_secure。
+user:
+  chart_days: 14
+  # 登录会话与 Cookie 的有效期，720 小时为 30 天。
+  session_ttl: 720h
+  # 全局密码登录开关，与前端 config.js 的 passwordLoginEnabled 保持一致。
+  password_login_enabled: true
+  # 使用独立的 32 字节 Base64 密钥保存可再次查看的 API Token；留空时不能生成或查看。
+  api_token_key: ""
+  cookie_name: agile_session
+  # 留空仅限当前主机；按需设置父域，例如 example.com，不包含协议或端口。
+  cookie_domain: ""
+  cookie_secure: false
+  bcrypt_cost: 12
+  # 单个 API 进程按直连 IP 限制临时密码修改、邮件发送和邮件登录。
+  login_rate: 0.2
+  login_burst: 5
+  login_limiter_ttl: 10m
+  bootstrap_username: admin
+  bootstrap_display_name: 系统管理员
+  bootstrap_password: ""
+  # 配置 Redis 和腾讯云邮件推送 API 后启用，6 位数字验证码由 Redis TTL 自动过期。
+  email_login:
+    enabled: false
+    ttl: 10m
+    min_interval: 1m
+    # 每次签发最多允许的错误次数，达到上限后验证码失效，范围为 1 至 10。
+    max_attempts: 5
+    ses:
+      secret_id: ""
+      secret_key: ""
+      # 必须与发信地址和已审核模板所在的地域一致，可选 ap-guangzhou、ap-hongkong。
+      region: ap-guangzhou
+      from_address: ""
+      from_name: 敏捷办公
+      # 将 docs/login-email-v3.html 注册为腾讯云模板，仅保留 LOGIN_CODE 和 TTL_MINUTES。
+      template_id: 0
+      subject: 登录敏捷办公
+      request_timeout: 10s
+  # 启用前在腾讯云控制台开启 CaptchaAppId 强制校验及一次一密。
+  captcha:
+    enabled: false
+    app_id: 0
+    app_secret_key: ""
+    secret_id: ""
+    secret_key: ""
+    challenge_ttl: 2m
+    request_timeout: 5s
+    # 按客户端 IP 限制签发间隔和滑动窗口内的次数。
+    issue_rate:
+      min_interval: 1s
+      window: 1m
+      max_requests: 5
+
+# 审计与业务共用事务；失败审计使用独立有界事务。
+# 敏感快照必须配置独立的 32 字节 Base64 密钥；不配置时拒绝写入敏感快照。
+audit:
+  query_default_days: 14
+  query_max_days: 90
+  write_timeout: 3s
+  max_payload_bytes: 1048576
+  snapshot_key_id: ""
+  snapshot_keys: {}
+
+# 学生字段与毕业去向直接存储在宽表，共用传输、导入和选项查询上限。
+student:
+  max_import_rows: 500
+  max_export_rows: 10000
+  max_file_bytes: 5242880
+  max_options: 1000
+
+# 年份与可选子项名称由项目维护，评分只能选择已配置名称；总分与各子项独立填写。
+project:
+  score_max_rules: 30
+  score_rule_max_depth: 8
+  score_rule_max_nodes: 100
+  score_rule_max_values: 100
+  score_formula_max_length: 4000
+  score_formula_max_nodes: 1000
+  score_formula_max_depth: 40
+  auto_submit_timeout: 5m # 截止时间后 1 分钟自动提交草稿，单次任务超时
+  auto_submit_max_retries: 3
+  ranking_timeout: 5m # 后台重排已审批通过填报单的单次任务超时
+  ranking_max_retries: 3 # 最终失败后通知当前空间拥有奖项编辑权限的启用账号
+  max_approval_targets: 10 # 每级审批最多选择的用户或班委数量
+  max_approval_steps: 20 # 允许配置的最多审批级数
+  max_details: 500
+  max_attachments: 20 # 每条业务记录的附件上限，包含待完成和待删除记录
+  max_options: 10000
+  max_import_rows: 500
+  max_export_rows: 10000 # 项目或获奖记录的数据行数上限，不含表头
+  max_file_bytes: 5242880
+
+# 学生工作与党建工作共用以下月度工作限制，均支持多附件与多条外部链接。
+monthly_work:
+  max_options: 10000 # 负责人及参与人选项上限，同时限制单条工作的参与人数
+  max_attachments: 20 # 每条业务记录的附件上限，包含待完成和待删除记录
+  max_links: 20
+  max_import_rows: 500
+  max_file_bytes: 5242880
+
+# 党支部书记选项、XLSX 导入导出及准入规则树限制。
+party_branch:
+  max_options: 10000
+  max_import_rows: 500
+  max_export_rows: 10000
+  max_file_bytes: 5242880
+  max_rule_depth: 3 # 根节点为第一层
+  max_rule_nodes: 100 # 包含所有条件组及叶子条件
+  max_rule_values: 100 # 每个叶子条件的候选值上限
+
+# 党建人员选项及导入导出限制。
+cpc_person:
+  max_options: 1000
+  max_import_rows: 500
+  max_export_rows: 10000
+  max_file_bytes: 5242880
+  recalculation_timeout: 5m
+  recalculation_max_retries: 3
+
+# 站内通知独立投递，临时故障不会消耗原业务任务的重试次数。
+notification:
+  delivery_timeout: 30s
+  delivery_max_retries: 5
+
+# 党建时间线模板的节点、字段、提示规则及定义大小限制。
+cpc_timeline_template:
+  max_attachments: 20 # 每个节点的附件上限，包含待完成和待删除记录
+  max_nodes: 100
+  max_fields_per_node: 20
+  max_rules_per_node: 20
+  max_definition_bytes: 131072
+  max_offset: 10000 # 每个年、月、自然日或工作日偏移的绝对值上限
+
+# 腾讯云私有 COS；浏览器通过仅限单个对象的 STS 简单上传。
+# 运行账号需要 PutObject 和 DeleteObject；禁止公开桶和公开对象 ACL。
+cos:
+  enabled: false
+  region: ap-guangzhou
+  bucket: examplebucket-1250000000
+  secret_id: ""
+  secret_key: ""
+  upload_credential_ttl: 30m # 直传 STS 有效期，1 秒至 2 小时；pending 不自动过期
+  request_timeout: 20s
+  max_retries: 2
+  max_upload_bytes: 5242880 # 所有附件、头像、XLSX 和 JSON 导入共用单文件上限，默认 5 MB
+  allowed_content_types:
+    - "application/pdf"
+    - "image/*"
+    - "application/msword"
+    - "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    - "application/vnd.ms-excel"
+    - "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    - "application/vnd.ms-powerpoint"
+    - "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+
+# EdgeOne 鉴权方式 A，签名使用签发时间，有效期由边缘规则设置。
+# 部署时确认目标规则使用 eo-sign 参数，且 CDN 路径前缀映射到桶根路径。
+cdn:
+  domain: ""
+  path_prefix: ""
+  signing_key: ""
+  parameter: eo-sign
+  signing_cache_ttl: 10m # Redis 签名缓存时间，须短于边缘鉴权有效期
+
+# dsn 为空时不启用 MySQL；配置后会在 init 中连接并检查。
+mysql:
+  dsn: ""
+  max_open_conns: 10
+  max_idle_conns: 5
+  conn_max_lifetime: 5m
+  connect_timeout: 5s
+  read_timeout: 5s
+  write_timeout: 5s
+
+# addr 为空时不启用 Redis；worker 和 beat 必须配置 Redis。
+redis:
+  addr: ""
+  password: ""
+  db: 0
+  dial_timeout: 5s
+  read_timeout: 3s
+  write_timeout: 3s
+  pool_timeout: 4s
+  ping_timeout: 5s
+  pool_size: 10
+  max_retries: 3
+  identity_enabled: false
+  maint_notifications_mode: disabled
+
+# 同一队列只运行一个 beat 实例，避免重复入队。
+scheduler:
+  queue: agile-workspace
+  concurrency: 10
+  task_check_interval: 1s
+  heartbeat_interval: 10s
+  timezone: Asia/Shanghai
+
+# 追踪始终开启；此开关仅控制是否通过 OTLP gRPC 上报。
+trace:
+  report_enabled: false
+  # 只填写主机和端口，不包含协议或 /v1/traces 路径。
+  endpoint: 127.0.0.1:4317
+  # 本地接收端使用明文连接；TLS 接收端设置为 false。
+  insecure: true
+  headers: {}
+  export_timeout: 5s
+  batch_timeout: 5s
+  max_queue_size: 2048
+  max_export_batch_size: 512

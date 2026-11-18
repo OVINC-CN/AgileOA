@@ -1,0 +1,89 @@
+2027 年假期插图生成记录
+
+生成方式：内置 image_gen 工具；每个节日单独生成一张图片。
+参考样图：原 2026 年国庆节样图，已由 2027 年版本替换；原始提示词见 docs/holiday-countdown-prompt.txt。
+资源目录：src/web/public/extra-assets/imgs/holidays/；各年份统一复用本批次图片，不再按年份分目录。
+画幅：1536 × 1024，横向 3:2，纯白背景；无内嵌文字，中央和上下边缘留白。
+每张图实际使用的提示词由下方通用提示词与对应节日主题拼接，参考图只用于统一风格和构图。
+
+通用提示词：
+Use case: stylized-concept. Generate a NEW finished background illustration for one 2027 Chinese
+public holiday. Image 1 is ONLY a STYLE AND COMPOSITION REFERENCE: match its restrained matte
+folded-paper illustration, subtle soft 3D facets, clean silhouettes, scale, sparse spacing, pure
+WHITE #FFFFFF background and seamless white-page integration. Replace its National Day subjects with
+the holiday subjects specified below; do not preserve unrelated reference objects. Output EXACTLY
+1536 x 1024 pixels, LANDSCAPE 3:2 PNG. Main accent palette coral #F17377 and warm gold #FFBD4A;
+muted pale sage or teal accents when appropriate to the holiday. Composition: exactly two SMALL
+independent floating vignettes, centered roughly at x=20%, y=57% and x=80%, y=43%. Keep the entire
+central vertical 45% of the canvas pure white and unoccupied, for a date and clock. Top 20% and
+bottom 20% must also remain pure white; all motifs comfortably inset from every canvas edge. Use the
+same generous empty space as Image 1. The two groups are NOT connected. Soft minimal contact shadows
+only. No frame, border, corner decoration, edge-following ribbon, enclosing ornament, full-width
+strip, colored background rectangle, UI, website mockup or date widget. Absolutely NO text,
+characters, letters, year numbers, dates, countdown numbers, slogans, logos or watermark, including
+on lanterns, envelopes and mooncakes. No watercolor, antique ornaments, realistic scenery, glossy
+plastic, dense detail, crowds, faces or heavy shadows. Every composition must be recognizably its
+named holiday and belong to the same visual family as Image 1. Holiday-specific subjects:
+
+节日：元旦
+输出文件：元旦.png
+节日主题：
+Gregorian New Year's Day. LEFT: a small warm-gold geometric folded-paper firework sunburst with two
+or three tiny coral confetti pieces. RIGHT: one short, elegant coral folded-paper party streamer
+floating beside a small golden four-point sparkle and a tiny pale-sage leaf. Celebratory and fresh,
+very sparse. The streamer is an isolated small object, never a page border. No Chinese lanterns,
+gate or lunar imagery.
+
+节日：春节
+输出文件：春节.png
+节日主题：
+Chinese Spring Festival. LEFT: a single small coral-red folded-paper hanging lantern with a short
+clean tassel and one very delicate pale-sage plum sprig with two coral/gold blossoms. RIGHT: a small
+coral folded-paper fan and one blank red envelope, accompanied by one tiny warm-gold blossom. Modern
+geometric simplicity with no writing, no printed symbols and no zodiac animal. Warm understated
+festive mood, no gate or large star.
+
+节日：清明节
+输出文件：清明节.png
+节日主题：
+Qingming holiday. LEFT: one small, airy pale-sage folded-paper willow sprig and a delicate tiny
+swallow silhouette. RIGHT: one small matte pale-green qingtuan rice dumpling with a simple folded
+leaf wrapping and a very small coral-and-gold diamond-shaped kite. Gentle, peaceful early-spring
+mood. Shapes should feel sculpted from paper and retain the reference's coral/gold accents and
+restrained soft shading; never a landscape or watercolor scene.
+
+节日：劳动节
+输出文件：劳动节.png
+节日主题：
+May Day, appreciation of everyday work. LEFT: a small warm-gold folded-paper safety helmet and a
+short coral pencil, with one tiny pale-sage sprout. RIGHT: a small coral paper work glove gently
+holding a fresh pale-sage leaf sprig, plus one tiny gold sparkle. Positive and respectful, modern
+editorial imagery of work rather than a political poster. No people, human hands, faces, slogans or
+realistic machinery.
+
+节日：端午节
+输出文件：端午节.png
+节日主题：
+Chinese Dragon Boat Festival. LEFT: two tiny geometric sage-green leaf-wrapped zongzi rice dumplings
+tied with thin warm-gold paper twine. RIGHT: one small, elegant coral-red folded-paper dragon boat
+with minimal gold trim, floating above just two short, extremely pale teal paper wave strokes; a
+tiny bamboo leaf may sit beside it. Contemporary paper sculpture, no people, no dense dragon
+ornament, no landscape or long water strip.
+
+节日：中秋节
+输出文件：中秋节.png
+节日主题：
+Chinese Mid-Autumn Festival. LEFT: a small softly faceted warm-gold full moon with a very delicate
+pale-sage osmanthus branch carrying two tiny gold blossoms. RIGHT: a small white/jade folded-paper
+rabbit beside one coral-and-gold mooncake with a simple geometric embossed pattern only, absolutely
+no Chinese characters. Warm, poetic, minimal. No clouds spanning the canvas or starry background.
+
+节日：国庆节
+输出文件：国庆节.png
+节日主题：
+China National Day holiday. Create a NEW composition within the same visual family as the reference.
+LEFT: a small coral-red folded-paper Tiananmen gate silhouette, elegantly simplified into a layered
+roof and three clean arches, with one tiny gold gingko leaf; no signage and no portrait. RIGHT: a
+small sculptural warm-gold five-point star with two folded coral confetti pieces and a delicate
+pale-sage autumn leaf. Refined celebratory autumn mood. No official emblems, flags, crowds or text.
+Preserve the reference's generous white space but do not simply duplicate the source image.

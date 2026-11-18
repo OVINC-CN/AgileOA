@@ -1,0 +1,424 @@
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { RefreshCw, Save, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+
+import { ErrorMessage } from '@/components/error-message';
+import { Button } from '@/components/ui/button';
+import { Drawer } from '@/components/ui/drawer';
+import { FileUploadButton } from '@/components/ui/file-upload-button';
+import { personKey } from '@/features/cpc-person/api';
+import { graduationKey } from '@/features/graduation/api';
+import {
+  type AvatarUpload,
+  createStudent,
+  deleteAvatarUpload,
+  deleteStudent,
+  emptyOffCampus,
+  emptyStudent,
+  type OffCampusValues,
+  type SensitiveData,
+  type Student,
+  studentDetailOptions,
+  type StudentInput,
+  studentKey,
+  studentSensitiveOptions,
+  updateStudent,
+  updateStudentSensitive,
+  uploadStudentAvatar,
+} from '@/features/student/api';
+import { StudentFieldInput } from '@/features/student/field-input';
+import { birthDateFromIdentityNumber, fieldLabel, studentFields } from '@/features/student/fields';
+import { StudentAvatar } from '@/features/student/student-avatar';
+import { StudentFieldSections } from '@/features/student/student-field-sections';
+import { StudentOffCampusFields } from '@/features/student/student-off-campus';
+import { useApiAction, useApiMutation } from '@/lib/api-action';
+import { getConfig } from '@/lib/config';
+import { uploadStateLabels } from '@/lib/file-upload';
+import { formatIdentity } from '@/lib/format';
+
+export function StudentEditor({
+  workspaceID,
+  student,
+  canQuery,
+  canBasic,
+  canDetail,
+  canSensitive,
+  onClose,
+}: {
+  workspaceID: string;
+  student: Student | null;
+  canQuery: boolean;
+  canBasic: boolean;
+  canDetail: boolean;
+  canSensitive: boolean;
+  onClose: () => void;
+}) {
+  const sensitive = useQuery({
+    ...studentSensitiveOptions(workspaceID, student?.id ?? 0),
+    enabled: student !== null && canSensitive,
+  });
+  const detail = useQuery({
+    ...studentDetailOptions(workspaceID, student?.id ?? 0),
+    enabled: student !== null && canDetail,
+  });
+  const retry = useApiAction();
+  const canReadOffCampus = canBasic && canDetail && student !== null;
+  const needsOffCampus = canReadOffCampus && student.accommodation_type === 'off_campus';
+  const pendingReads = [
+    ...(canSensitive && !sensitive.data ? [sensitive] : []),
+    ...(needsOffCampus && !detail.data ? [detail] : []),
+  ];
+  if (student && pendingReads.length > 0) {
+    return (
+      <Drawer
+        title="编辑学生"
+        description={formatIdentity(student.name, student.student_no)}
+        onClose={onClose}
+        footer={
+          <Button
+            variant="outline"
+            loading={pendingReads.some((read) => read.isFetching) || retry.pending}
+            onClick={() => {
+              void retry.run('retry', () =>
+                Promise.all(pendingReads.map((read) => read.refetch())),
+              );
+            }}
+          >
+            <RefreshCw aria-hidden="true" />
+            重新读取
+          </Button>
+        }
+      >
+        <div className="space-y-4 p-6">
+          <ErrorMessage>{pendingReads.find((read) => read.error)?.error?.message}</ErrorMessage>
+        </div>
+      </Drawer>
+    );
+  }
+  return (
+    <StudentEditorForm
+      key={student?.id ?? 'new'}
+      workspaceID={workspaceID}
+      student={needsOffCampus ? (detail.data ?? student) : student}
+      canQuery={canQuery}
+      canBasic={canBasic}
+      avatarURL={canDetail && !detail.isError ? (detail.data?.avatar_url ?? '') : undefined}
+      avatarLoading={canDetail && detail.isPending && student !== null}
+      avatarUploads={canDetail && !detail.isError ? (detail.data?.avatar_uploads ?? []) : []}
+      canSensitive={canSensitive}
+      sensitive={sensitive.data}
+      canReadOffCampus={canReadOffCampus}
+      offCampusDetails={needsOffCampus ? detail.data?.off_campus_details : undefined}
+      onClose={onClose}
+    />
+  );
+}
+
+function StudentEditorForm({
+  workspaceID,
+  student,
+  canQuery,
+  canBasic,
+  avatarURL,
+  avatarLoading,
+  avatarUploads,
+  canSensitive,
+  sensitive,
+  canReadOffCampus,
+  offCampusDetails,
+  onClose,
+}: {
+  workspaceID: string;
+  student: Student | null;
+  canQuery: boolean;
+  canBasic: boolean;
+  avatarURL: string | undefined;
+  avatarLoading: boolean;
+  avatarUploads: AvatarUpload[];
+  canSensitive: boolean;
+  sensitive: SensitiveData | undefined;
+  canReadOffCampus: boolean;
+  offCampusDetails: OffCampusValues | undefined;
+  onClose: () => void;
+}) {
+  const [originalStudent] = useState(student);
+  const [revision, setRevision] = useState(
+    (canBasic ? student?.revision : sensitive?.revision) ?? student?.revision ?? 0,
+  );
+  const [values, setValues] = useState<StudentInput>(student ?? emptyStudent);
+  const [offCampus, setOffCampus] = useState(offCampusDetails ?? emptyOffCampus);
+  const showOffCampus =
+    canReadOffCampus &&
+    (originalStudent?.accommodation_type === 'off_campus' ||
+      values.accommodation_type === 'off_campus');
+  const fields = studentFields.filter((field) => field.group === 'sensitive');
+  const [privateValues, setPrivateValues] = useState<Record<string, string>>(() =>
+    Object.fromEntries(sensitive?.values.map((item) => [item.field, item.value]) ?? []),
+  );
+  const birthDate = canSensitive
+    ? birthDateFromIdentityNumber(privateValues['identity_number'] ?? '')
+    : (originalStudent?.birth_date ?? '');
+  const client = useQueryClient();
+  const avatarUpload = useApiAction();
+  const avatarMaxUploadBytes = getConfig().fileMaxUploadBytes;
+  const invalidate = () =>
+    Promise.all([
+      client.invalidateQueries({ queryKey: studentKey(workspaceID) }),
+      client.invalidateQueries({ queryKey: personKey(workspaceID) }),
+      client.invalidateQueries({ queryKey: graduationKey(workspaceID) }),
+      client.invalidateQueries({ queryKey: ['management', 'audit'] }),
+    ]);
+  const mutation = useApiMutation({
+    mutationFn: async () => {
+      const sensitiveValues = canSensitive
+        ? fields.map((field) => ({ field: field.key, value: privateValues[field.key] ?? '' }))
+        : undefined;
+      const result = !originalStudent
+        ? await createStudent(workspaceID, values, sensitiveValues)
+        : canBasic
+          ? await updateStudent(
+              workspaceID,
+              { id: originalStudent.id, revision },
+              values,
+              sensitiveValues,
+              showOffCampus ? offCampus : undefined,
+            )
+          : await updateStudentSensitive(
+              workspaceID,
+              originalStudent.id,
+              revision,
+              sensitiveValues ?? [],
+            );
+      await invalidate();
+      return result;
+    },
+    onSuccess: onClose,
+  });
+  const busy = mutation.isPending || avatarUpload.pending;
+  return (
+    <Drawer
+      title={student ? '编辑学生' : '添加学生'}
+      description={student ? formatIdentity(student.name, student.student_no) : '填写学生档案'}
+      busy={busy}
+      onClose={onClose}
+      footer={
+        <>
+          <Button type="button" variant="secondary" disabled={busy} onClick={onClose}>
+            取消
+          </Button>
+          <Button type="submit" loading={mutation.isPending} disabled={avatarUpload.pending}>
+            <Save aria-hidden="true" />
+            保存
+          </Button>
+        </>
+      }
+      form={{
+        noValidate: true,
+        onSubmit: (event) => {
+          event.preventDefault();
+          if (!busy) mutation.mutate();
+        },
+      }}
+    >
+      <fieldset disabled={busy} className="divide-y divide-border px-6">
+        {originalStudent && (avatarURL !== undefined || canBasic) ? (
+          <section className="flex flex-wrap items-center gap-4 py-6">
+            {avatarURL !== undefined ? (
+              <StudentAvatar name={originalStudent.name} src={avatarURL} loading={avatarLoading} />
+            ) : null}
+            {canBasic ? (
+              <div className="space-y-2">
+                <FileUploadButton
+                  label="上传头像"
+                  accept="image/jpeg,image/png,image/webp"
+                  disabled={mutation.isPending}
+                  loading={avatarUpload.pending}
+                  onFileSelect={(file) => {
+                    void avatarUpload.run('avatar', async () => {
+                      // 上传前校验头像大小，避免发送空文件或超限文件。
+                      if (file.size < 1) throw new Error('头像文件不能为空');
+                      if (file.size > avatarMaxUploadBytes)
+                        throw new Error('头像文件超过上传大小限制');
+
+                      // 上传成功后更新版本并刷新相关数据。
+                      try {
+                        const result = await uploadStudentAvatar(
+                          workspaceID,
+                          { id: originalStudent.id, revision },
+                          file,
+                        );
+                        setRevision(result.revision);
+                      } finally {
+                        await invalidate();
+                      }
+                    });
+                  }}
+                />
+                {avatarUploads.map((upload) => (
+                  <div
+                    key={upload.id}
+                    className="flex items-center gap-2 text-xs text-muted-foreground"
+                  >
+                    <span className="min-w-0 truncate">{upload.filename}</span>
+                    <span className="shrink-0">{uploadStateLabels[upload.state]}</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      disabled={busy}
+                      loading={avatarUpload.isPending(`delete:${String(upload.id)}`)}
+                      onClick={() => {
+                        void avatarUpload.run(`delete:${String(upload.id)}`, async () => {
+                          try {
+                            await deleteAvatarUpload(workspaceID, originalStudent.id, upload);
+                          } finally {
+                            await invalidate();
+                          }
+                        });
+                      }}
+                    >
+                      <Trash2 aria-hidden="true" />
+                      删除
+                    </Button>
+                  </div>
+                ))}
+                <p className="text-xs text-muted-foreground">
+                  支持 JPEG、PNG、WebP，大小不超过 {avatarMaxUploadBytes / (1024 * 1024)}{' '}
+                  MiB，上传后立即更新。
+                </p>
+              </div>
+            ) : null}
+          </section>
+        ) : null}
+        {canBasic ? (
+          <section className="space-y-5 py-6">
+            <h2 className="text-base font-semibold">基本信息</h2>
+            <StudentFieldSections group="basic" form>
+              {(field) =>
+                field.key === 'birth_date' ? (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">{field.label}</p>
+                    <p className="text-sm">{fieldLabel(field, birthDate)}</p>
+                    <p className="text-xs text-muted-foreground">由身份证号码生成</p>
+                  </div>
+                ) : (
+                  <StudentFieldInput
+                    field={field}
+                    value={values[field.key as keyof StudentInput]}
+                    onChange={(value) => {
+                      setValues((current) => ({ ...current, [field.key]: value }));
+                    }}
+                    workspaceID={workspaceID}
+                    canQuery={canQuery}
+                  />
+                )
+              }
+            </StudentFieldSections>
+          </section>
+        ) : null}
+        {showOffCampus ? (
+          <section className="space-y-5 py-6">
+            <div className="space-y-2">
+              <h2 className="text-sm font-semibold">校外住宿信息</h2>
+              {values.accommodation_type !== 'off_campus' ? (
+                <p className="text-xs text-muted-foreground">
+                  切换住宿类型前，请清空校外住宿明细。
+                </p>
+              ) : null}
+            </div>
+            <StudentOffCampusFields
+              values={offCampus}
+              onChange={(key, value) => {
+                setOffCampus((current) => ({ ...current, [key]: value }));
+              }}
+            />
+          </section>
+        ) : null}
+        {canSensitive ? (
+          <section className="space-y-5 py-6">
+            <div className="space-y-2">
+              <h2 className="text-base font-semibold">敏感信息</h2>
+              <p className="text-xs text-muted-foreground">
+                身份证号码必填；保存会更新全部敏感信息，其他字段留空会清除对应内容。
+              </p>
+            </div>
+            <StudentFieldSections group="sensitive" form>
+              {(field) => (
+                <div
+                  className={
+                    field.maxLength > 500 || field.key === 'home_address' ? 'sm:col-span-2' : ''
+                  }
+                >
+                  <StudentFieldInput
+                    field={field}
+                    value={privateValues[field.key] ?? ''}
+                    workspaceID={workspaceID}
+                    canQuery={true}
+                    onChange={(value) => {
+                      setPrivateValues((current) => ({ ...current, [field.key]: value }));
+                    }}
+                  />
+                </div>
+              )}
+            </StudentFieldSections>
+          </section>
+        ) : null}
+      </fieldset>
+      {mutation.error ? <ErrorMessage>{mutation.error.message}</ErrorMessage> : null}
+    </Drawer>
+  );
+}
+
+export function DeleteStudent({
+  workspaceID,
+  student,
+  onClose,
+}: {
+  workspaceID: string;
+  student: Student;
+  onClose: () => void;
+}) {
+  const client = useQueryClient();
+  const mutation = useApiMutation({
+    mutationFn: async () => {
+      await deleteStudent(workspaceID, student);
+      await Promise.all([
+        client.invalidateQueries({ queryKey: studentKey(workspaceID) }),
+        client.invalidateQueries({ queryKey: graduationKey(workspaceID) }),
+        client.invalidateQueries({ queryKey: ['management', 'audit'] }),
+      ]);
+    },
+    onSuccess: onClose,
+  });
+  return (
+    <Drawer
+      title="删除学生"
+      description={formatIdentity(student.name, student.student_no)}
+      busy={mutation.isPending}
+      onClose={onClose}
+      footer={
+        <>
+          <Button variant="secondary" disabled={mutation.isPending} onClick={onClose}>
+            取消
+          </Button>
+          <Button
+            loading={mutation.isPending}
+            onClick={() => {
+              mutation.mutate();
+            }}
+          >
+            <Trash2 aria-hidden="true" />
+            确认删除
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-4 p-6 text-sm">
+        <p>
+          将永久删除该学生档案、隐私信息、毕业去向、校外住宿、获奖及党建记录，并删除相关会话、时间线和附件记录；历史审计保留。存在申报或审批节点引用时不可删除。
+        </p>
+        {mutation.error ? <ErrorMessage>{mutation.error.message}</ErrorMessage> : null}
+      </div>
+    </Drawer>
+  );
+}

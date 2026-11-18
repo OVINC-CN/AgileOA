@@ -1,0 +1,87 @@
+import { X } from 'lucide-react';
+import { useState } from 'react';
+
+import { Button } from '@/components/ui/button';
+import { Drawer } from '@/components/ui/drawer';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { rejectTimelineTransfer } from '@/features/cpc-person/timeline-transfer-api';
+import { useApiAction } from '@/lib/api-action';
+import { formatIdentity } from '@/lib/format';
+
+const reasonMaxLength = 1000;
+
+export function TimelineTransferRejectDrawer({
+  workspaceID,
+  person,
+  revision,
+  invalidate,
+  onClose,
+}: {
+  workspaceID: string;
+  person: { id: number; name: string; student_no: string };
+  revision: number;
+  invalidate: () => Promise<void>;
+  onClose: () => void;
+}) {
+  const [reason, setReason] = useState('');
+  const reject = useApiAction();
+
+  return (
+    <Drawer
+      title="驳回时间线转移"
+      description={
+        person.name && person.student_no
+          ? formatIdentity(person.name, person.student_no)
+          : `人员编号：${String(person.id)}`
+      }
+      busy={reject.pending}
+      onClose={onClose}
+      form={{
+        noValidate: true,
+        onSubmit: (event) => {
+          event.preventDefault();
+          if (reject.pending) return;
+          void reject.run('reject', async () => {
+            // 去除首尾空白后校验，避免只填写空格时提交驳回。
+            const value = reason.trim();
+            if (!value) throw new Error('请填写审批意见');
+            if (Array.from(value).length > reasonMaxLength) {
+              throw new Error('审批意见不能超过 1000 个字符');
+            }
+            await rejectTimelineTransfer(workspaceID, person.id, revision, value);
+            await invalidate();
+            onClose();
+          });
+        },
+      }}
+      footer={
+        <>
+          <Button type="button" variant="secondary" disabled={reject.pending} onClick={onClose}>
+            取消
+          </Button>
+          <Button type="submit" loading={reject.pending}>
+            <X aria-hidden="true" />
+            确认驳回
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-2 p-6">
+        <Label htmlFor="timeline-transfer-reject-reason">审批意见 *</Label>
+        <Textarea
+          id="timeline-transfer-reject-reason"
+          value={reason}
+          required
+          maxLength={reasonMaxLength}
+          disabled={reject.pending}
+          placeholder="请填写审批意见"
+          onChange={(event) => {
+            setReason(event.target.value);
+          }}
+        />
+        <p className="text-xs text-muted-foreground">审批意见将随驳回结果通知发送给提交人。</p>
+      </div>
+    </Drawer>
+  );
+}

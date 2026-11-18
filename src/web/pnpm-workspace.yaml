@@ -1,0 +1,30 @@
+saveExact: true
+strictPeerDependencies: true
+
+overrides:
+  # 3.x 使用旧版可调用导出，且无 GHSA-g3hv-75wg-m249 涉及的预处理逻辑。
+  'minimatch@10': 11.0.4
+  # ExcelJS 尚未更新 UUID 依赖，固定仍支持 CommonJS 的官方安全版本。
+  'exceljs>uuid': 11.1.1
+  # COS SDK 源码入口使用已修复的 XML 解析器版本。
+  'cos-js-sdk-v5>fast-xml-parser': 5.12.1
+
+patchedDependencies:
+  # 兼容 minimatch 11 移除的 makeRe。上游发布修复后移除此补丁。
+  # https://github.com/un-ts/eslint-plugin-import-x/pull/570
+  eslint-plugin-import-x@4.17.1: patches/eslint-plugin-import-x@4.17.1.patch
+  # 回补浏览器内嵌 UUID 的边界校验，切换到已修复的浏览器入口。
+  # https://github.com/uuidjs/uuid/commit/32389c887c9e75f90442ee4cc95bbab0c4e8346e
+  # 上游发布完整修复后移除此补丁及 UUID 版本覆盖。
+  exceljs@4.4.0: patches/exceljs@4.4.0.patch
+
+minimumReleaseAgeExclude:
+  - '@vitejs/plugin-react@6.2.1'
+  - '@silurus/ooxml-legacy-office@0.89.10'
+  - '@silurus/ooxml@0.89.10'
+
+allowBuilds:
+  '@tailwindcss/oxide': true
+  esbuild: true
+  # 直接使用 SDK 发布的源码，跳过安装后的补丁检查。
+  cos-js-sdk-v5: false
