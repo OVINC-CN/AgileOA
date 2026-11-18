@@ -9,9 +9,9 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/partybranch/partybranchConstants"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/partybranch/partybranchModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/config"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/partybranch/partybranchConstants"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/partybranch/partybranchModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/config"
 )
 
 func determineBranch(tx *gorm.DB, workspaceID string, studentID uint64) (*uint64, error) {

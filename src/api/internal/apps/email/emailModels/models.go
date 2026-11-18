@@ -3,7 +3,7 @@ package emailModels
 import (
 	"time"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
 )
 
 // CallbackRequest 对应腾讯云邮件通知事件，不接收 IP 或关联历史发信记录。

@@ -6,13 +6,13 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/access/accessUtils"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/graduation/graduationConstants"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/graduation/graduationModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/graduation/graduationSvc"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/pagination"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/queryfilter"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessUtils"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/graduation/graduationConstants"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/graduation/graduationModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/graduation/graduationSvc"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/pagination"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/queryfilter"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
 )
 
 // List 查询当前空间学生及其毕业去向。

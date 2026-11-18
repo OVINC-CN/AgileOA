@@ -5,7 +5,7 @@
 <h2 align="center">Agile OA · 敏捷办公</h2>
 
 <p align="center">
-  <a href="https://github.com/OVINC-CN/AgileWorkspace/actions/workflows/ci.yml"><img src="https://github.com/OVINC-CN/AgileWorkspace/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI 状态"></a>
+  <a href="https://github.com/OVINC-CN/AgileOA/actions/workflows/ci.yml"><img src="https://github.com/OVINC-CN/AgileOA/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI 状态"></a>
 </p>
 
 <p align="center">
@@ -32,8 +32,8 @@ Agile OA 是面向学生工作与党建工作的多工作空间管理系统，�
 克隆仓库，安装工具和依赖，再复制一份独立的后端配置。
 
 ```sh
-git clone https://github.com/OVINC-CN/AgileWorkspace.git
-cd AgileWorkspace
+git clone https://github.com/OVINC-CN/AgileOA.git
+cd AgileOA
 mise install
 mise exec -- make setup
 cp src/api/config.yaml src/api/config.local.yaml

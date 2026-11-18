@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/home/homeModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/db"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/tracing"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/home/homeModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/db"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/tracing"
 )
 
 // Calendar 只读公开节日，不读取账号、租户或法定调休信息。

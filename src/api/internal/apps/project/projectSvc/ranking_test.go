@@ -5,7 +5,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/project/projectModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/project/projectModels"
 )
 
 func TestApplicationRankingDimensionCombinations(t *testing.T) {

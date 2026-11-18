@@ -1,6 +1,6 @@
 package cpcdashboardConstants
 
-import "github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/cpcdashboard/cpcdashboardModels"
+import "github.com/OVINC-CN/AgileOA/src/api/internal/apps/cpcdashboard/cpcdashboardModels"
 
 const (
 	StageFullMember         = "full_member"

@@ -13,14 +13,14 @@ import (
 	"github.com/go-sql-driver/mysql"
 	"gorm.io/gorm"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/email/emailConstants"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/email/emailModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/email/emailUtils"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/config"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/db"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/logger"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/tracing"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/email/emailConstants"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/email/emailModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/email/emailUtils"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/config"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/db"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/logger"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/tracing"
 )
 
 // ReceiveCallback 独立接收回调，异常事件与邮箱拉黑在同一事务内提交。

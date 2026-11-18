@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/cpcdashboard/cpcdashboardModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/cpcdashboard/cpcdashboardModels"
 )
 
 func TestSummaryPreservesEmptyBranchesAndOnlyCountsMembers(t *testing.T) {

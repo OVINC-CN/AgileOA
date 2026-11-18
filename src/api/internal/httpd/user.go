@@ -11,13 +11,13 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	"golang.org/x/time/rate"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/access/accessConstants"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/user/userConstants"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/user/userSvc"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/user/userUtils"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/config"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/db"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessConstants"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/user/userConstants"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/user/userSvc"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/user/userUtils"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/config"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/db"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
 )
 
 func identifyUser(next echo.HandlerFunc) echo.HandlerFunc {

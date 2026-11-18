@@ -3,7 +3,7 @@ package cpctimelineModels
 import (
 	"time"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
 )
 
 // TemplateTransfer 保存同空间模板之间的有序转移配置。

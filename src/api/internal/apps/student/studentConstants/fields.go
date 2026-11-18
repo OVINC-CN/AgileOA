@@ -1,6 +1,6 @@
 package studentConstants
 
-import "github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/student/studentModels"
+import "github.com/OVINC-CN/AgileOA/src/api/internal/apps/student/studentModels"
 
 // 固定信息类别对应基础和敏感两类权限。
 const (

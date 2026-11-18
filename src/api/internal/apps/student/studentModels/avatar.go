@@ -1,6 +1,6 @@
 package studentModels
 
-import "github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/attachment/attachmentModels"
+import "github.com/OVINC-CN/AgileOA/src/api/internal/apps/attachment/attachmentModels"
 
 // AvatarUpload 保留头像直传的状态，只有确认完成后才替换学生的当前头像。
 type AvatarUpload struct {

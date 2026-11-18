@@ -1,6 +1,6 @@
 package studentdashboardModels
 
-import "github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
+import "github.com/OVINC-CN/AgileOA/src/api/internal/response"
 
 // AccommodationQuery 仅允许按住宿固定字段的具体值筛选，同一字段取并集。
 type AccommodationQuery struct {

@@ -3,11 +3,11 @@ package projectRouters
 import (
 	"github.com/labstack/echo/v4"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/access/accessUtils"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/project/projectModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/project/projectSvc"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/queryfilter"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessUtils"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/project/projectModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/project/projectSvc"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/queryfilter"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
 )
 
 // ManagedApplicationExport 导出当前填报管理筛选下的全部申报及评分子项。

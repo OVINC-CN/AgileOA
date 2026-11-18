@@ -1,4 +1,4 @@
-module github.com/OVINC-CN/AgileWorkspace/src/api
+module github.com/OVINC-CN/AgileOA/src/api
 
 go 1.26.10
 

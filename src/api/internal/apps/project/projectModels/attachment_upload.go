@@ -1,6 +1,6 @@
 package projectModels
 
-import "github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/attachment/attachmentModels"
+import "github.com/OVINC-CN/AgileOA/src/api/internal/apps/attachment/attachmentModels"
 
 // AttachmentUploadRequest 为当前申报子项申请独立的直传对象。
 type AttachmentUploadRequest struct {

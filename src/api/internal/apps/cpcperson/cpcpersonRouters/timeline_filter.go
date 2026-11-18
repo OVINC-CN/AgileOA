@@ -3,7 +3,7 @@ package cpcpersonRouters
 import (
 	"github.com/labstack/echo/v4"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/cpcperson/cpcpersonSvc"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/cpcperson/cpcpersonSvc"
 )
 
 // TimelineFilterFields 查询可读人员绑定模板的字段目录。

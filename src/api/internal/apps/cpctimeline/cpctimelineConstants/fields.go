@@ -1,6 +1,6 @@
 package cpctimelineConstants
 
-import "github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/cpctimeline/cpctimelineModels"
+import "github.com/OVINC-CN/AgileOA/src/api/internal/apps/cpctimeline/cpctimelineModels"
 
 const (
 	StableIDPattern      = `^[a-z][a-z0-9_]{0,63}$`

@@ -10,10 +10,10 @@ import (
 
 	cos "github.com/tencentyun/cos-go-sdk-v5"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apis/tencentcos"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/attachment/attachmentModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/config"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apis/tencentcos"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/attachment/attachmentModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/config"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
 )
 
 func TestUploadRequestEnforcesExactMetadataAndAllowedTypes(t *testing.T) {

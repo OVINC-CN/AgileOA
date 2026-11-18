@@ -16,8 +16,8 @@ import (
 
 	"github.com/redis/go-redis/v9"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/config"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/db"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/config"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/db"
 )
 
 const cdnSignatureCachePrefix = "storage:cdn:signature:"

@@ -1,6 +1,6 @@
 package projectModels
 
-import "github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
+import "github.com/OVINC-CN/AgileOA/src/api/internal/response"
 
 // ScoreCondition 是仅支持 in 的学生基础维度条件及 AND、OR 条件组。
 type ScoreCondition struct {

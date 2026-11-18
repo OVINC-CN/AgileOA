@@ -6,9 +6,9 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/home/homeModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/home/homeSvc"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/home/homeModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/home/homeSvc"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
 )
 
 // Calendar 返回公开的首页节日信息。

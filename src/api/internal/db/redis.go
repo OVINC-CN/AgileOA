@@ -8,9 +8,9 @@ import (
 	"github.com/redis/go-redis/v9/maintnotifications"
 	"go.opentelemetry.io/otel/attribute"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/config"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/logger"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/tracing"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/config"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/logger"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/tracing"
 )
 
 var rdb *redis.Client

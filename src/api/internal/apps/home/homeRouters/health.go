@@ -5,9 +5,9 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/home/homeModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/home/homeSvc"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/home/homeModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/home/homeSvc"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
 )
 
 // Health 返回进程存活结果。

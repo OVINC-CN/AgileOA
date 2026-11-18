@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/config"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/db"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/config"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/db"
 )
 
 func TestSignedCDNURLUsesIssueTimeAndCustomParameter(t *testing.T) {

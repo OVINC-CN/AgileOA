@@ -1,6 +1,6 @@
 package homeModels
 
-import "github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
+import "github.com/OVINC-CN/AgileOA/src/api/internal/response"
 
 // HealthResponse 复用统一响应字段，业务数据固定为空。
 type HealthResponse struct {

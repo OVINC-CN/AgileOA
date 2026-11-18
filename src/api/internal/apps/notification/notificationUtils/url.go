@@ -6,7 +6,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/notification/notificationConstants"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/notification/notificationConstants"
 )
 
 // ValidURL 仅允许空链接或站内绝对路径，拒绝外站、协议及控制字符。

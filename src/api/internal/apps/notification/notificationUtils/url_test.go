@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/notification/notificationConstants"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/notification/notificationModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/notification/notificationConstants"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/notification/notificationModels"
 )
 
 func TestNotificationURLBoundaries(t *testing.T) {

@@ -1,6 +1,6 @@
 package cpcdashboardModels
 
-import "github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
+import "github.com/OVINC-CN/AgileOA/src/api/internal/response"
 
 // Counts 保存正式党员、预备党员及两者合计。
 type Counts struct {

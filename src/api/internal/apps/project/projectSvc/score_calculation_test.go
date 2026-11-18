@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/project/projectModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/project/projectModels"
 )
 
 func TestScoreFormulaAllowedMathAndMissingValues(t *testing.T) {

@@ -13,9 +13,9 @@ import (
 	gormlogger "gorm.io/gorm/logger"
 	gormtracing "gorm.io/plugin/opentelemetry/tracing"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/config"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/logger"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/tracing"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/config"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/logger"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/tracing"
 )
 
 var db *gorm.DB

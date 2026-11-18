@@ -3,7 +3,7 @@ package accessConstants
 import (
 	"net/http"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/access/accessModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessModels"
 )
 
 // 系统管理与用户业务权限分开，任何系统身份都不隐含 workspace 操作。

@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/monthlywork/monthlyworkModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/config"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/monthlywork/monthlyworkModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/config"
 )
 
 func TestWorkRejectsInvalidDateOwnerAndExternalLinks(t *testing.T) {

@@ -3,7 +3,7 @@ package crond
 import (
 	"github.com/hibiken/asynq"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/db"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/db"
 )
 
 // AsyncClient 在 init 中初始化，复用全局 Redis 连接。

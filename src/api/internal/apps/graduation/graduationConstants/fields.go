@@ -1,6 +1,6 @@
 package graduationConstants
 
-import "github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/graduation/graduationModels"
+import "github.com/OVINC-CN/AgileOA/src/api/internal/apps/graduation/graduationModels"
 
 // 固定代码、长度与统计维度不接受外部数据库列名。
 const (

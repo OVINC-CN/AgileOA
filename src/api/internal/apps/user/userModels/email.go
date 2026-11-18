@@ -3,7 +3,7 @@ package userModels
 import (
 	"time"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
 )
 
 // EmailLogin 是 Redis 中短时保存的登录信息，只保存绑定校验标识的验证码摘要。

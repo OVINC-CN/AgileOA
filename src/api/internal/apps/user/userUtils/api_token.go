@@ -8,7 +8,7 @@ import (
 	"errors"
 	"strconv"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/config"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/config"
 )
 
 // EncryptAPIToken 以账号编号作为附加认证数据，防止数据库中的密文被跨账号替换。

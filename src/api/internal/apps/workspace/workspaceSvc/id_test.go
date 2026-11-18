@@ -3,7 +3,7 @@ package workspaceSvc
 import (
 	"testing"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/workspace/workspaceUtils"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/workspace/workspaceUtils"
 )
 
 func TestRandomWorkspaceIDsMatchThePublicContract(t *testing.T) {

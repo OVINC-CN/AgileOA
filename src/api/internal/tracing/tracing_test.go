@@ -3,7 +3,7 @@ package tracing_test
 import (
 	"testing"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/tracing"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/tracing"
 )
 
 func TestTracingIsAlwaysRecording(t *testing.T) {

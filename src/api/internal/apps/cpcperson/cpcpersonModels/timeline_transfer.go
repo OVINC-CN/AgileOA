@@ -3,7 +3,7 @@ package cpcpersonModels
 import (
 	"time"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
 )
 
 // TimelineTransferReview 保存当前待审核申请，完成或取消后硬删除，历史由审计保留。

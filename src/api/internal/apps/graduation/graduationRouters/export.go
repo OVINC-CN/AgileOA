@@ -3,9 +3,9 @@ package graduationRouters
 import (
 	"github.com/labstack/echo/v4"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/access/accessUtils"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/graduation/graduationSvc"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessUtils"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/graduation/graduationSvc"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
 )
 
 // Export 按当前筛选导出全部学生及毕业去向。

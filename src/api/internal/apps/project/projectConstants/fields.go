@@ -1,6 +1,6 @@
 package projectConstants
 
-import "github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/project/projectModels"
+import "github.com/OVINC-CN/AgileOA/src/api/internal/apps/project/projectModels"
 
 // 字段、表名、类别和边界由代码固定，外部输入不能选择数据库列。
 const (

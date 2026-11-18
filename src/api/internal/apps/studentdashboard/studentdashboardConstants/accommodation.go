@@ -1,6 +1,6 @@
 package studentdashboardConstants
 
-import "github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/studentdashboard/studentdashboardModels"
+import "github.com/OVINC-CN/AgileOA/src/api/internal/apps/studentdashboard/studentdashboardModels"
 
 // AccommodationFields 按住宿信息表及导出列顺序定义只读字段。
 var AccommodationFields = []studentdashboardModels.Field{

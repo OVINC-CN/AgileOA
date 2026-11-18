@@ -1,6 +1,6 @@
 package studentdashboardModels
 
-import "github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
+import "github.com/OVINC-CN/AgileOA/src/api/internal/response"
 
 // Counts 保存各专业人数及全部专业的总数。
 type Counts struct {

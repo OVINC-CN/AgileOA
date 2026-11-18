@@ -6,8 +6,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/cmd"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/logger"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/cmd"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/logger"
 )
 
 const exitCodeFailure = 1
