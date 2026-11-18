@@ -8,8 +8,8 @@ import (
 	"github.com/go-sql-driver/mysql"
 	"gorm.io/gorm"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/cpctimeline/cpctimelineModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/cpctimeline/cpctimelineModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
 )
 
 func syncNodes(

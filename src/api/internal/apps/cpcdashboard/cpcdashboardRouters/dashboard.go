@@ -3,9 +3,9 @@ package cpcdashboardRouters
 import (
 	"github.com/labstack/echo/v4"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/access/accessUtils"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/cpcdashboard/cpcdashboardSvc"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessUtils"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/cpcdashboard/cpcdashboardSvc"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
 )
 
 // Summary 查询各党支部在编党员数量和姓名汇总。

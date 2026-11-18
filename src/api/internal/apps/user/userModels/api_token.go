@@ -3,7 +3,7 @@ package userModels
 import (
 	"time"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
 )
 
 // APIToken 保存每个账号唯一的访问凭据，密文仅供授权后的再次查看。

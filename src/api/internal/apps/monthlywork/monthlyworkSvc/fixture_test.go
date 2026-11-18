@@ -15,11 +15,11 @@ import (
 	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/access/accessModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/user/userModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/config"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/db"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/user/userModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/config"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/db"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
 )
 
 func request(

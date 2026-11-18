@@ -6,7 +6,7 @@ import (
 
 	"github.com/hibiken/asynq"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/project/projectConstants"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/project/projectConstants"
 )
 
 func TestAutoSubmitRejectsIncompleteTasks(t *testing.T) {

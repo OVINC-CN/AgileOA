@@ -5,10 +5,10 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/audit/auditModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/student/studentModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/logger"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/storage"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/audit/auditModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/student/studentModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/logger"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/storage"
 )
 
 // AvatarUploadSnapshot 只返回安全元数据，不公开对象路径或临时凭据。

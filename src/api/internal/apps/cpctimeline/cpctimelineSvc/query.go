@@ -8,12 +8,12 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/access/accessConstants"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/access/accessModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/access/accessUtils"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/audit/auditModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/cpctimeline/cpctimelineConstants"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/cpctimeline/cpctimelineModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessConstants"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessUtils"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/audit/auditModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/cpctimeline/cpctimelineConstants"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/cpctimeline/cpctimelineModels"
 )
 
 // List 只返回当前空间的模板摘要，完整定义使用独立详情权限。

@@ -8,11 +8,11 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/access/accessModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/monthlywork/monthlyworkConstants"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/monthlywork/monthlyworkModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/notification/notificationModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/notification/notificationUtils"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/monthlywork/monthlyworkConstants"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/monthlywork/monthlyworkModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/notification/notificationModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/notification/notificationUtils"
 )
 
 func notifyAssignments(

@@ -16,9 +16,9 @@ import (
 	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common/profile"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/config"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/logger"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/tracing"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/config"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/logger"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/tracing"
 )
 
 const (

@@ -5,8 +5,8 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/cpctimeline/cpctimelineConstants"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/cpctimeline/cpctimelineModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/cpctimeline/cpctimelineConstants"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/cpctimeline/cpctimelineModels"
 )
 
 // HasStudentFields 判断节点是否需要读取学生出生日期。

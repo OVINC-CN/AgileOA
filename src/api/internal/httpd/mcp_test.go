@@ -11,12 +11,12 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/audit/auditModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/audit/auditUtils"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/user/userModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/user/userUtils"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/config"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/audit/auditModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/audit/auditUtils"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/user/userModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/user/userUtils"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/config"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
 )
 
 func TestMCPCatalogOnlyExposesWorkspaceJSONQueries(t *testing.T) {

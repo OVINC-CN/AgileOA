@@ -4,10 +4,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/spreadsheettest"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/spreadsheettest"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/partybranch/partybranchModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/config"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/partybranch/partybranchModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/config"
 )
 
 func TestBranchTextAndSecretaryValidation(t *testing.T) {

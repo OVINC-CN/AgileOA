@@ -3,7 +3,7 @@ package cpctimelineUtils
 import (
 	"testing"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/cpctimeline/cpctimelineModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/cpctimeline/cpctimelineModels"
 )
 
 func transferFixtureNodes() []cpctimelineModels.Node {

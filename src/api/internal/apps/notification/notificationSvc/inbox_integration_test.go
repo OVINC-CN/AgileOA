@@ -16,14 +16,14 @@ import (
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/audit/auditModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/notification/notificationModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/notification/notificationSvc"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/user/userModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/config"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/db"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/httpd"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/audit/auditModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/notification/notificationModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/notification/notificationSvc"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/user/userModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/config"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/db"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/httpd"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
 )
 
 var _ = flag.String("config", "", "独立通知验收数据库的 YAML 配置")

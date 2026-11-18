@@ -1,6 +1,6 @@
 package cpcpersonConstants
 
-import "github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/cpcperson/cpcpersonModels"
+import "github.com/OVINC-CN/AgileOA/src/api/internal/apps/cpcperson/cpcpersonModels"
 
 const (
 	Object                       = "cpc_person"

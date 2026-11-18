@@ -9,8 +9,8 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"gorm.io/gorm"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/notification/notificationModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/config"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/notification/notificationModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/config"
 )
 
 func recalculationRows() *sqlmock.Rows {

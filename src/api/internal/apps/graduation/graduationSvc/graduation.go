@@ -13,13 +13,13 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/access/accessConstants"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/access/accessModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/access/accessUtils"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/audit/auditModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/graduation/graduationConstants"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/graduation/graduationModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessConstants"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessUtils"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/audit/auditModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/graduation/graduationConstants"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/graduation/graduationModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
 )
 
 // Save 在工作空间锁内绑定或修改学生去向，不隐含学生详情读取权限。

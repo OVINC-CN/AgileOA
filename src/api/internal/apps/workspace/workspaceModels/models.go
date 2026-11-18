@@ -3,8 +3,8 @@ package workspaceModels
 import (
 	"time"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/pagination"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/pagination"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
 )
 
 // Workspace 是租户边界，不携带角色或隐含业务权限。

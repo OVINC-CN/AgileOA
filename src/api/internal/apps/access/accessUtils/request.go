@@ -8,7 +8,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/workspace/workspaceUtils"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/workspace/workspaceUtils"
 )
 
 // Decode 只接受固定 JSON 模型，拒绝未知字段、多个文档及非 JSON 请求体。

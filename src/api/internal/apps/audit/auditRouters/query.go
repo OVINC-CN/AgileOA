@@ -9,16 +9,16 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/access/accessConstants"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/audit/auditConstants"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/audit/auditModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/audit/auditSvc"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/audit/auditUtils"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/workspace/workspaceUtils"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/config"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/pagination"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/queryfilter"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessConstants"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/audit/auditConstants"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/audit/auditModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/audit/auditSvc"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/audit/auditUtils"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/workspace/workspaceUtils"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/config"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/pagination"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/queryfilter"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
 )
 
 var errInvalidFilter = errors.New("invalid audit filter")

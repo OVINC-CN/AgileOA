@@ -20,15 +20,15 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/access/accessConstants"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/audit/auditModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/user/userModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/user/userSvc"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/config"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/db"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/httpd"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/tracing"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessConstants"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/audit/auditModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/user/userModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/user/userSvc"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/config"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/db"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/httpd"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/tracing"
 )
 
 var _ = flag.String("config", "", "独立验收数据库的 YAML 配置")

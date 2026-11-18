@@ -3,10 +3,10 @@ package cpctimelineRouters
 import (
 	"github.com/labstack/echo/v4"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/access/accessUtils"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/cpctimeline/cpctimelineModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/cpctimeline/cpctimelineSvc"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessUtils"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/cpctimeline/cpctimelineModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/cpctimeline/cpctimelineSvc"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
 )
 
 // Clone 创建独立模板及其节点附件副本。

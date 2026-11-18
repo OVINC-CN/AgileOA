@@ -8,15 +8,15 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/access/accessConstants"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/access/accessModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/access/accessUtils"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/audit/auditModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/student/studentConstants"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/studentdashboard/studentdashboardConstants"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/studentdashboard/studentdashboardModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/config"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessConstants"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessUtils"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/audit/auditModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/student/studentConstants"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/studentdashboard/studentdashboardConstants"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/studentdashboard/studentdashboardModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/config"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
 )
 
 // Accommodation 只统计当前空间的在籍学生，读取审计提交后返回住宿信息表。

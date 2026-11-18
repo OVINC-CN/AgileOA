@@ -8,12 +8,12 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/access/accessConstants"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/access/accessUtils"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/notification/notificationModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/notification/notificationUtils"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/project/projectModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/db"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessConstants"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessUtils"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/notification/notificationModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/notification/notificationUtils"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/project/projectModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/db"
 )
 
 // NotifyRankingFailure 独立重试并向当前空间拥有奖项编辑权限的启用账号幂等通知。

@@ -8,15 +8,15 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/access/accessConstants"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/audit/auditModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/audit/auditUtils"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/cpcperson/cpcpersonConstants"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/cpcperson/cpcpersonModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/cpcperson/cpcpersonUtils"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/notification/notificationModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/notification/notificationUtils"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/logger"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessConstants"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/audit/auditModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/audit/auditUtils"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/cpcperson/cpcpersonConstants"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/cpcperson/cpcpersonModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/cpcperson/cpcpersonUtils"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/notification/notificationModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/notification/notificationUtils"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/logger"
 )
 
 // TransferTimeline 发起转移并锁定人员时间线，审核前保留全部原节点和附件。

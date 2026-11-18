@@ -6,14 +6,14 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/access/accessModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/access/accessUtils"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/student/studentConstants"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/student/studentModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/student/studentSvc"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/pagination"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/queryfilter"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessUtils"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/student/studentConstants"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/student/studentModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/student/studentSvc"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/pagination"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/queryfilter"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
 )
 
 // List 学生基本信息明细表。

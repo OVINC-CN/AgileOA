@@ -3,11 +3,11 @@ package notificationRouters
 import (
 	"github.com/labstack/echo/v4"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/access/accessUtils"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/notification/notificationModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/notification/notificationSvc"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/pagination"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessUtils"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/notification/notificationModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/notification/notificationSvc"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/pagination"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
 )
 
 // StudentList 查看当前学生在绑定空间内的通知，不接受指定接收人。

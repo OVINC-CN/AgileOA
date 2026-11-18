@@ -8,12 +8,12 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	"gorm.io/gorm"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/project/projectConstants"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/project/projectModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/config"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/crond"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/logger"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/project/projectConstants"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/project/projectModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/config"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/crond"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/logger"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
 )
 
 func enqueueDraftAutoSubmit(tx *gorm.DB, project projectModels.Project) error {

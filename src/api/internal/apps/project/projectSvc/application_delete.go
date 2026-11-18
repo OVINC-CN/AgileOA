@@ -6,15 +6,15 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/access/accessConstants"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/attachment/attachmentConstants"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/attachment/attachmentModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/audit/auditModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/project/projectConstants"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/project/projectModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/logger"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/storage"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessConstants"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/attachment/attachmentConstants"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/attachment/attachmentModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/audit/auditModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/project/projectConstants"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/project/projectModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/logger"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/storage"
 )
 
 // DeleteApplication 分阶段保存附件删除意图及审计，清理对象后硬删除填报及其所属记录。

@@ -10,19 +10,19 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apis/tencentcos"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/access/accessConstants"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/access/accessUtils"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/attachment/attachmentConstants"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/attachment/attachmentModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/attachment/attachmentUtils"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/audit/auditModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/project/projectConstants"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/project/projectModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/config"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/logger"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/storage"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apis/tencentcos"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessConstants"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessUtils"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/attachment/attachmentConstants"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/attachment/attachmentModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/attachment/attachmentUtils"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/audit/auditModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/project/projectConstants"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/project/projectModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/config"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/logger"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/storage"
 )
 
 func applicationFileAction(student bool, mode, operation string) string {

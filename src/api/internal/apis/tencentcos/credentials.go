@@ -11,7 +11,7 @@ import (
 
 	sts "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/sts/v20180813"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/config"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/config"
 )
 
 // UploadParameters 仅在申请响应中传递直传凭据，不进入列表、缓存、日志或审计。

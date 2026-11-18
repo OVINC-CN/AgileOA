@@ -3,9 +3,9 @@ package studentdashboardRouters
 import (
 	"github.com/labstack/echo/v4"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/access/accessUtils"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/studentdashboard/studentdashboardSvc"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessUtils"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/studentdashboard/studentdashboardSvc"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
 )
 
 // Summary 查询当前空间各班级的学生专业人数与班长。

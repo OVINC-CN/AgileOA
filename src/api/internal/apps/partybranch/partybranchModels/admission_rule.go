@@ -3,7 +3,7 @@ package partybranchModels
 import (
 	"time"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
 )
 
 // AdmissionRuleNode 是固定字段目录内的递归规则节点，不接受表达式或数据库标识。

@@ -3,8 +3,8 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/user/userSvc"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/httpd"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/user/userSvc"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/httpd"
 )
 
 var apiCmd = &cobra.Command{

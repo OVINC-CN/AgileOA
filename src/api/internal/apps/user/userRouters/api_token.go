@@ -6,10 +6,10 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/access/accessConstants"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/user/userModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/user/userSvc"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessConstants"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/user/userModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/user/userSvc"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
 )
 
 // APIToken 校验账号编号并返回可再次查看的凭据。

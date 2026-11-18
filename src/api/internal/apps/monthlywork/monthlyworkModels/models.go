@@ -3,7 +3,7 @@ package monthlyworkModels
 import (
 	"time"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
 )
 
 // Record 保存工作日期、负责人和多个外部链接，日期不做时区转换。

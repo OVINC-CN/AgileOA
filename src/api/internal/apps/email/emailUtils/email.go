@@ -6,10 +6,10 @@ import (
 	"net/mail"
 	"strings"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/email/emailModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/db"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/tracing"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/email/emailModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/db"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/tracing"
 )
 
 // NormalizeAddress 统一邮箱黑名单的比较方式，不改变账号登录的逐字匹配规则。

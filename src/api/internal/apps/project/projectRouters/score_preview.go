@@ -3,10 +3,10 @@ package projectRouters
 import (
 	"github.com/labstack/echo/v4"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/access/accessUtils"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/project/projectModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/project/projectSvc"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessUtils"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/project/projectModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/project/projectSvc"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
 )
 
 // PreviewNewProjectScore 试算新项目尚未保存的分数配置。

@@ -7,13 +7,13 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/access/accessConstants"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/access/accessModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/access/accessUtils"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/audit/auditModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/student/studentConstants"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/student/studentModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/config"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessConstants"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessUtils"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/audit/auditModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/student/studentConstants"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/student/studentModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/config"
 )
 
 // List 只输出基础字段，涉及敏感字段的筛选额外校验处理敏感信息权限。

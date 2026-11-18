@@ -3,8 +3,8 @@ package userModels
 import (
 	"time"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/pagination"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/pagination"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
 )
 
 // ListQuery 是固定用户目录的搜索条件。

@@ -7,9 +7,9 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/notification/notificationModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/workspace/workspaceUtils"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/logger"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/notification/notificationModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/workspace/workspaceUtils"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/logger"
 )
 
 // CreateStudent 在业务事务内按空间、学生及来源幂等投递，不重置已读状态。

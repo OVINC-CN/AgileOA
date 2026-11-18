@@ -3,9 +3,9 @@ package attachmentModels
 import (
 	"time"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apis/tencentcos"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apis/tencentcos"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
 )
 
 // Record 是各业务附件表共有的字段，签名和 URL 不入库。

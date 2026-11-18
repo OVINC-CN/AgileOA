@@ -1,6 +1,6 @@
 package cpcpersonModels
 
-import "github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
+import "github.com/OVINC-CN/AgileOA/src/api/internal/response"
 
 type TimelineFilterField struct {
 	// NodeID 是筛选定位使用的内部节点标识，显示名称中的编号为模板内顺序号。

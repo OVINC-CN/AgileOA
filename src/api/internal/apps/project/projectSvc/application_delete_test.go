@@ -9,12 +9,12 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/attachment/attachmentConstants"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/attachment/attachmentModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/audit/auditModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/project/projectModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/storage"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/attachment/attachmentConstants"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/attachment/attachmentModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/audit/auditModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/project/projectModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/storage"
 )
 
 func TestApplicationDeletionStorageRequirement(t *testing.T) {

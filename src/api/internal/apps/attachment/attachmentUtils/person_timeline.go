@@ -3,7 +3,7 @@ package attachmentUtils
 import (
 	"gorm.io/gorm"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/attachment/attachmentModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/attachment/attachmentModels"
 )
 
 // HasOtherTimelineReferences 在空间锁内判断私有对象是否仍被本租户其他人员节点引用。

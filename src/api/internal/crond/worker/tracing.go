@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/tracing"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/tracing"
 )
 
 // traceTask 为每次任务执行创建消费者跨度，覆盖校验、业务和任务日志。

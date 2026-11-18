@@ -40,4 +40,4 @@ formatters:
       max-len: 100
     goimports:
       local-prefixes:
-        - github.com/OVINC-CN/AgileWorkspace/src/api
+        - github.com/OVINC-CN/AgileOA/src/api

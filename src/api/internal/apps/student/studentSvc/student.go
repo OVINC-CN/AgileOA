@@ -10,24 +10,24 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/project/projectUtils"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/project/projectUtils"
 
 	"github.com/go-sql-driver/mysql"
 	"gorm.io/gorm"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/access/accessConstants"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/access/accessModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/access/accessUtils"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/attachment/attachmentModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/audit/auditModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/cpcperson/cpcpersonUtils"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/notification/notificationUtils"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/student/studentConstants"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/student/studentModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/student/studentUtils"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/logger"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/storage"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessConstants"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessUtils"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/attachment/attachmentModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/audit/auditModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/cpcperson/cpcpersonUtils"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/notification/notificationUtils"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/student/studentConstants"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/student/studentModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/student/studentUtils"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/logger"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/storage"
 )
 
 // Create 按独立权限在一个事务中创建基本信息及包含身份证号码的完整敏感信息。

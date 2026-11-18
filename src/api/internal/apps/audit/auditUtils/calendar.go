@@ -3,7 +3,7 @@ package auditUtils
 import (
 	"time"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/logger"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/logger"
 )
 
 // Location 保留管理统计的上海时区；标准审计使用独立 UTC 窗口。

@@ -3,7 +3,7 @@ package homeModels
 import (
 	"time"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
 )
 
 // CalendarHoliday 按公历日期保存公开节日，同一天允许多个不同名称。

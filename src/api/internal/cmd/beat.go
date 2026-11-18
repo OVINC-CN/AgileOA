@@ -3,7 +3,7 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/crond/beat"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/crond/beat"
 )
 
 var beatCmd = &cobra.Command{

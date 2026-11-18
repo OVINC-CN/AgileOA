@@ -4,8 +4,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/student/studentConstants"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/student/studentModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/student/studentConstants"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/student/studentModels"
 )
 
 func inputValues(input studentModels.Input) map[string]string {

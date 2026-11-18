@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/student/studentModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/student/studentModels"
 )
 
 // 宗教信仰情况明细只读取报表使用的业务字段。

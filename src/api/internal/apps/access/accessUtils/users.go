@@ -3,7 +3,7 @@ package accessUtils
 import (
 	"gorm.io/gorm"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/access/accessConstants"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessConstants"
 )
 
 // WorkspaceUsers 提供当前空间拥有进入权限的启用账号，供候选项及关联校验复用。

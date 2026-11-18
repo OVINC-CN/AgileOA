@@ -12,8 +12,8 @@ import (
 	"gorm.io/gorm"
 	gormlogger "gorm.io/gorm/logger"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/email/emailModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/config"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/email/emailModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/config"
 )
 
 func TestPrepareCallbackKeepsFixedFieldsAndRemovesCredentials(t *testing.T) {

@@ -3,8 +3,8 @@ package cpcpersonUtils
 import (
 	"time"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/cpcperson/cpcpersonModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/cpctimeline/cpctimelineModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/cpcperson/cpcpersonModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/cpctimeline/cpctimelineModels"
 )
 
 // EvaluateTimeline 用同一套含边界规则生成详情异常和列表状态，缺失日期不视为时间冲突。

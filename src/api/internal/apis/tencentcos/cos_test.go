@@ -10,7 +10,7 @@ import (
 
 	cos "github.com/tencentyun/cos-go-sdk-v5"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/config"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/config"
 )
 
 func copyTestClient(t *testing.T, handler http.HandlerFunc) {

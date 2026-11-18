@@ -9,12 +9,12 @@ import (
 	"github.com/hibiken/asynq"
 	"go.opentelemetry.io/otel/propagation"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/notification/notificationModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/notification/notificationSvc"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/notification/notificationUtils"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/config"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/crond"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/logger"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/notification/notificationModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/notification/notificationSvc"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/notification/notificationUtils"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/config"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/crond"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/logger"
 )
 
 const DeliverNotification = "notification:deliver"

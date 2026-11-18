@@ -3,7 +3,7 @@ package storage
 import (
 	"context"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apis/tencentcos"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apis/tencentcos"
 )
 
 // Enabled 表示私有 COS 已通过 YAML 配置。

@@ -10,10 +10,10 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/email/emailModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/email/emailSvc"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/config"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/email/emailModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/email/emailSvc"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/config"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
 )
 
 // Callback 校验腾讯云邮件事件并持久化，不读取账号凭据或请求 IP。

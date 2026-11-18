@@ -3,7 +3,7 @@ package userModels
 import (
 	"time"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
 )
 
 // User 仅保存全局账号，不携带租户业务权限。

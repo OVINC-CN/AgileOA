@@ -1,6 +1,6 @@
 package monthlyworkConstants
 
-import "github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/monthlywork/monthlyworkModels"
+import "github.com/OVINC-CN/AgileOA/src/api/internal/apps/monthlywork/monthlyworkModels"
 
 const (
 	MinYear           = 1900

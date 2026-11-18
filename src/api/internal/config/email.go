@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/email/emailConstants"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/email/emailConstants"
 )
 
 func (c *emailConfig) validate() error {

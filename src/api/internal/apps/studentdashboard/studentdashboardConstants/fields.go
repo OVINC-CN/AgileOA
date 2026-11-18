@@ -1,6 +1,6 @@
 package studentdashboardConstants
 
-import "github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/studentdashboard/studentdashboardModels"
+import "github.com/OVINC-CN/AgileOA/src/api/internal/apps/studentdashboard/studentdashboardModels"
 
 const MonitorPosition = "班长"
 

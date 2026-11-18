@@ -3,9 +3,9 @@ package partybranchRouters
 import (
 	"github.com/labstack/echo/v4"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/access/accessUtils"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/partybranch/partybranchSvc"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessUtils"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/partybranch/partybranchSvc"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
 )
 
 // ReorderPeople 由用户二次确认后手动提交当前空间在编人员的后台归属重算。

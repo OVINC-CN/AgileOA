@@ -3,11 +3,11 @@ package studentdashboardRouters
 import (
 	"github.com/labstack/echo/v4"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/access/accessUtils"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/studentdashboard/studentdashboardModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/studentdashboard/studentdashboardSvc"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/queryfilter"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessUtils"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/studentdashboard/studentdashboardModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/studentdashboard/studentdashboardSvc"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/queryfilter"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
 )
 
 // Accommodation 查询在籍学生的住宿信息汇总。

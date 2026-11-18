@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/cpcperson/cpcpersonSvc"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/cpcperson/cpcpersonSvc"
 )
 
 func TestReorderNotifiesOnlyForTerminalFailures(t *testing.T) {

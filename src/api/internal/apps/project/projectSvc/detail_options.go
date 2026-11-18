@@ -8,8 +8,8 @@ import (
 	"github.com/go-sql-driver/mysql"
 	"gorm.io/gorm"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/project/projectModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/project/projectModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
 )
 
 func detailOptionNames(tx *gorm.DB, workspaceID string, projectID uint64) ([]string, error) {

@@ -1,6 +1,6 @@
 package workspaceUtils
 
-import "github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/workspace/workspaceConstants"
+import "github.com/OVINC-CN/AgileOA/src/api/internal/apps/workspace/workspaceConstants"
 
 // ValidID 只接受同时包含英文小写字母与数字的 16 位工作空间编号。
 func ValidID(value string) bool {

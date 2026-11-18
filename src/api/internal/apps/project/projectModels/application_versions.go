@@ -3,7 +3,7 @@ package projectModels
 import (
 	"time"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/response"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
 )
 
 // ApplicationVersion 是从普通审计快照提取的历史申报内容，不提供恢复或下载入口。

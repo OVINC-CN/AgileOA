@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/access/accessConstants"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/access/accessModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessConstants"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessModels"
 )
 
 func TestActionDirectoryIsExplicitAndUnambiguous(t *testing.T) {

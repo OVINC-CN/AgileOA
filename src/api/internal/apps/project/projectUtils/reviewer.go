@@ -3,7 +3,7 @@ package projectUtils
 import (
 	"gorm.io/gorm"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/project/projectModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/project/projectModels"
 )
 
 // HasReviewAssignment 只提供组织审批人身份提示，不授予空间发现、进入或业务权限。

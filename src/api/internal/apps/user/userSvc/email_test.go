@@ -4,10 +4,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/user/userConstants"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/user/userModels"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/config"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/db"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/user/userConstants"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/user/userModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/config"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/db"
 )
 
 func TestLoginEmailTemplateData(t *testing.T) {

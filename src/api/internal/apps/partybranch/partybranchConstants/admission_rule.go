@@ -1,6 +1,6 @@
 package partybranchConstants
 
-import "github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/partybranch/partybranchModels"
+import "github.com/OVINC-CN/AgileOA/src/api/internal/apps/partybranch/partybranchModels"
 
 const (
 	RuleGroup                = "group"

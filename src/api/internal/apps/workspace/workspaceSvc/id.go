@@ -4,8 +4,8 @@ import (
 	"crypto/rand"
 	"math/big"
 
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/workspace/workspaceConstants"
-	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/workspace/workspaceUtils"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/workspace/workspaceConstants"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/workspace/workspaceUtils"
 )
 
 func newID() (string, error) {
