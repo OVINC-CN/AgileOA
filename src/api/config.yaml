@@ -50,7 +50,7 @@ user:
   cookie_domain: ""
   cookie_secure: false
   bcrypt_cost: 12
-  # 单个 API 进程按直连 IP 限制临时密码修改、邮件发送和邮件登录。
+  # 单个 API 进程按客户端 IP 限制临时密码修改、邮件发送和邮件登录，IP 遵循 http.trusted_proxy_cidrs。
   login_rate: 0.2
   login_burst: 5
   login_limiter_ttl: 10m
