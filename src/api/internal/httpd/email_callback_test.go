@@ -3,6 +3,7 @@ package httpd
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/labstack/echo/v4"
@@ -10,6 +11,46 @@ import (
 	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/apps/access/accessConstants"
 	"github.com/OVINC-CN/AgileWorkspace/src/api/internal/config"
 )
+
+func TestEmailCallbackRequiresConfiguredSign(t *testing.T) {
+	original := config.Config.Email.CallbackSign
+	t.Cleanup(func() { config.Config.Email.CallbackSign = original })
+	server := New()
+
+	// 发送无效事件，只有签名匹配时才会进入事件校验并返回 400。
+	const configured = "Test+Sign"
+	for _, test := range []struct {
+		name   string
+		sign   string
+		query  string
+		status int
+	}{
+		{"未配置", "", "?sign=", http.StatusUnauthorized},
+		{"配置为空白", " ", "?sign=%20", http.StatusUnauthorized},
+		{"缺少签名", configured, "", http.StatusUnauthorized},
+		{"签名为空", configured, "?sign=", http.StatusUnauthorized},
+		{"大小写不同", configured, "?sign=test%2Bsign", http.StatusUnauthorized},
+		{"签名重复", configured, "?sign=Test%2BSign&sign=other", http.StatusUnauthorized},
+		{"无效编码", configured, "?sign=Test%2BSign&sign=%zz", http.StatusUnauthorized},
+		{"签名匹配", configured, "?sign=Test%2BSign", http.StatusBadRequest},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			config.Config.Email.CallbackSign = test.sign
+			request := httptest.NewRequestWithContext(
+				t.Context(),
+				http.MethodPost,
+				"/v1/callback/email"+test.query,
+				strings.NewReader(`{"sign":"Test+Sign"}`),
+			)
+			request.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			recorder := httptest.NewRecorder()
+			server.ServeHTTP(recorder, request)
+			if recorder.Code != test.status {
+				t.Fatalf("回调状态码为 %d，期望 %d", recorder.Code, test.status)
+			}
+		})
+	}
+}
 
 func TestEmailCallbackDoesNotRequireBrowserCredentials(t *testing.T) {
 	t.Parallel()

@@ -7796,6 +7796,11 @@ paths:
       description: 接收腾讯云邮件事件，不依赖登录 Cookie、CSRF 标识或既有发信记录。标准字段独立落库并按内容去重，未知扩展字段忽略；点击地址仅保存站点和路径。email.abnormal_events
         配置的事件直接永久拉黑收件邮箱，后续所有业务发信均拒绝该地址。不保存或校验 IP。
       parameters:
+      - description: 与 email.callback_sign 一致的回调签名
+        in: query
+        name: sign
+        required: true
+        type: string
       - description: 腾讯云邮件通知事件
         in: body
         name: body
@@ -7811,6 +7816,10 @@ paths:
             $ref: '#/definitions/emailModels.EmptyResponse'
         "400":
           description: 回调参数无效
+          schema:
+            $ref: '#/definitions/emailModels.EmptyResponse'
+        "401":
+          description: 回调签名无效
           schema:
             $ref: '#/definitions/emailModels.EmptyResponse'
         "503":
