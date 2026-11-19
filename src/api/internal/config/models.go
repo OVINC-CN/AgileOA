@@ -141,9 +141,6 @@ type userConfig struct {
 	CookieDomain         string           `yaml:"cookie_domain"`
 	CookieSecure         bool             `yaml:"cookie_secure"`
 	BcryptCost           int              `yaml:"bcrypt_cost"`
-	LoginRate            float64          `yaml:"login_rate"`
-	LoginBurst           int              `yaml:"login_burst"`
-	LoginLimiterTTL      time.Duration    `yaml:"login_limiter_ttl"`
 	Captcha              captchaConfig    `yaml:"captcha"`
 	EmailLogin           emailLoginConfig `yaml:"email_login"`
 	BootstrapUsername    string           `yaml:"bootstrap_username"`
@@ -171,20 +168,13 @@ type sesConfig struct {
 }
 
 type captchaConfig struct {
-	Enabled        bool                    `yaml:"enabled"`
-	AppID          uint64                  `yaml:"app_id"`
-	AppSecretKey   string                  `yaml:"app_secret_key"`
-	SecretID       string                  `yaml:"secret_id"`
-	SecretKey      string                  `yaml:"secret_key"`
-	ChallengeTTL   time.Duration           `yaml:"challenge_ttl"`
-	RequestTimeout time.Duration           `yaml:"request_timeout"`
-	IssueRate      *captchaIssueRateConfig `yaml:"issue_rate"`
-}
-
-type captchaIssueRateConfig struct {
-	MinInterval time.Duration `yaml:"min_interval"`
-	Window      time.Duration `yaml:"window"`
-	MaxRequests int           `yaml:"max_requests"`
+	Enabled        bool          `yaml:"enabled"`
+	AppID          uint64        `yaml:"app_id"`
+	AppSecretKey   string        `yaml:"app_secret_key"`
+	SecretID       string        `yaml:"secret_id"`
+	SecretKey      string        `yaml:"secret_key"`
+	ChallengeTTL   time.Duration `yaml:"challenge_ttl"`
+	RequestTimeout time.Duration `yaml:"request_timeout"`
 }
 
 type appConfig struct {

@@ -165,9 +165,8 @@ func check() error {
 		if method == "post" && path == "/v1/login" {
 			expectedStatuses = []string{"200", "401"}
 		}
-		if path == "/v1/login-email" || path == "/v1/login-email-verify" ||
-			path == "/v1/student-login-email" {
-			expectedStatuses = []string{"200", "400", "401", "429", "503"}
+		if path == "/v1/login-email-verify" {
+			expectedStatuses = []string{"200", "400", "401", "503"}
 		}
 		if path == "/v1/login-email" || path == "/v1/student-login-email" {
 			expectedStatuses = []string{"200", "400", "401", "403", "429", "503"}

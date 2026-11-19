@@ -543,14 +543,11 @@ func invalidCredentials() error {
 	return &response.BusinessError{Status: http.StatusUnauthorized, Message: "用户名或密码错误"}
 }
 
-// Reject 对参数错误、跨站保护和限流拒绝调用独立审计服务，审计不可用时阻断响应。
+// Reject 对参数错误及跨站保护拒绝调用独立审计服务，审计不可用时阻断响应。
 func Reject(ctx context.Context, action string, status int) error {
 	message := response.MessageBadRequest
 	if status == http.StatusForbidden {
 		message = response.MessageForbidden
-	}
-	if status == http.StatusTooManyRequests {
-		message = response.MessageRateLimited
 	}
 	return failed(
 		ctx,

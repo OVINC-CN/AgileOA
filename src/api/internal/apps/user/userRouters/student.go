@@ -23,7 +23,7 @@ import (
 // @Failure 400 {object} userModels.EmptyResponse "参数或验证码无效"
 // @Failure 401 {object} userModels.EmptyResponse "用户不存在"
 // @Failure 403 {object} userModels.EmptyResponse "邮箱已被禁止接收邮件"
-// @Failure 429 {object} userModels.EmptyResponse "请求过于频繁"
+// @Failure 429 {object} userModels.EmptyResponse "同一学生请求发送验证码过于频繁"
 // @Failure 503 {object} userModels.EmptyResponse "学生邮件登录暂时不可用"
 // @Router /v1/student-login-email [post]
 func SendStudentLoginEmail(c echo.Context) error {

@@ -11,6 +11,40 @@ import (
 	"github.com/OVINC-CN/AgileOA/src/api/internal/config"
 )
 
+func TestSessionRoutesHandleRepeatedRequestsFromSameIP(t *testing.T) {
+	t.Parallel()
+
+	// 使用生产路由注册。校验失败由各业务入口返回，无需建立会话或发送邮件。
+	server := echo.New()
+	server.HTTPErrorHandler = errorHandler
+	serveHealthz(server)
+	for _, scenario := range []struct {
+		path   string
+		status int
+	}{
+		{"/v1/login-captcha", http.StatusOK},
+		{"/v1/login-email", http.StatusBadRequest},
+		{"/v1/student-login-email", http.StatusBadRequest},
+		{"/v1/login-email-verify", http.StatusBadRequest},
+		{"/v1/change-password", http.StatusBadRequest},
+	} {
+		t.Run(scenario.path, func(t *testing.T) {
+			for attempt := range 8 {
+				request := httptest.NewRequestWithContext(
+					t.Context(), http.MethodPost, scenario.path, strings.NewReader("{"),
+				)
+				request.RemoteAddr = "192.0.2.10:12345"
+				request.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+				result := httptest.NewRecorder()
+				server.ServeHTTP(result, request)
+				if result.Code != scenario.status {
+					t.Fatalf("第 %d 次请求返回 %d，期望 %d", attempt+1, result.Code, scenario.status)
+				}
+			}
+		})
+	}
+}
+
 func TestRequestCredentialUsesEndpointAuthentication(t *testing.T) {
 	// 同时携带两种凭据时也只读取入口允许的类型，禁止跨入口回退。
 	const cookieValue = "fictional-cookie"

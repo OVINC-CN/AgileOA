@@ -121,11 +121,13 @@ WHERE EVENT_SCHEMA = DATABASE() AND EVENT_NAME = 'maintain_audit_events_partitio
 
 敏感审计使用 `audit.snapshot_keys` 中独立的 32 字节 Base64 密钥，`audit.snapshot_key_id` 选择当前密钥，轮换后保留历史密钥以读取旧快照。API Token 使用另一个独立的 `user.api_token_key`；可用 `openssl rand -base64 32` 生成，填写在私有部署 YAML。更换 Token 密钥前先撤销现有 Token，再重新生成。
 
-启用邮件登录时，配置 Redis，并按 [config.yaml](src/api/config.yaml) 填写 `user.email_login` 的有效期、发送间隔及 `ses` 凭据、地域、发信地址、模板编号和超时，再开启 `enabled`。发信账号需要 `ses:SendEmail` 权限。地域与发信地址、模板一致，发信名称可空且不含冒号、尖括号或换行。
+启用邮件登录时，配置 Redis，并按 [config.yaml](src/api/config.yaml) 填写 `user.email_login` 的有效期、发送间隔及 `ses` 凭据、地域、发信地址、模板编号和超时，再开启 `enabled`。发送间隔按组织账号或工作空间内的学生独立计算。发信账号需要 `ses:SendEmail` 权限。地域与发信地址、模板一致，发信名称可空且不含冒号、尖括号或换行。
 
 将 [登录邮件模板](docs/login-email-v3.html) 注册为已审核模板，并将 `ses.template_id` 更新为该模板编号。模板只保留 `{{LOGIN_CODE}}` 和 `{{TTL_MINUTES}}`，验证码为 6 位数字字符串，包含前导零；邮件不再包含登录链接或回跳地址。`user.email_login.max_attempts` 必须配置为 1 至 10，示例为 5；达到错误次数上限后须重新获取验证码。组织账号和学生在原登录页面发送、输入验证码并登录，重发成功后旧验证码失效。随机校验标识由发送接口返回，校验时连同验证码放入请求体；二者只保存在当前页面内存，不写入 URL、浏览器存储、日志、追踪或审计。`/login/email` 兼容入口仅返回登录页。
 
-腾讯云验证码通过 `user.captcha` 配置，控制台启用 CaptchaAppId 强制校验和一次一密。反向代理环境配套设置 `http.trusted_proxy_cidrs`。OTLP gRPC 的主机与端口、TLS 模式及认证头分别由 `trace.endpoint`、`trace.insecure`、`trace.headers` 配置。
+腾讯云验证码通过 `user.captcha` 配置，控制台启用 CaptchaAppId 强制校验和一次一密。反向代理环境配套设置 `http.trusted_proxy_cidrs`。
+
+OTLP gRPC 的主机与端口、TLS 模式及认证头分别由 `trace.endpoint`、`trace.insecure`、`trace.headers` 配置。
 
 追踪始终开启，`trace.report_enabled: true` 时才向接收端上报。
 追踪服务名优先使用非空环境变量 `OTEL_SERVICE_NAME`，未设置或为空时回退 YAML 的 `app.name`；

@@ -70,7 +70,6 @@ func (c *config) validate() error {
 		"scheduler.task_check_interval": c.Scheduler.TaskCheckInterval,
 		"scheduler.heartbeat_interval":  c.Scheduler.HeartbeatInterval,
 		"user.session_ttl":              c.User.SessionTTL,
-		"user.login_limiter_ttl":        c.User.LoginLimiterTTL,
 		"audit.write_timeout":           c.Audit.WriteTimeout,
 	} {
 		if duration <= 0 {
@@ -111,8 +110,8 @@ func (c *config) validate() error {
 		return errors.New("scheduler.concurrency must be positive")
 	}
 	if c.User.SessionTTL < time.Second || c.User.BcryptCost < bcrypt.DefaultCost ||
-		c.User.BcryptCost > 16 || c.User.LoginRate <= 0 || c.User.LoginBurst < 1 {
-		return errors.New("invalid user session, password, or rate limit configuration")
+		c.User.BcryptCost > 16 {
+		return errors.New("invalid user session or password configuration")
 	}
 	if err := c.User.Captcha.validate(); err != nil {
 		return err
@@ -273,18 +272,6 @@ func (c *config) validate() error {
 }
 
 func (c *captchaConfig) validate() error {
-	// 已有部署未配置签发频率时应用默认限额。
-	if c.IssueRate == nil {
-		c.IssueRate = &captchaIssueRateConfig{
-			MinInterval: time.Second,
-			Window:      time.Minute,
-			MaxRequests: 5,
-		}
-	}
-	if c.IssueRate.MinInterval <= 0 || c.IssueRate.Window < c.IssueRate.MinInterval ||
-		c.IssueRate.MaxRequests < 1 {
-		return errors.New("invalid user.captcha.issue_rate interval, window or request limit")
-	}
 	if !c.Enabled {
 		return nil
 	}

@@ -18,7 +18,7 @@ import (
 
 // LoginCaptcha 签发登录所需的一次性验证码鉴权密文。
 // @Summary 获取登录验证码参数
-// @Description 每次尝试登录前获取新密文，默认按客户端 IP 每秒最多一次且连续一分钟最多五次。未启用验证码时 data 为 null。
+// @Description 每次尝试登录前获取新密文。未启用验证码时 data 为 null。
 // @Tags 用户
 // @Produce json
 // @Param X-CSRF-Protection header string true "跨站请求保护标识，固定为 1" default(1)

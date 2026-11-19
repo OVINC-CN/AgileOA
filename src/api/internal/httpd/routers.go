@@ -4,7 +4,6 @@ import (
 	"github.com/labstack/echo/v4"
 	echoSwagger "github.com/swaggo/echo-swagger"
 
-	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessConstants"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessRouters"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/attachment/attachmentRouters"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/audit/auditRouters"
@@ -46,18 +45,14 @@ func serveHealthz(engine *echo.Echo) {
 	session.POST("/mcp", MCP)
 	session.GET("/mcp", MCP)
 	session.DELETE("/mcp", MCP)
-	changeLimiter := passwordLimiter(accessConstants.UserChangePassword)
-	emailSendLimiter := passwordLimiter(accessConstants.UserLoginEmailSend)
-	studentEmailLimiter := passwordLimiter(accessConstants.StudentLoginEmailSend)
-	emailVerifyLimiter := passwordLimiter(accessConstants.UserLogin)
-	session.POST("/login-captcha", userRouters.LoginCaptcha, captchaIssueLimiter())
+	session.POST("/login-captcha", userRouters.LoginCaptcha)
 	session.POST("/login", userRouters.Login)
-	session.POST("/login-email", userRouters.SendLoginEmail, emailSendLimiter)
-	session.POST("/student-login-email", userRouters.SendStudentLoginEmail, studentEmailLimiter)
-	session.POST("/login-email-verify", userRouters.LoginByEmail, emailVerifyLimiter)
+	session.POST("/login-email", userRouters.SendLoginEmail)
+	session.POST("/student-login-email", userRouters.SendStudentLoginEmail)
+	session.POST("/login-email-verify", userRouters.LoginByEmail)
 	session.GET("/user-info", userRouters.Info)
 	session.POST("/logout", userRouters.Logout)
-	session.POST("/change-password", userRouters.ChangePassword, changeLimiter)
+	session.POST("/change-password", userRouters.ChangePassword)
 
 	// 通知是账号自助资源，接收人始终从当前会话确定。
 	notifications := session.Group("/notifications")

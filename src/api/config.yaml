@@ -52,10 +52,6 @@ user:
   cookie_domain: ""
   cookie_secure: false
   bcrypt_cost: 12
-  # 单个 API 进程按客户端 IP 限制临时密码修改、邮件发送和邮件登录，IP 遵循 http.trusted_proxy_cidrs。
-  login_rate: 0.2
-  login_burst: 5
-  login_limiter_ttl: 10m
   bootstrap_username: admin
   bootstrap_display_name: 系统管理员
   bootstrap_password: ""
@@ -86,11 +82,6 @@ user:
     secret_key: ""
     challenge_ttl: 2m
     request_timeout: 5s
-    # 按客户端 IP 限制签发间隔和滑动窗口内的次数。
-    issue_rate:
-      min_interval: 1s
-      window: 1m
-      max_requests: 5
 
 # 审计与业务共用事务；失败审计使用独立有界事务。
 # 敏感快照必须配置独立的 32 字节 Base64 密钥；不配置时拒绝写入敏感快照。
