@@ -171,6 +171,8 @@ COS 直传对已有库的独立结构调整见
 | 图表提示和数量轴 | [chart-tooltip-table.tsx](src/web/src/components/chart-tooltip-table.tsx)、[chart-count-tick.tsx](src/web/src/components/chart-count-tick.tsx) |
 
 表单与详情使用 Drawer 内容滚动模式，全屏导航使用 `scrollMode="viewport"`。
+标题宽度不足时整行省略，通过公共 Tooltip 查看完整内容。包含对象标识的副标题使用
+`truncateDescription` 启用同样的行为。
 并列分区通过 `DrawerTabs`、`footerNavigation` 接到底部，操作放入 `footer`，
 切换时保留原表单状态。导航修改同时连接 `features/*/navigation.ts`，并核对
 [cdn-urls.ts](src/web/scripts/cdn-urls.ts) 及其覆盖验证。

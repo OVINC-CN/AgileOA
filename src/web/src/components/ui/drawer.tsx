@@ -10,12 +10,14 @@ import {
 } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { Tooltip } from '@/components/ui/tooltip';
 import { setMessageContainer } from '@/lib/messages';
 import { cn } from '@/lib/utils';
 
 interface Props {
   title: string;
-  description?: string;
+  description?: string | undefined;
+  truncateDescription?: boolean;
   footerNavigation?: ReactNode;
   children: ReactNode;
   footer?: ReactNode;
@@ -35,6 +37,7 @@ interface Props {
 export function Drawer({
   title,
   description,
+  truncateDescription = false,
   footerNavigation,
   children,
   footer,
@@ -100,6 +103,13 @@ export function Drawer({
       : 'absolute inset-y-0 right-0 min-h-0 overflow-hidden',
     size === 'full' ? 'w-full max-w-none min-w-0' : 'w-full max-w-[600px]',
   );
+  const descriptionElement = (
+    <Dialog.Description
+      className={cn('text-xs leading-4 text-muted-foreground', truncateDescription && 'truncate')}
+    >
+      {description}
+    </Dialog.Description>
+  );
   const content = (
     <>
       <div
@@ -108,15 +118,23 @@ export function Drawer({
           viewportScroll && 'sticky top-0 z-10 bg-popover backdrop-blur-xl',
         )}
       >
-        <div className="min-w-0 space-y-0.5 wrap-anywhere">
-          <Dialog.Title data-slot="drawer-title" className="text-xl leading-6 font-medium">
-            {title}
-          </Dialog.Title>
-          {description ? (
-            <Dialog.Description className="text-xs leading-4 text-muted-foreground">
-              {description}
-            </Dialog.Description>
-          ) : null}
+        <div className="min-w-0 flex-1 space-y-0.5 wrap-anywhere">
+          <Tooltip content={title} onlyOverflow>
+            <Dialog.Title
+              data-slot="drawer-title"
+              className="truncate text-xl leading-6 font-medium"
+            >
+              {title}
+            </Dialog.Title>
+          </Tooltip>
+          {description &&
+            (truncateDescription ? (
+              <Tooltip content={description} onlyOverflow>
+                {descriptionElement}
+              </Tooltip>
+            ) : (
+              descriptionElement
+            ))}
         </div>
         <Dialog.Close asChild>
           <Button
@@ -124,6 +142,7 @@ export function Drawer({
             variant="ghost"
             size="icon-sm"
             aria-label={closeLabel}
+            className="shrink-0"
             disabled={busy}
           >
             <X className="size-4" aria-hidden="true" />

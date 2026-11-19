@@ -64,6 +64,7 @@ function UserAction({
     <Drawer
       title={kind === 'delete' ? '删除用户' : '撤销用户会话'}
       busy={mutation.isPending}
+      truncateDescription
       description={formatIdentity(user.display_name, user.username)}
       onClose={() => {
         if (!mutation.isPending) {

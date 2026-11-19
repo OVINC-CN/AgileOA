@@ -7,19 +7,20 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { rejectTimelineTransfer } from '@/features/cpc-person/timeline-transfer-api';
 import { useApiAction } from '@/lib/api-action';
-import { formatIdentity } from '@/lib/format';
 
 const reasonMaxLength = 1000;
 
 export function TimelineTransferRejectDrawer({
   workspaceID,
-  person,
+  personID,
+  personLabel,
   revision,
   invalidate,
   onClose,
 }: {
   workspaceID: string;
-  person: { id: number; name: string; student_no: string };
+  personID: number;
+  personLabel: string | undefined;
   revision: number;
   invalidate: () => Promise<void>;
   onClose: () => void;
@@ -30,11 +31,8 @@ export function TimelineTransferRejectDrawer({
   return (
     <Drawer
       title="驳回时间线转移"
-      description={
-        person.name && person.student_no
-          ? formatIdentity(person.name, person.student_no)
-          : `人员编号：${String(person.id)}`
-      }
+      description={personLabel}
+      truncateDescription
       busy={reject.pending}
       onClose={onClose}
       form={{
@@ -49,7 +47,7 @@ export function TimelineTransferRejectDrawer({
             if (Array.from(value).length > reasonMaxLength) {
               throw new Error('审批意见不能超过 1000 个字符');
             }
-            await rejectTimelineTransfer(workspaceID, person.id, revision, value);
+            await rejectTimelineTransfer(workspaceID, personID, revision, value);
             await invalidate();
             onClose();
           });

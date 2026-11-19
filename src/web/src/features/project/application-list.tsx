@@ -313,6 +313,7 @@ export function ApplicationList({
       {scope === 'manage' && canDelete && !denied && deleting ? (
         <Drawer
           title="删除填报"
+          truncateDescription
           description={`${deleting.project_name} · ${String(deleting.year)} · ${formatIdentity(deleting.student_name, deleting.student_no)}`}
           busy={remove.pending}
           onClose={() => {

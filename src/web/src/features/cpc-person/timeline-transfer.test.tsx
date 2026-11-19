@@ -112,7 +112,8 @@ function setup(status = 200, abnormal = false, reviewing = false) {
     >
       <TimelineTransferDrawer
         workspaceID={workspaceID}
-        person={{ id: 7, name: '虚构人员', student_no: '000007' }}
+        personID={7}
+        personLabel="虚构人员(000007)"
         transfer={
           reviewing
             ? { mode: 'review', preview: currentPreview }

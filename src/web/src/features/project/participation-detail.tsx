@@ -12,6 +12,7 @@ export function ParticipationDetail({
   return (
     <Drawer
       title="参与评分详情"
+      truncateDescription
       description={formatIdentity(record.student_name, record.student_no)}
       onClose={onClose}
     >

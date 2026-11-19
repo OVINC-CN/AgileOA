@@ -63,6 +63,7 @@ export function GraduationEditor({
   return (
     <Drawer
       title={record.type ? '编辑毕业去向' : '绑定毕业去向'}
+      truncateDescription
       description={formatIdentity(record.student_name, record.student_no)}
       busy={mutation.isPending}
       onClose={onClose}

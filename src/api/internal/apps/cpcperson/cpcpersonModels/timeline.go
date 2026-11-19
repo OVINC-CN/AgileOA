@@ -71,6 +71,8 @@ type TimelineIssue struct {
 type TimelineData struct {
 	// PersonID 是所属人员编号。
 	PersonID uint64 `json:"person_id" example:"1"`
+	// PersonName 是所属人员的姓名。
+	PersonName string `json:"person_name" example:"虚构学生甲"`
 	// PersonRevision 是绑定模板时校验的人员版本。
 	PersonRevision uint64 `json:"person_revision" example:"1"`
 	// TemplateID 是已绑定模板编号，未绑定时为 null。

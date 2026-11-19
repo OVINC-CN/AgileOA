@@ -73,6 +73,7 @@ export function ParticipationEditor({
   return (
     <Drawer
       title={record ? '编辑参与评分' : '绑定学生项目'}
+      truncateDescription={!!record}
       description={
         record
           ? `${record.project_name} · ${String(record.year)} · ${studentLabel}`

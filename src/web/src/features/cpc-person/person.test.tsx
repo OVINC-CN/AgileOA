@@ -86,6 +86,7 @@ describe('党建人员', () => {
       Promise.resolve(
         respond({
           person_id: 42,
+          person_name: '虚构审核人员',
           person_revision: 1,
           template_id: 1,
           template_name: '虚构待审核时间线',
@@ -116,6 +117,7 @@ describe('党建人员', () => {
     );
     const drawer = await screen.findByRole('dialog', { name: '人员时间线' });
     expect(await within(drawer).findByRole('button', { name: '审核' })).toBeVisible();
+    expect(drawer).toHaveAccessibleDescription('虚构审核人员 (42)');
     expect(fetch).toHaveBeenCalledExactlyOnceWith(
       `/v1/workspaces/${first}/cpc-people/42/timeline/review`,
       expect.anything(),

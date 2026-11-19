@@ -663,6 +663,7 @@ function ProjectWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: W
       {deleting ? (
         <Drawer
           title={deleting.participation ? '删除获奖记录' : '删除项目'}
+          truncateDescription
           description={
             'name' in deleting.record
               ? deleting.record.name

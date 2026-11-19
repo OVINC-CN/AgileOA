@@ -40,10 +40,12 @@ function EventFields({ fields }: { fields: [string, string | null][] }) {
 
 export function AuditDetail({
   row,
+  actionName,
   workspaceLabel,
   onClose,
 }: {
   row: AuditRow;
+  actionName: string;
   workspaceLabel: string;
   onClose: () => void;
 }) {
@@ -58,10 +60,13 @@ export function AuditDetail({
       ? 'changes'
       : 'event');
   const actor = auditIdentity(row.snapshot_user_info);
+  const eventContent = row.event_content?.trim() ?? '';
+  const eventLabel = eventContent || `${actionName} (${row.action_id})`;
   return (
     <Drawer
       title="审计详情"
-      description={`${row.event_content ?? row.action_id} · ${formatDate(new Date(row.start_time).toISOString())}`}
+      truncateDescription
+      description={`${eventLabel} · ${formatDate(new Date(row.start_time).toISOString())}`}
       onClose={onClose}
       footerNavigation={
         data ? (
