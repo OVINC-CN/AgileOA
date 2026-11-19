@@ -10,7 +10,7 @@ import (
 
 // UploadMonthlyWork 登记待完成附件并返回 COS 直传凭据。
 // @Summary 申请附件直传
-// @Description 先登记 pending 及审计并占用名额，客户端按 STS 约束直传正式路径；失败记录可显式删除。
+// @Description 当前负责人具备附件上传权限时可申请。先登记 pending 及审计并占用名额，客户端按 STS 约束直传正式路径；失败记录可显式删除。
 // @Tags 月度工作附件
 // @Accept json
 // @Produce json
@@ -19,6 +19,8 @@ import (
 // @Param body body attachmentModels.UploadRequest true "文件名、准确字节数及声明媒体类型"
 // @Param X-CSRF-Protection header string true "固定为 1" default(1)
 // @Success 200 {object} attachmentModels.UploadResponse "待完成编号及仅本对象可用的临时凭据"
+// @Failure 403 {object} accessModels.EmptyResponse "没有上传权限"
+// @Failure 404 {object} accessModels.EmptyResponse "工作记录不存在或不可访问"
 // @Router /v1/workspaces/{workspace_id}/monthly-work/{work_id}/attachments [post]
 // @Router /v1/workspaces/{workspace_id}/cpc-monthly-work/{work_id}/attachments [post]
 func UploadMonthlyWork(c echo.Context) error {
@@ -27,7 +29,7 @@ func UploadMonthlyWork(c echo.Context) error {
 
 // ListMonthlyWork 查询固定月度工作类别的附件。
 // @Summary 查询月度工作附件
-// @Description 只返回当前空间指定类别的元数据及存储流程状态，不返回对象名、存储地址或签名。
+// @Description 需具备附件读取权限。只返回当前账号负责或参与的工作附件元数据及存储流程状态。
 // @Tags 月度工作附件
 // @Produce json
 // @Param workspace_id path string true "工作空间编号"
@@ -35,6 +37,7 @@ func UploadMonthlyWork(c echo.Context) error {
 // @Param page query int false "页码，从 1 开始"
 // @Param page_size query int false "每页条数，上限来自 YAML"
 // @Success 200 {object} attachmentModels.ListResponse "附件目录"
+// @Failure 403 {object} accessModels.EmptyResponse "没有附件读取权限"
 // @Router /v1/workspaces/{workspace_id}/attachments/monthly-work [get]
 // @Router /v1/workspaces/{workspace_id}/attachments/cpc-monthly-work [get]
 func ListMonthlyWork(c echo.Context) error {
@@ -43,13 +46,15 @@ func ListMonthlyWork(c echo.Context) error {
 
 // DownloadMonthlyWork 按月度工作附件读取权限审计并返回下载地址。
 // @Summary 下载月度工作附件
-// @Description 实时复核当前空间及所属类别的附件读取权限，审计提交后 返回短期 CDN URL 的 JSON；学生工作、党建工作及项目附件权限互不通用。
+// @Description 实时复核附件读取权限及当前账号是否负责或参与所属工作，审计提交后返回文件名及短期 CDN URL。
 // @Produce json
 // @Tags 月度工作附件
 // @Param workspace_id path string true "工作空间编号"
 // @Param id path int true "附件编号"
-// @Success 200 {object} attachmentModels.URLResponse "文件名、下载地址及过期时间"
+// @Success 200 {object} attachmentModels.URLResponse "文件名及下载地址"
 // @Failure 400 {object} accessModels.EmptyResponse "参数无效"
+// @Failure 403 {object} accessModels.EmptyResponse "没有附件读取权限"
+// @Failure 404 {object} accessModels.EmptyResponse "附件不存在或不可访问"
 // @Router /v1/workspaces/{workspace_id}/attachments/monthly-work/{id}/download [get]
 // @Router /v1/workspaces/{workspace_id}/attachments/cpc-monthly-work/{id}/download [get]
 func DownloadMonthlyWork(c echo.Context) error {
@@ -58,7 +63,7 @@ func DownloadMonthlyWork(c echo.Context) error {
 
 // DeleteMonthlyWork 显式删除工作附件。
 // @Summary 删除月度工作附件
-// @Description 检查当前版本及独立删除权限；先提交删除意图及审计，再删除对象及元数据，失败可显式重试。
+// @Description 检查当前负责人、当前版本及独立删除权限。先提交删除意图及审计，复核当前负责人后删除对象及元数据，失败可显式重试。
 // @Tags 月度工作附件
 // @Produce json
 // @Param workspace_id path string true "工作空间编号"
@@ -66,6 +71,8 @@ func DownloadMonthlyWork(c echo.Context) error {
 // @Param revision query int true "当前并发版本"
 // @Param X-CSRF-Protection header string true "固定为 1" default(1)
 // @Success 200 {object} accessModels.EmptyResponse "删除成功"
+// @Failure 403 {object} accessModels.EmptyResponse "没有附件删除权限"
+// @Failure 404 {object} accessModels.EmptyResponse "附件不存在或不可访问"
 // @Router /v1/workspaces/{workspace_id}/attachments/monthly-work/{id} [delete]
 // @Router /v1/workspaces/{workspace_id}/attachments/cpc-monthly-work/{id} [delete]
 func DeleteMonthlyWork(c echo.Context) error {
@@ -82,7 +89,7 @@ func workAttachmentCategory(c echo.Context) string {
 
 // CompleteMonthlyWork 核对对象元数据后完成已登记的附件。
 // @Summary 确认附件直传完成
-// @Description 实时复核权限、业务归属及并发版本，仅通过 HEAD 检查大小和声明类型；已完成记录可幂等重试。
+// @Description 实时复核当前负责人、上传权限、原申请人、业务归属及并发版本，仅通过 HEAD 检查大小和声明类型，已完成记录可幂等重试。
 // @Tags 月度工作附件
 // @Accept json
 // @Produce json
@@ -91,6 +98,8 @@ func workAttachmentCategory(c echo.Context) string {
 // @Param body body attachmentModels.CompleteUploadRequest true "申请返回的上传编号和版本"
 // @Param X-CSRF-Protection header string true "固定为 1" default(1)
 // @Success 200 {object} attachmentModels.InfoResponse "已完成附件元数据"
+// @Failure 403 {object} accessModels.EmptyResponse "没有上传权限"
+// @Failure 404 {object} accessModels.EmptyResponse "附件不存在或不可访问"
 // @Router /v1/workspaces/{workspace_id}/monthly-work/{work_id}/attachments/complete [post]
 // @Router /v1/workspaces/{workspace_id}/cpc-monthly-work/{work_id}/attachments/complete [post]
 func CompleteMonthlyWork(c echo.Context) error {

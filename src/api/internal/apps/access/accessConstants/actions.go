@@ -645,7 +645,7 @@ var catalog = []accessModels.Action{
 	definition(
 		MonthlyWorkList,
 		"查看月度工作",
-		"按年份和月份查看工作记录",
+		"按年份和月份查看本人负责或参与的工作",
 		"monthly_work",
 		ScopeWorkspace,
 		endpoint("GET", "/v1/workspaces/:workspace_id/monthly-work"),
@@ -661,10 +661,10 @@ var catalog = []accessModels.Action{
 		ScopeWorkspace,
 		endpoint("POST", "/v1/workspaces/:workspace_id/monthly-work"),
 	),
-	definition(MonthlyWorkUpdate, "修改月度工作", "按版本修改工作记录及外部链接", "monthly_work", ScopeWorkspace,
+	definition(MonthlyWorkUpdate, "修改月度工作", "仅负责人可按版本修改或转交工作", "monthly_work", ScopeWorkspace,
 		endpoint("PUT", "/v1/workspaces/:workspace_id/monthly-work/:id"),
 	),
-	definition(MonthlyWorkDelete, "删除月度工作", "硬删除无所属附件的工作记录，保留审计", "monthly_work", ScopeWorkspace,
+	definition(MonthlyWorkDelete, "删除月度工作", "仅负责人可删除工作，保留审计", "monthly_work", ScopeWorkspace,
 		endpoint("DELETE", "/v1/workspaces/:workspace_id/monthly-work/:id"),
 	),
 	definition(MonthlyWorkImport, "导入月度工作", "下载固定 XLSX 模板并整批新增工作记录", "monthly_work", ScopeWorkspace,
@@ -674,7 +674,7 @@ var catalog = []accessModels.Action{
 	definition(
 		MonthlyWorkAttachmentRead,
 		"读取月度工作附件",
-		"查看普通工作附件目录及下载，独立于项目附件权限",
+		"查看和下载本人负责或参与的工作附件",
 		"monthly_work",
 		ScopeWorkspace,
 		endpoint("GET", "/v1/workspaces/:workspace_id/attachments/monthly-work"),
@@ -683,7 +683,7 @@ var catalog = []accessModels.Action{
 	definition(
 		MonthlyWorkAttachmentUpload,
 		"上传月度工作附件",
-		"上传到工作日期及十位随机目录，不检查同名或对象存在性",
+		"仅负责人可上传及确认工作附件",
 		"monthly_work",
 		ScopeWorkspace,
 		endpoint("POST", "/v1/workspaces/:workspace_id/monthly-work/:work_id/attachments"),
@@ -692,7 +692,7 @@ var catalog = []accessModels.Action{
 	definition(
 		MonthlyWorkAttachmentDelete,
 		"删除月度工作附件",
-		"删除工作附件及存储对象，可重试未完成的存储操作",
+		"仅负责人可删除工作附件，可重试未完成的删除",
 		"monthly_work",
 		ScopeWorkspace,
 		endpoint("DELETE", "/v1/workspaces/:workspace_id/attachments/monthly-work/:id"),
@@ -700,7 +700,7 @@ var catalog = []accessModels.Action{
 	definition(
 		CPCMonthlyWorkList,
 		"查看党建月度工作",
-		"按年份和月份查看工作记录",
+		"按年份和月份查看本人负责或参与的工作",
 		"cpc_monthly_work",
 		ScopeWorkspace,
 		endpoint("GET", "/v1/workspaces/:workspace_id/cpc-monthly-work"),
@@ -719,7 +719,7 @@ var catalog = []accessModels.Action{
 	definition(
 		CPCMonthlyWorkUpdate,
 		"修改党建月度工作",
-		"按版本修改工作记录及外部链接",
+		"仅负责人可按版本修改或转交工作",
 		"cpc_monthly_work",
 		ScopeWorkspace,
 		endpoint("PUT", "/v1/workspaces/:workspace_id/cpc-monthly-work/:id"),
@@ -727,7 +727,7 @@ var catalog = []accessModels.Action{
 	definition(
 		CPCMonthlyWorkDelete,
 		"删除党建月度工作",
-		"硬删除无所属附件的工作记录，保留审计",
+		"仅负责人可删除工作，保留审计",
 		"cpc_monthly_work",
 		ScopeWorkspace,
 		endpoint("DELETE", "/v1/workspaces/:workspace_id/cpc-monthly-work/:id"),
@@ -744,7 +744,7 @@ var catalog = []accessModels.Action{
 	definition(
 		CPCMonthlyWorkAttachmentRead,
 		"读取党建月度工作附件",
-		"查看普通工作附件目录及下载，独立于项目附件权限",
+		"查看和下载本人负责或参与的工作附件",
 		"cpc_monthly_work",
 		ScopeWorkspace,
 		endpoint("GET", "/v1/workspaces/:workspace_id/attachments/cpc-monthly-work"),
@@ -753,7 +753,7 @@ var catalog = []accessModels.Action{
 	definition(
 		CPCMonthlyWorkAttachmentUpload,
 		"上传党建月度工作附件",
-		"上传到工作日期及十位随机目录，不检查同名或对象存在性",
+		"仅负责人可上传及确认工作附件",
 		"cpc_monthly_work",
 		ScopeWorkspace,
 		endpoint("POST", "/v1/workspaces/:workspace_id/cpc-monthly-work/:work_id/attachments"),
@@ -765,7 +765,7 @@ var catalog = []accessModels.Action{
 	definition(
 		CPCMonthlyWorkAttachmentDelete,
 		"删除党建月度工作附件",
-		"删除工作附件及存储对象，可重试未完成的存储操作",
+		"仅负责人可删除工作附件，可重试未完成的删除",
 		"cpc_monthly_work",
 		ScopeWorkspace,
 		endpoint("DELETE", "/v1/workspaces/:workspace_id/attachments/cpc-monthly-work/:id"),

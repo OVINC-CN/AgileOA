@@ -3212,7 +3212,7 @@ definitions:
   monthlyworkModels.Info:
     properties:
       attachment_ids:
-        description: AttachmentIDs 是所属记录中已完成的附件编号。
+        description: AttachmentIDs 是所属记录中已完成的附件编号，记录对当前账号不可见时为空。
         example:
         - 1
         - 2
@@ -3220,7 +3220,7 @@ definitions:
           type: integer
         type: array
       attachments:
-        description: Attachments 是可下载附件的元数据，仅在具备附件读取权限时返回，否则为空数组。
+        description: Attachments 是可见工作中已完成的附件元数据，需要附件读取权限。
         items:
           $ref: '#/definitions/monthlyworkModels.File'
         type: array
@@ -3313,7 +3313,7 @@ definitions:
   monthlyworkModels.ListData:
     properties:
       items:
-        description: Items 是所选年份与月份范围内的全部记录，按日期和编号倒序排列，不分页。
+        description: Items 是本人负责或参与且符合筛选的记录，按日期和编号倒序排列，不分页。
         items:
           $ref: '#/definitions/monthlyworkModels.Info'
         type: array
@@ -9275,7 +9275,7 @@ paths:
       - 评奖评优附件
   /v1/workspaces/{workspace_id}/attachments/cpc-monthly-work:
     get:
-      description: 只返回当前空间指定类别的元数据及存储流程状态，不返回对象名、存储地址或签名。
+      description: 需具备附件读取权限。只返回当前账号负责或参与的工作附件元数据及存储流程状态。
       parameters:
       - description: 工作空间编号
         in: path
@@ -9301,12 +9301,16 @@ paths:
           description: 附件目录
           schema:
             $ref: '#/definitions/attachmentModels.ListResponse'
+        "403":
+          description: 没有附件读取权限
+          schema:
+            $ref: '#/definitions/accessModels.EmptyResponse'
       summary: 查询月度工作附件
       tags:
       - 月度工作附件
   /v1/workspaces/{workspace_id}/attachments/cpc-monthly-work/{id}:
     delete:
-      description: 检查当前版本及独立删除权限；先提交删除意图及审计，再删除对象及元数据，失败可显式重试。
+      description: 检查当前负责人、当前版本及独立删除权限。先提交删除意图及审计，复核当前负责人后删除对象及元数据，失败可显式重试。
       parameters:
       - description: 工作空间编号
         in: path
@@ -9336,12 +9340,20 @@ paths:
           description: 删除成功
           schema:
             $ref: '#/definitions/accessModels.EmptyResponse'
+        "403":
+          description: 没有附件删除权限
+          schema:
+            $ref: '#/definitions/accessModels.EmptyResponse'
+        "404":
+          description: 附件不存在或不可访问
+          schema:
+            $ref: '#/definitions/accessModels.EmptyResponse'
       summary: 删除月度工作附件
       tags:
       - 月度工作附件
   /v1/workspaces/{workspace_id}/attachments/cpc-monthly-work/{id}/download:
     get:
-      description: 实时复核当前空间及所属类别的附件读取权限，审计提交后 返回短期 CDN URL 的 JSON；学生工作、党建工作及项目附件权限互不通用。
+      description: 实时复核附件读取权限及当前账号是否负责或参与所属工作，审计提交后返回文件名及短期 CDN URL。
       parameters:
       - description: 工作空间编号
         in: path
@@ -9357,11 +9369,19 @@ paths:
       - application/json
       responses:
         "200":
-          description: 文件名、下载地址及过期时间
+          description: 文件名及下载地址
           schema:
             $ref: '#/definitions/attachmentModels.URLResponse'
         "400":
           description: 参数无效
+          schema:
+            $ref: '#/definitions/accessModels.EmptyResponse'
+        "403":
+          description: 没有附件读取权限
+          schema:
+            $ref: '#/definitions/accessModels.EmptyResponse'
+        "404":
+          description: 附件不存在或不可访问
           schema:
             $ref: '#/definitions/accessModels.EmptyResponse'
       summary: 下载月度工作附件
@@ -9468,7 +9488,7 @@ paths:
       - 时间线节点附件
   /v1/workspaces/{workspace_id}/attachments/monthly-work:
     get:
-      description: 只返回当前空间指定类别的元数据及存储流程状态，不返回对象名、存储地址或签名。
+      description: 需具备附件读取权限。只返回当前账号负责或参与的工作附件元数据及存储流程状态。
       parameters:
       - description: 工作空间编号
         in: path
@@ -9494,12 +9514,16 @@ paths:
           description: 附件目录
           schema:
             $ref: '#/definitions/attachmentModels.ListResponse'
+        "403":
+          description: 没有附件读取权限
+          schema:
+            $ref: '#/definitions/accessModels.EmptyResponse'
       summary: 查询月度工作附件
       tags:
       - 月度工作附件
   /v1/workspaces/{workspace_id}/attachments/monthly-work/{id}:
     delete:
-      description: 检查当前版本及独立删除权限；先提交删除意图及审计，再删除对象及元数据，失败可显式重试。
+      description: 检查当前负责人、当前版本及独立删除权限。先提交删除意图及审计，复核当前负责人后删除对象及元数据，失败可显式重试。
       parameters:
       - description: 工作空间编号
         in: path
@@ -9529,12 +9553,20 @@ paths:
           description: 删除成功
           schema:
             $ref: '#/definitions/accessModels.EmptyResponse'
+        "403":
+          description: 没有附件删除权限
+          schema:
+            $ref: '#/definitions/accessModels.EmptyResponse'
+        "404":
+          description: 附件不存在或不可访问
+          schema:
+            $ref: '#/definitions/accessModels.EmptyResponse'
       summary: 删除月度工作附件
       tags:
       - 月度工作附件
   /v1/workspaces/{workspace_id}/attachments/monthly-work/{id}/download:
     get:
-      description: 实时复核当前空间及所属类别的附件读取权限，审计提交后 返回短期 CDN URL 的 JSON；学生工作、党建工作及项目附件权限互不通用。
+      description: 实时复核附件读取权限及当前账号是否负责或参与所属工作，审计提交后返回文件名及短期 CDN URL。
       parameters:
       - description: 工作空间编号
         in: path
@@ -9550,11 +9582,19 @@ paths:
       - application/json
       responses:
         "200":
-          description: 文件名、下载地址及过期时间
+          description: 文件名及下载地址
           schema:
             $ref: '#/definitions/attachmentModels.URLResponse'
         "400":
           description: 参数无效
+          schema:
+            $ref: '#/definitions/accessModels.EmptyResponse'
+        "403":
+          description: 没有附件读取权限
+          schema:
+            $ref: '#/definitions/accessModels.EmptyResponse'
+        "404":
+          description: 附件不存在或不可访问
           schema:
             $ref: '#/definitions/accessModels.EmptyResponse'
       summary: 下载月度工作附件
@@ -9657,7 +9697,7 @@ paths:
   /v1/workspaces/{workspace_id}/cpc-monthly-work:
     get:
       description: |-
-        年份与月份均支持多选，省略时不限制对应维度，一次返回筛选范围内的全部记录，不分页；按日期及编号倒序，附件元数据单独检查读取权限，审计提交后返回。
+        仅查询当前账号负责或参与的工作。年份与月份均支持多选，省略时不限制对应维度；按日期及编号倒序，不分页。附件元数据单独检查读取权限，审计提交后返回。
         学生工作与党建工作通过各自路径访问，分别授权并隔离数据；请求体不接受类别字段。
       parameters:
       - description: 工作空间编号
@@ -9683,16 +9723,6 @@ paths:
         in: query
         name: keyword
         type: string
-      - collectionFormat: multi
-        description: 工作范围：mine 为当前用户负责或参与的工作，all 为全部工作，省略时兼容查询全部工作；支持多选，同一参数可重复传递
-        in: query
-        items:
-          enum:
-          - mine
-          - all
-          type: string
-        name: scope
-        type: array
       produces:
       - application/json
       responses:
@@ -9741,7 +9771,7 @@ paths:
   /v1/workspaces/{workspace_id}/cpc-monthly-work/{id}:
     delete:
       description: |-
-        检查当前版本，硬删除工作并级联删除参与人关联和附件记录，历史审计保留。
+        在工作空间锁内复核当前负责人、独立删除权限及并发版本，硬删除工作并级联删除参与人关联和附件记录，历史审计保留。
         学生工作与党建工作通过各自路径访问，分别授权并隔离数据；请求体不接受类别字段。
       parameters:
       - description: 工作空间编号
@@ -9772,6 +9802,14 @@ paths:
           description: 删除成功
           schema:
             $ref: '#/definitions/accessModels.EmptyResponse'
+        "403":
+          description: 没有删除权限
+          schema:
+            $ref: '#/definitions/accessModels.EmptyResponse'
+        "404":
+          description: 工作记录不存在或不可访问
+          schema:
+            $ref: '#/definitions/accessModels.EmptyResponse'
       summary: 删除月度工作
       tags:
       - 月度工作
@@ -9780,7 +9818,7 @@ paths:
       - application/json
       description: |-
         仅向新负责人及新增参与人发送站内通知，跳过当前操作人，保留原指派或普通编辑不重复通知。
-        在工作空间锁内复核独立修改权限及并发版本；participant_ids 省略或传 null 时保留，空数组清空；原参与人停用或撤权后可保留，新增参与人按当前可用账号校验；附件通过独立接口管理。
+        在工作空间锁内复核当前负责人、独立修改权限及并发版本。负责人可以转交工作。participant_ids 省略或传 null 时保留，空数组清空；原参与人停用或撤权后可保留，新增参与人按当前可用账号校验；附件通过独立接口管理。
         学生工作与党建工作通过各自路径访问，分别授权并隔离数据；请求体不接受类别字段。
       parameters:
       - description: 工作空间编号
@@ -9812,6 +9850,14 @@ paths:
           description: 修改后的工作记录
           schema:
             $ref: '#/definitions/monthlyworkModels.InfoResponse'
+        "403":
+          description: 没有修改权限
+          schema:
+            $ref: '#/definitions/accessModels.EmptyResponse'
+        "404":
+          description: 工作记录不存在或不可访问
+          schema:
+            $ref: '#/definitions/accessModels.EmptyResponse'
       summary: 修改月度工作
       tags:
       - 月度工作
@@ -9819,7 +9865,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: 先登记 pending 及审计并占用名额，客户端按 STS 约束直传正式路径；失败记录可显式删除。
+      description: 当前负责人具备附件上传权限时可申请。先登记 pending 及审计并占用名额，客户端按 STS 约束直传正式路径；失败记录可显式删除。
       parameters:
       - description: 工作空间编号
         in: path
@@ -9850,6 +9896,14 @@ paths:
           description: 待完成编号及仅本对象可用的临时凭据
           schema:
             $ref: '#/definitions/attachmentModels.UploadResponse'
+        "403":
+          description: 没有上传权限
+          schema:
+            $ref: '#/definitions/accessModels.EmptyResponse'
+        "404":
+          description: 工作记录不存在或不可访问
+          schema:
+            $ref: '#/definitions/accessModels.EmptyResponse'
       summary: 申请附件直传
       tags:
       - 月度工作附件
@@ -9857,7 +9911,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: 实时复核权限、业务归属及并发版本，仅通过 HEAD 检查大小和声明类型；已完成记录可幂等重试。
+      description: 实时复核当前负责人、上传权限、原申请人、业务归属及并发版本，仅通过 HEAD 检查大小和声明类型，已完成记录可幂等重试。
       parameters:
       - description: 工作空间编号
         in: path
@@ -9888,6 +9942,14 @@ paths:
           description: 已完成附件元数据
           schema:
             $ref: '#/definitions/attachmentModels.InfoResponse'
+        "403":
+          description: 没有上传权限
+          schema:
+            $ref: '#/definitions/accessModels.EmptyResponse'
+        "404":
+          description: 附件不存在或不可访问
+          schema:
+            $ref: '#/definitions/accessModels.EmptyResponse'
       summary: 确认附件直传完成
       tags:
       - 月度工作附件
@@ -9915,7 +9977,7 @@ paths:
   /v1/workspaces/{workspace_id}/cpc-monthly-work/filter-options:
     get:
       description: |-
-        复用月度工作列表权限，仅查询当前空间已有记录的完整年份，供自定义选择器本地搜索。
+        复用月度工作列表权限，仅返回当前账号负责或参与的工作年份，供自定义选择器本地搜索。
         学生工作与党建工作通过各自路径访问，分别授权并隔离数据；请求体不接受类别字段。
       parameters:
       - description: 工作空间编号
@@ -13047,7 +13109,7 @@ paths:
   /v1/workspaces/{workspace_id}/monthly-work:
     get:
       description: |-
-        年份与月份均支持多选，省略时不限制对应维度，一次返回筛选范围内的全部记录，不分页；按日期及编号倒序，附件元数据单独检查读取权限，审计提交后返回。
+        仅查询当前账号负责或参与的工作。年份与月份均支持多选，省略时不限制对应维度；按日期及编号倒序，不分页。附件元数据单独检查读取权限，审计提交后返回。
         学生工作与党建工作通过各自路径访问，分别授权并隔离数据；请求体不接受类别字段。
       parameters:
       - description: 工作空间编号
@@ -13073,16 +13135,6 @@ paths:
         in: query
         name: keyword
         type: string
-      - collectionFormat: multi
-        description: 工作范围：mine 为当前用户负责或参与的工作，all 为全部工作，省略时兼容查询全部工作；支持多选，同一参数可重复传递
-        in: query
-        items:
-          enum:
-          - mine
-          - all
-          type: string
-        name: scope
-        type: array
       produces:
       - application/json
       responses:
@@ -13131,7 +13183,7 @@ paths:
   /v1/workspaces/{workspace_id}/monthly-work/{id}:
     delete:
       description: |-
-        检查当前版本，硬删除工作并级联删除参与人关联和附件记录，历史审计保留。
+        在工作空间锁内复核当前负责人、独立删除权限及并发版本，硬删除工作并级联删除参与人关联和附件记录，历史审计保留。
         学生工作与党建工作通过各自路径访问，分别授权并隔离数据；请求体不接受类别字段。
       parameters:
       - description: 工作空间编号
@@ -13162,6 +13214,14 @@ paths:
           description: 删除成功
           schema:
             $ref: '#/definitions/accessModels.EmptyResponse'
+        "403":
+          description: 没有删除权限
+          schema:
+            $ref: '#/definitions/accessModels.EmptyResponse'
+        "404":
+          description: 工作记录不存在或不可访问
+          schema:
+            $ref: '#/definitions/accessModels.EmptyResponse'
       summary: 删除月度工作
       tags:
       - 月度工作
@@ -13170,7 +13230,7 @@ paths:
       - application/json
       description: |-
         仅向新负责人及新增参与人发送站内通知，跳过当前操作人，保留原指派或普通编辑不重复通知。
-        在工作空间锁内复核独立修改权限及并发版本；participant_ids 省略或传 null 时保留，空数组清空；原参与人停用或撤权后可保留，新增参与人按当前可用账号校验；附件通过独立接口管理。
+        在工作空间锁内复核当前负责人、独立修改权限及并发版本。负责人可以转交工作。participant_ids 省略或传 null 时保留，空数组清空；原参与人停用或撤权后可保留，新增参与人按当前可用账号校验；附件通过独立接口管理。
         学生工作与党建工作通过各自路径访问，分别授权并隔离数据；请求体不接受类别字段。
       parameters:
       - description: 工作空间编号
@@ -13202,6 +13262,14 @@ paths:
           description: 修改后的工作记录
           schema:
             $ref: '#/definitions/monthlyworkModels.InfoResponse'
+        "403":
+          description: 没有修改权限
+          schema:
+            $ref: '#/definitions/accessModels.EmptyResponse'
+        "404":
+          description: 工作记录不存在或不可访问
+          schema:
+            $ref: '#/definitions/accessModels.EmptyResponse'
       summary: 修改月度工作
       tags:
       - 月度工作
@@ -13209,7 +13277,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: 先登记 pending 及审计并占用名额，客户端按 STS 约束直传正式路径；失败记录可显式删除。
+      description: 当前负责人具备附件上传权限时可申请。先登记 pending 及审计并占用名额，客户端按 STS 约束直传正式路径；失败记录可显式删除。
       parameters:
       - description: 工作空间编号
         in: path
@@ -13240,6 +13308,14 @@ paths:
           description: 待完成编号及仅本对象可用的临时凭据
           schema:
             $ref: '#/definitions/attachmentModels.UploadResponse'
+        "403":
+          description: 没有上传权限
+          schema:
+            $ref: '#/definitions/accessModels.EmptyResponse'
+        "404":
+          description: 工作记录不存在或不可访问
+          schema:
+            $ref: '#/definitions/accessModels.EmptyResponse'
       summary: 申请附件直传
       tags:
       - 月度工作附件
@@ -13247,7 +13323,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: 实时复核权限、业务归属及并发版本，仅通过 HEAD 检查大小和声明类型；已完成记录可幂等重试。
+      description: 实时复核当前负责人、上传权限、原申请人、业务归属及并发版本，仅通过 HEAD 检查大小和声明类型，已完成记录可幂等重试。
       parameters:
       - description: 工作空间编号
         in: path
@@ -13278,6 +13354,14 @@ paths:
           description: 已完成附件元数据
           schema:
             $ref: '#/definitions/attachmentModels.InfoResponse'
+        "403":
+          description: 没有上传权限
+          schema:
+            $ref: '#/definitions/accessModels.EmptyResponse'
+        "404":
+          description: 附件不存在或不可访问
+          schema:
+            $ref: '#/definitions/accessModels.EmptyResponse'
       summary: 确认附件直传完成
       tags:
       - 月度工作附件
@@ -13305,7 +13389,7 @@ paths:
   /v1/workspaces/{workspace_id}/monthly-work/filter-options:
     get:
       description: |-
-        复用月度工作列表权限，仅查询当前空间已有记录的完整年份，供自定义选择器本地搜索。
+        复用月度工作列表权限，仅返回当前账号负责或参与的工作年份，供自定义选择器本地搜索。
         学生工作与党建工作通过各自路径访问，分别授权并隔离数据；请求体不接受类别字段。
       parameters:
       - description: 工作空间编号

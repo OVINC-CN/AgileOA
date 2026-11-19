@@ -19,6 +19,7 @@ import (
 	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/cpcperson/cpcpersonUtils"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/cpctimeline/cpctimelineConstants"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/monthlywork/monthlyworkConstants"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/monthlywork/monthlyworkUtils"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/config"
 )
 
@@ -89,17 +90,26 @@ func policyFor(category string) (attachmentPolicy, error) {
 	}
 }
 
-func (policy attachmentPolicy) scope(tx *gorm.DB, workspaceID string) *gorm.DB {
+func (policy attachmentPolicy) scope(
+	tx *gorm.DB, principal accessModels.Principal, action string,
+) *gorm.DB {
+	workspaceID := principal.Workspace.ID
 	scope := tx.Model(&attachmentModels.Record{}).
 		Table(policy.table).
 		Where("workspace_id = ?", workspaceID)
-	// 月度附件通过所属记录的类别隔离，沿用原有保护型复合外键。
-	if policy.workCategory != "" {
-		owners := tx.Table("monthly_work_records").Select("id").
-			Where("workspace_id = ? AND category = ?", workspaceID, policy.workCategory)
-		scope = scope.Where("monthly_work_id IN (?)", owners)
+	if policy.workCategory == "" {
+		return scope
 	}
-	return scope
+
+	// 月度附件的读取范围与工作列表一致，写入仅限当前负责人。
+	userID := principal.User.ID
+	if action == policy.readAction {
+		works := monthlyworkUtils.VisibleRecords(tx, workspaceID, policy.workCategory, userID)
+		return scope.Where("monthly_work_id IN (?)", works.Select("id"))
+	}
+	works := monthlyworkUtils.Records(tx, workspaceID, policy.workCategory).
+		Where("owner_id = ?", userID)
+	return scope.Where("monthly_work_id IN (?)", works.Select("id"))
 }
 
 func (policy attachmentPolicy) ownerSelection() string {
@@ -141,10 +151,12 @@ func create(
 
 func objectName(
 	tx *gorm.DB,
-	workspaceID, category string,
+	principal accessModels.Principal,
+	category string,
 	id uint64,
 	nodeID, filename string,
 ) (string, error) {
+	workspaceID := principal.Workspace.ID
 	prefix := "workspaces/" + workspaceID
 	if category == attachmentConstants.CategoryCPCPersonTimelineNode {
 		if id == 0 || !timelineNodeID.MatchString(nodeID) {
@@ -182,11 +194,10 @@ func objectName(
 		return "", err
 	}
 	var record struct{ Date string }
-	err = tx.Table("monthly_work_records").Select("date").
-		Where("workspace_id = ? AND category = ? AND id = ?",
-			workspaceID, policy.workCategory, id).Take(&record).Error
+	err = monthlyworkUtils.Records(tx, workspaceID, policy.workCategory).
+		Select("date").Where("id = ? AND owner_id = ?", id, principal.User.ID).Take(&record).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return "", failure(http.StatusBadRequest, "工作记录不存在或不可访问")
+		return "", failure(http.StatusNotFound, "工作记录不存在或不可访问")
 	}
 	if err != nil {
 		return "", err

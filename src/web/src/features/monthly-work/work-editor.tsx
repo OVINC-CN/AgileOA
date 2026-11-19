@@ -20,6 +20,7 @@ import {
 import { WorkAttachments } from '@/features/monthly-work/attachments';
 import { workAction, type WorkCategory } from '@/features/monthly-work/category';
 import { LinksEditor } from '@/features/monthly-work/links-editor';
+import type { CurrentUser } from '@/features/user/api';
 import { ApiError } from '@/lib/api';
 import { useApiMutation } from '@/lib/api-action';
 import { currentCalendarDate } from '@/lib/calendar';
@@ -30,12 +31,14 @@ export function WorkEditor({
   category = 'student',
   record,
   actions,
+  currentUser,
   onClose,
 }: {
   workspaceID: string;
   category?: WorkCategory;
   record: WorkRecord | null;
   actions: string[];
+  currentUser?: Pick<CurrentUser, 'id' | 'display_name' | 'username'> | null | undefined;
   onClose: () => void;
 }) {
   const [original] = useState(record);
@@ -43,13 +46,18 @@ export function WorkEditor({
     record ?? {
       date: currentCalendarDate(),
       work_item: '',
-      owner_id: 0,
+      owner_id: currentUser?.id ?? 0,
       participant_ids: [],
       description: '',
       links: [],
     },
   );
   const [attachments, setAttachments] = useState(false);
+  const isOwner = original !== null && original.owner_id === currentUser?.id;
+  const canReadFiles = actions.includes(workAction(category, 'attachment.read'));
+  const canUpload = isOwner && actions.includes(workAction(category, 'attachment.upload'));
+  const canManageFiles =
+    canUpload || (isOwner && actions.includes(workAction(category, 'attachment.delete')));
   const client = useQueryClient();
   const owners = useQuery({
     ...workOwnerOptions(workspaceID, category),
@@ -61,11 +69,17 @@ export function WorkEditor({
     label: item.label,
   }));
   const ownerOptions = [...availableOptions];
-  if (original && !ownerOptions.some((item) => item.value === String(original.owner_id))) {
-    ownerOptions.push({
-      value: String(original.owner_id),
-      label: formatIdentity(original.owner_name, original.owner_username),
-    });
+  const initialOwner = original
+    ? {
+        value: String(original.owner_id),
+        label: formatIdentity(original.owner_name, original.owner_username),
+      }
+    : currentUser && {
+        value: String(currentUser.id),
+        label: formatIdentity(currentUser.display_name, currentUser.username),
+      };
+  if (initialOwner && !ownerOptions.some((item) => item.value === initialOwner.value)) {
+    ownerOptions.push(initialOwner);
   }
   const participantOptions = [...availableOptions];
   for (const person of original?.participants ?? []) {
@@ -188,23 +202,21 @@ export function WorkEditor({
           <section className="space-y-3 border-t border-border pt-5" aria-label="附件">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-base leading-5 font-medium">附件</h2>
-              {actions.includes(workAction(category, 'attachment.read')) ||
-              actions.includes(workAction(category, 'attachment.upload')) ? (
+              {original && (canReadFiles || canUpload) ? (
                 <Button
                   type="button"
                   variant="outline"
-                  disabled={!original}
                   onClick={() => {
                     setAttachments(true);
                   }}
                 >
                   <Paperclip aria-hidden="true" />
-                  管理附件
+                  {canManageFiles ? '管理附件' : '查看附件'}
                 </Button>
               ) : null}
             </div>
-            {original ? null : (
-              <p className="text-xs text-muted-foreground">创建记录后可上传附件</p>
+            {original || !actions.includes(workAction(category, 'attachment.upload')) ? null : (
+              <p className="text-xs text-muted-foreground">创建后由负责人上传附件</p>
             )}
           </section>
           <LinksEditor
@@ -215,12 +227,13 @@ export function WorkEditor({
           />
         </fieldset>
       </Drawer>
-      {attachments && original ? (
+      {attachments && original && (canReadFiles || canUpload) ? (
         <WorkAttachments
           workspaceID={workspaceID}
           category={category}
           record={original}
           actions={actions}
+          isOwner={isOwner}
           onClose={() => {
             setAttachments(false);
           }}

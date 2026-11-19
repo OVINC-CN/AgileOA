@@ -39,6 +39,7 @@ import { groupWorkRecords, monthLabel } from '@/features/monthly-work/timeline';
 import { WorkChart } from '@/features/monthly-work/work-chart';
 import { WorkEditor } from '@/features/monthly-work/work-editor';
 import { WorkTransfer } from '@/features/monthly-work/work-transfer';
+import { currentUserOptions } from '@/features/user/api';
 import type { WorkspaceContext } from '@/features/workspace/context';
 import { ApiError } from '@/lib/api';
 import { useApiAction } from '@/lib/api-action';
@@ -49,7 +50,7 @@ import { useLoadingDelay } from '@/lib/loading';
 import { cn } from '@/lib/utils';
 
 function defaultWorkFilters(): WorkFilters {
-  return { scope: ['mine'], year: [currentCalendarDate().slice(0, 4)], month: [], keyword: '' };
+  return { year: [currentCalendarDate().slice(0, 4)], month: [], keyword: '' };
 }
 
 type MonthlyWorkProps = WorkspaceContext & {
@@ -81,16 +82,17 @@ function MonthlyWorkWorkspace({
 }: MonthlyWorkProps) {
   const can = (operation: string) => actions.includes(workAction(category, operation));
   const canList = can('list');
-  const canManageAttachments = can('attachment.read') || can('attachment.upload');
+  const canReadFiles = can('attachment.read');
+  // 复用鉴权入口已读取的登录态，不额外请求用户接口。
+  const { data: user } = useQuery({ ...currentUserOptions, enabled: false });
+  const userID = user?.id;
   const [filters, setFilters] = useState<WorkFilters>(() =>
-    target
-      ? { scope: [], year: [target.year], month: [target.month], keyword: '' }
-      : defaultWorkFilters(),
+    target ? { year: [target.year], month: [target.month], keyword: '' } : defaultWorkFilters(),
   );
   const targetRecord = useRef<HTMLLIElement>(null);
   const [editing, setEditing] = useState<WorkRecord | null | undefined>();
   const [deleting, setDeleting] = useState<WorkRecord | null>(null);
-  const [attachments, setAttachments] = useState<WorkRecord | null>(null);
+  const [attachmentWorkID, setAttachmentWorkID] = useState<number | null>(null);
   const [transfer, setTransfer] = useState(false);
   const client = useQueryClient();
   const refresh = useApiAction();
@@ -103,9 +105,20 @@ function MonthlyWorkWorkspace({
   });
   const denied = query.error instanceof ApiError && [401, 403, 404].includes(query.error.status);
   const data = denied || !canList ? undefined : query.data;
+  const findWork = (id: number | null | undefined) =>
+    data?.items.find((record) => record.id === id);
+  const attachments = findWork(attachmentWorkID);
+  const isOwner = (record: WorkRecord | undefined) =>
+    record !== undefined && record.owner_id === userID;
+  const canOpenAttachments = (record: WorkRecord) =>
+    canReadFiles || (isOwner(record) && can('attachment.upload'));
+  const canManageFiles = (record: WorkRecord) =>
+    isOwner(record) && (can('attachment.upload') || can('attachment.delete'));
+  const canChangeWork = (record: WorkRecord | undefined, operation: 'update' | 'delete') =>
+    isOwner(record) && can(operation);
   const targetVisible = data?.items.some((record) => record.id === target?.id) ?? false;
   useEffect(() => {
-    // 通知定位不依赖当前年份和我的工作筛选，记录加载后滚动到对应卡片。
+    // 通知按目标年月查询，记录可见时滚动到对应卡片。
     if (targetVisible && typeof targetRecord.current?.scrollIntoView === 'function') {
       targetRecord.current.scrollIntoView({ block: 'center' });
     }
@@ -114,7 +127,6 @@ function MonthlyWorkWorkspace({
   const filterOptions = useQuery({ ...workFilterOptions(workspaceID, category), enabled: canList });
   const filterDenied =
     filterOptions.error instanceof ApiError && [401, 403, 404].includes(filterOptions.error.status);
-  const canReadFiles = can('attachment.read');
   const fetchRecords = (nextFilters = filters) =>
     client.query({ ...workListOptions(workspaceID, nextFilters, category), staleTime: 0 });
   const applyFilters = async (values: WorkFilters) => {
@@ -189,7 +201,7 @@ function MonthlyWorkWorkspace({
           </Button>
         </div>
       </header>
-      {canList ? <WorkChart records={data?.items} /> : null}
+      {canList ? <WorkChart records={data?.items} userID={userID} /> : null}
       {canList ? (
         <FilterPanel
           onSubmit={(event) => {
@@ -216,21 +228,6 @@ function MonthlyWorkWorkspace({
             </>
           }
         >
-          <FilterField label="工作范围" htmlFor="work-scope">
-            <SearchSelect
-              multiple
-              id="work-scope"
-              allLabel="全部工作"
-              label="工作范围"
-              className="w-full"
-              options={[{ value: 'mine', label: '我的工作' }]}
-              value={draft.scope}
-              defaultValue={defaultWorkFilters().scope}
-              onValueChange={(scope) => {
-                changeFilters({ scope });
-              }}
-            />
-          </FilterField>
           <FilterField label="年份" htmlFor="work-year">
             <SearchSelect
               multiple
@@ -401,19 +398,21 @@ function MonthlyWorkWorkspace({
                             : null}
                         </ul>
                       ) : null}
-                      {canManageAttachments || can('update') || can('delete') ? (
+                      {canOpenAttachments(record) ||
+                      canChangeWork(record, 'update') ||
+                      canChangeWork(record, 'delete') ? (
                         <div className="flex min-w-0 flex-wrap items-center gap-1 border-t border-border pt-3 lg:col-start-2 lg:row-start-1 lg:justify-end lg:self-start lg:border-0 lg:pt-0">
-                          {canManageAttachments ? (
+                          {canOpenAttachments(record) ? (
                             <TableActionButton
                               onClick={() => {
-                                setAttachments(record);
+                                setAttachmentWorkID(record.id);
                               }}
                             >
                               <Paperclip aria-hidden="true" />
-                              管理附件
+                              {canManageFiles(record) ? '管理附件' : '查看附件'}
                             </TableActionButton>
                           ) : null}
-                          {can('update') ? (
+                          {canChangeWork(record, 'update') ? (
                             <TableActionButton
                               onClick={() => {
                                 setEditing(record);
@@ -423,7 +422,7 @@ function MonthlyWorkWorkspace({
                               编辑
                             </TableActionButton>
                           ) : null}
-                          {can('delete') ? (
+                          {canChangeWork(record, 'delete') ? (
                             <TableActionButton
                               loading={remove.isPending(String(record.id))}
                               disabled={remove.pending}
@@ -453,25 +452,28 @@ function MonthlyWorkWorkspace({
       ) : (
         <Card className="p-6 text-sm text-muted-foreground">没有查看月度工作的权限</Card>
       )}
-      {editing !== undefined ? (
+      {editing !== undefined &&
+      (editing ? canChangeWork(findWork(editing.id), 'update') : can('create')) ? (
         <WorkEditor
           workspaceID={workspaceID}
           category={category}
           record={editing}
           actions={actions}
+          currentUser={user}
           onClose={() => {
             setEditing(undefined);
           }}
         />
       ) : null}
-      {attachments ? (
+      {attachments && canOpenAttachments(attachments) ? (
         <WorkAttachments
           workspaceID={workspaceID}
           category={category}
           record={attachments}
           actions={actions}
+          isOwner={isOwner(attachments)}
           onClose={() => {
-            setAttachments(null);
+            setAttachmentWorkID(null);
           }}
         />
       ) : null}
@@ -484,7 +486,7 @@ function MonthlyWorkWorkspace({
           }}
         />
       ) : null}
-      {deleting ? (
+      {deleting && canChangeWork(findWork(deleting.id), 'delete') ? (
         <Drawer
           title="删除月度工作"
           description={`${deleting.date} · ${deleting.work_item}`}

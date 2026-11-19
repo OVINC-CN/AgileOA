@@ -31,6 +31,7 @@ interface Props {
   category?: WorkCategory;
   record: WorkRecord;
   actions: string[];
+  isOwner: boolean;
   onClose: () => void;
 }
 
@@ -43,7 +44,14 @@ export function WorkAttachments(props: Props) {
   );
 }
 
-function AttachmentPanel({ workspaceID, category = 'student', record, actions, onClose }: Props) {
+function AttachmentPanel({
+  workspaceID,
+  category = 'student',
+  record,
+  actions,
+  isOwner,
+  onClose,
+}: Props) {
   const can = (operation: string) => actions.includes(workAction(category, operation));
   const client = useQueryClient();
   const pagination = useTablePagination();
@@ -52,6 +60,8 @@ function AttachmentPanel({ workspaceID, category = 'student', record, actions, o
   const remove = useApiAction();
   const refresh = useApiAction();
   const canRead = can('attachment.read');
+  const canUpload = isOwner && can('attachment.upload');
+  const canDelete = isOwner && can('attachment.delete');
   const options = workAttachmentOptions(
     workspaceID,
     record.id,
@@ -97,7 +107,7 @@ function AttachmentPanel({ workspaceID, category = 'student', record, actions, o
         const item = row.original;
         return (
           <div className="flex items-center gap-1">
-            {can('attachment.delete') ? (
+            {canDelete ? (
               <TableActionButton
                 type="button"
                 disabled={remove.pending}
@@ -142,7 +152,7 @@ function AttachmentPanel({ workspaceID, category = 'student', record, actions, o
         }
       >
         <div className="space-y-4 p-6">
-          {can('attachment.upload') ? (
+          {canUpload ? (
             <div className="space-y-2">
               <FileUploadButton
                 loading={upload.pending}
@@ -166,9 +176,7 @@ function AttachmentPanel({ workspaceID, category = 'student', record, actions, o
             <div className="border-y border-border">
               <ManagementTable
                 tableID={`monthly-work-attachments:${category}`}
-                columns={columns.filter(
-                  (column) => column.id !== 'actions' || can('attachment.delete'),
-                )}
+                columns={columns.filter((column) => column.id !== 'actions' || canDelete)}
                 data={data?.items ?? []}
                 total={data?.total ?? 0}
                 page={pagination.page}
@@ -199,7 +207,7 @@ function AttachmentPanel({ workspaceID, category = 'student', record, actions, o
           ) : null}
         </div>
       </Drawer>
-      {deleting ? (
+      {deleting && canDelete ? (
         <Drawer
           title="删除月度工作附件"
           description={deleting.filename}

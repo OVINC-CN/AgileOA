@@ -16,6 +16,7 @@ import { MonthlyWorkPage } from '@/features/monthly-work/monthly-work-page';
 import { readWorkTarget } from '@/features/monthly-work/navigation';
 import { groupWorkRecords } from '@/features/monthly-work/timeline';
 import { WorkEditor } from '@/features/monthly-work/work-editor';
+import { currentUserKey, userSchema } from '@/features/user/api';
 import { currentCalendarDate } from '@/lib/calendar';
 import { preparedUpload } from '@/test/mock-cos';
 
@@ -70,35 +71,32 @@ afterEach(() => {
 });
 
 describe('月度工作', () => {
-  it.each(['student', 'cpc'] as const)(
-    '%s 从通知打开历史年份的工作，并清除默认我的工作范围限制',
-    async (category) => {
-      const fetch = vi.fn((path: string) => Promise.resolve(listResponse(path)));
-      vi.stubGlobal('fetch', fetch);
-      const target = readWorkTarget(new URLSearchParams('work_id=1&year=2025&month=03'));
-      render(
-        <QueryClientProvider client={createClient()}>
-          <MonthlyWorkPage
-            workspaceID={first}
-            category={category}
-            workspaceName="虚构空间"
-            actions={[workAction(category, 'list')]}
-            refresh={() => Promise.resolve()}
-            target={target}
-          />
-        </QueryClientProvider>,
-      );
-      await screen.findByRole('heading', { name: record.work_item });
-      const resource = category === 'cpc' ? 'cpc-monthly-work' : 'monthly-work';
-      const request = fetch.mock.calls.find(([path]) =>
-        path.startsWith(`/v1/workspaces/${first}/${resource}?`),
-      );
-      const params = new URL(request?.[0] ?? '', 'https://example.com').searchParams;
-      expect(params.getAll('year')).toEqual(['2025']);
-      expect(params.getAll('month')).toEqual(['3']);
-      expect(params.has('scope')).toBe(false);
-    },
-  );
+  it.each(['student', 'cpc'] as const)('%s 从通知按历史年月定位工作', async (category) => {
+    const fetch = vi.fn((path: string) => Promise.resolve(listResponse(path)));
+    vi.stubGlobal('fetch', fetch);
+    const target = readWorkTarget(new URLSearchParams('work_id=1&year=2025&month=03'));
+    render(
+      <QueryClientProvider client={createClient()}>
+        <MonthlyWorkPage
+          workspaceID={first}
+          category={category}
+          workspaceName="虚构空间"
+          actions={[workAction(category, 'list')]}
+          refresh={() => Promise.resolve()}
+          target={target}
+        />
+      </QueryClientProvider>,
+    );
+    await screen.findByRole('heading', { name: record.work_item });
+    const resource = category === 'cpc' ? 'cpc-monthly-work' : 'monthly-work';
+    const request = fetch.mock.calls.find(([path]) =>
+      path.startsWith(`/v1/workspaces/${first}/${resource}?`),
+    );
+    const params = new URL(request?.[0] ?? '', 'https://example.com').searchParams;
+    expect(params.getAll('year')).toEqual(['2025']);
+    expect(params.getAll('month')).toEqual(['3']);
+    expect(params.has('scope')).toBe(false);
+  });
 
   it.each([
     'work_id=0&year=2025&month=03',
@@ -220,7 +218,7 @@ describe('月度工作', () => {
   });
 
   it.each(['student', 'cpc'] as const)(
-    '%s 工作范围、年份和月份变化立即请求，重置恢复默认且没有分页',
+    '%s 年份和月份变化立即请求，重置恢复默认且没有分页',
     async (category) => {
       const paths: string[] = [];
       const items = Array.from({ length: 12 }, (_, index) => ({
@@ -254,8 +252,8 @@ describe('月度工作', () => {
       const resource = category === 'cpc' ? 'cpc-monthly-work' : 'monthly-work';
       const initial = paths.find((path) => path.includes(`/${resource}?`));
       const initialParameters = new URL(initial ?? '', 'https://example.com').searchParams;
-      expect(initialParameters.get('scope')).toBe('mine');
-      expect(screen.getByRole('combobox', { name: '工作范围' })).toHaveTextContent('我的工作');
+      expect(initialParameters.has('scope')).toBe(false);
+      expect(screen.queryByRole('combobox', { name: '工作范围' })).not.toBeInTheDocument();
       expect(initialParameters.get('year')).toBe(currentCalendarDate().slice(0, 4));
       expect(initialParameters.has('month')).toBe(false);
       expect(initialParameters.has('page')).toBe(false);
@@ -263,8 +261,6 @@ describe('月度工作', () => {
       expect(screen.queryByRole('button', { name: '下一页' })).not.toBeInTheDocument();
       expect(screen.queryByRole('combobox', { name: '每页条数' })).not.toBeInTheDocument();
       const user = userEvent.setup();
-      await user.click(screen.getByRole('combobox', { name: '工作范围' }));
-      await user.click(screen.getByRole('option', { name: '全部工作' }));
       await user.click(screen.getByRole('combobox', { name: '年份' }));
       expect(screen.getByRole('option', { name: '全部年份' })).toBeVisible();
       await user.click(await screen.findByRole('option', { name: '2025 年' }));
@@ -292,10 +288,9 @@ describe('月度工作', () => {
       await waitFor(() => {
         const latest = paths.filter((path) => path.includes(`/${resource}?`)).at(-1);
         const parameters = new URL(latest ?? '', 'https://example.com').searchParams;
-        expect(parameters.get('scope')).toBe('mine');
+        expect(parameters.has('scope')).toBe(false);
         expect(parameters.get('year')).toBe(currentCalendarDate().slice(0, 4));
         expect(parameters.has('month')).toBe(false);
-        expect(screen.getByRole('combobox', { name: '工作范围' })).toHaveTextContent('我的工作');
       });
     },
   );
@@ -339,7 +334,118 @@ describe('月度工作', () => {
   });
 
   it.each(['student', 'cpc'] as const)(
-    '%s 负责人和多选参与人提交数字编号，多条链接保持顺序',
+    '%s 负责人转交后，仍参与工作时只能查看附件',
+    async (category) => {
+      const client = createClient();
+      client.setQueryData(
+        currentUserKey,
+        userSchema.parse({
+          id: record.owner_id,
+          username: record.owner_username,
+          display_name: record.owner_name,
+          email: '',
+          is_admin: true,
+          password_login_enabled: true,
+          password_change_required: false,
+        }),
+      );
+      const transferred = {
+        ...record,
+        owner_id: 3,
+        owner_name: '虚构参与人甲',
+        owner_username: 'fictional.first',
+        participant_ids: [2, 3, 4],
+        participants: [
+          { id: 2, name: record.owner_name, username: record.owner_username },
+          ...record.participants,
+        ],
+        revision: 2,
+      };
+      let item = record;
+      vi.stubGlobal(
+        'fetch',
+        vi.fn((path: string, options: RequestInit) => {
+          if (path.includes('/attachments/')) {
+            return Promise.resolve(
+              respond({
+                items: [
+                  {
+                    id: 7,
+                    filename: '虚构附件.pdf',
+                    monthly_work_id: record.id,
+                    category: category === 'cpc' ? 'cpc_monthly_work' : 'monthly_work',
+                    state: 'ready',
+                    size: 1,
+                    revision: 1,
+                    created_at: record.created_at,
+                    updated_at: record.updated_at,
+                  },
+                ],
+                total: 1,
+                page: 1,
+                page_size: 20,
+              }),
+            );
+          }
+          if (path.endsWith('/owners')) {
+            return Promise.resolve(
+              respond([
+                { value: 2, label: '虚构负责人(fictional.owner)' },
+                { value: 3, label: '虚构参与人甲(fictional.first)' },
+              ]),
+            );
+          }
+          if (options.method === 'PUT') {
+            item = transferred;
+            return Promise.resolve(respond(item));
+          }
+          return Promise.resolve(listResponse(path, [item]));
+        }),
+      );
+      render(
+        <QueryClientProvider client={client}>
+          <MonthlyWorkPage
+            workspaceID={first}
+            category={category}
+            workspaceName="虚构空间"
+            actions={[
+              'list',
+              'update',
+              'delete',
+              'attachment.read',
+              'attachment.upload',
+              'attachment.delete',
+            ].map((operation) => workAction(category, operation))}
+            refresh={() => Promise.resolve()}
+          />
+        </QueryClientProvider>,
+      );
+      const user = userEvent.setup();
+      expect(await screen.findByRole('button', { name: '管理附件' })).toBeVisible();
+      expect(screen.getByRole('button', { name: '删除' })).toBeVisible();
+      await user.click(screen.getByRole('button', { name: '编辑' }));
+      await user.click(screen.getByRole('combobox', { name: '负责人' }));
+      await user.click(
+        await screen.findByRole('option', { name: '虚构参与人甲(fictional.first)' }),
+      );
+      await user.click(screen.getByRole('combobox', { name: '参与人' }));
+      await user.click(screen.getByRole('option', { name: '虚构负责人(fictional.owner)' }));
+      await user.keyboard('{Escape}');
+      await user.click(screen.getByRole('button', { name: '保存' }));
+      const readAttachments = await screen.findByRole('button', { name: '查看附件' });
+      const work = within(screen.getByRole('article', { name: record.work_item }));
+      expect(work.queryByRole('button', { name: '编辑' })).not.toBeInTheDocument();
+      expect(work.queryByRole('button', { name: '删除' })).not.toBeInTheDocument();
+      await user.click(readAttachments);
+      const drawer = await screen.findByRole('dialog', { name: '月度工作附件' });
+      expect(await within(drawer).findByRole('button', { name: '虚构附件.pdf' })).toBeVisible();
+      expect(within(drawer).queryByRole('button', { name: '上传' })).not.toBeInTheDocument();
+      expect(within(drawer).queryByRole('button', { name: '删除' })).not.toBeInTheDocument();
+    },
+  );
+
+  it.each(['student', 'cpc'] as const)(
+    '%s 新增默认以本人为负责人，参与人提交数字编号，多条链接保持顺序',
     async (category) => {
       const bodies: WorkRequest[] = [];
       vi.stubGlobal(
@@ -353,6 +459,7 @@ describe('月度工作', () => {
                 { value: 4, label: '虚构参与人乙(fictional.second)' },
               ]),
             );
+          if (options.method !== 'POST') return Promise.resolve(listResponse(path, []));
           const input = JSON.parse(
             typeof options.body === 'string' ? options.body : '',
           ) as WorkRequest;
@@ -361,22 +468,36 @@ describe('月度工作', () => {
           return Promise.resolve(respond({ ...record, ...input, revision: 1 }));
         }),
       );
-      const close = vi.fn();
+      const client = createClient();
+      client.setQueryData(
+        currentUserKey,
+        userSchema.parse({
+          id: 2,
+          username: 'fictional.owner',
+          display_name: '虚构负责人',
+          email: '',
+          is_admin: false,
+          password_login_enabled: true,
+          password_change_required: false,
+        }),
+      );
       render(
-        <QueryClientProvider client={createClient()}>
-          <WorkEditor
+        <QueryClientProvider client={client}>
+          <MonthlyWorkPage
             workspaceID={first}
+            workspaceName="虚构空间"
             category={category}
-            record={null}
             actions={[workAction(category, 'list'), workAction(category, 'create')]}
-            onClose={close}
+            refresh={() => Promise.resolve()}
           />
         </QueryClientProvider>,
       );
       const user = userEvent.setup();
+      await user.click(screen.getByRole('button', { name: '新增工作' }));
+      expect(screen.getByRole('combobox', { name: '负责人' })).toHaveTextContent(
+        '虚构负责人(fictional.owner)',
+      );
       await user.type(screen.getByRole('textbox', { name: '工作项目' }), '虚构新增工作');
-      await user.click(screen.getByRole('combobox', { name: '负责人' }));
-      await user.click(await screen.findByRole('option', { name: '虚构负责人(fictional.owner)' }));
       await user.click(screen.getByRole('combobox', { name: '参与人' }));
       await user.click(screen.getByRole('option', { name: '虚构参与人甲(fictional.first)' }));
       await user.click(screen.getByRole('option', { name: '虚构参与人乙(fictional.second)' }));
@@ -390,7 +511,7 @@ describe('月度工作', () => {
       }
       await user.click(screen.getByRole('button', { name: '保存' }));
       await waitFor(() => {
-        expect(close).toHaveBeenCalledOnce();
+        expect(screen.queryByRole('dialog', { name: '新增月度工作' })).not.toBeInTheDocument();
       });
       expect(bodies).toHaveLength(1);
       expect(bodies[0]?.revision).toBe(0);
@@ -426,11 +547,15 @@ describe('月度工作', () => {
             category={category}
             record={record}
             actions={[workAction(category, 'list'), workAction(category, 'update')]}
+            currentUser={{ id: 3, username: 'fictional.first', display_name: '虚构参与人甲' }}
             onClose={() => undefined}
           />
         </QueryClientProvider>,
       );
       const user = userEvent.setup();
+      expect(screen.getByRole('combobox', { name: '负责人' })).toHaveTextContent(
+        '虚构负责人(fictional.owner)',
+      );
       expect(screen.getByRole('combobox', { name: '参与人' })).toHaveTextContent(
         '虚构参与人甲(fictional.first)、虚构参与人乙(fictional.second)',
       );
@@ -439,6 +564,7 @@ describe('月度工作', () => {
         expect(bodies).toHaveLength(1);
         expect(screen.getByRole('button', { name: '保存' })).toBeEnabled();
       });
+      expect(bodies[0]?.owner_id).toBe(record.owner_id);
       expect(bodies[0]?.participant_ids).toEqual([3, 4]);
       await user.click(screen.getByRole('combobox', { name: '参与人' }));
       await user.click(screen.getByRole('option', { name: '虚构参与人甲(fictional.first)' }));

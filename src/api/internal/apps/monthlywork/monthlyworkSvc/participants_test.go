@@ -1,6 +1,7 @@
 package monthlyworkSvc_test
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"net/http"
 	"slices"
@@ -11,12 +12,16 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessConstants"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/attachment/attachmentConstants"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/attachment/attachmentModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/attachment/attachmentUtils"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/audit/auditModels"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/monthlywork/monthlyworkModels"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/notification/notificationModels"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/user/userModels"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/db"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/spreadsheettest"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/storage"
 )
 
 func checkWorkParticipants(
@@ -24,7 +29,7 @@ func checkWorkParticipants(
 	server *echo.Echo,
 	workspaceID, otherWorkspaceID string,
 	userID, ownerID, foreignUserID uint64,
-	cookie, admin *http.Cookie,
+	cookie, ownerCookie, admin *http.Cookie,
 	studentActions []string,
 ) {
 	t.Helper()
@@ -48,13 +53,22 @@ func checkWorkParticipants(
 		Update("is_enabled", false).Error; err != nil {
 		t.Fatal(err)
 	}
-	actions := append(slices.Clone(studentActions),
-		accessConstants.CPCMonthlyWorkList, accessConstants.CPCMonthlyWorkCreate,
-		accessConstants.CPCMonthlyWorkUpdate, accessConstants.CPCMonthlyWorkDelete,
-		accessConstants.CPCMonthlyWorkImport)
+	actions := append(
+		slices.Clone(studentActions),
+		accessConstants.CPCMonthlyWorkList,
+		accessConstants.CPCMonthlyWorkCreate,
+		accessConstants.CPCMonthlyWorkUpdate,
+		accessConstants.CPCMonthlyWorkDelete,
+		accessConstants.CPCMonthlyWorkImport,
+		accessConstants.CPCMonthlyWorkAttachmentRead,
+		accessConstants.CPCMonthlyWorkAttachmentUpload,
+		accessConstants.CPCMonthlyWorkAttachmentDelete,
+	)
 	grant(t, server, admin, workspaceID, userID, actions)
+	grant(t, server, admin, workspaceID, ownerID, actions)
 
 	for _, resource := range []string{"monthly-work", "cpc-monthly-work"} {
+		grant(t, server, admin, workspaceID, first.ID, readActions)
 		deleteAction := accessConstants.MonthlyWorkDelete
 		if resource == "cpc-monthly-work" {
 			deleteAction = accessConstants.CPCMonthlyWorkDelete
@@ -72,7 +86,7 @@ func checkWorkParticipants(
 		}
 		checkAssignmentNotices(t, workspaceID, work, []uint64{ownerID, first.ID, second.ID})
 		path := fmt.Sprintf("%s/%d", base, work.ID)
-		minePath := base + "?scope=mine&year=2022"
+		minePath := base + "?year=2022"
 		mine := decode[monthlyworkModels.ListData](t,
 			request(t, server, "GET", minePath+"&keyword="+first.Username, nil, firstCookie, 200))
 		if mine.Total != 1 || mine.Items[0].ID != work.ID {
@@ -93,6 +107,14 @@ func checkWorkParticipants(
 		request(t, server, "GET", minePath, nil, secondCookie, 403)
 		request(t, server, "PUT", path,
 			monthlyworkModels.Request{Input: work.Input, Revision: work.Revision}, firstCookie, 403)
+		grant(t, server, admin, workspaceID, first.ID, actions)
+		request(t, server, "PUT", path,
+			monthlyworkModels.Request{Input: work.Input, Revision: work.Revision}, firstCookie, 404)
+		request(t, server, "DELETE", fmt.Sprintf("%s?revision=%d", path, work.Revision),
+			nil, firstCookie, 404)
+		attachmentPath := "/v1/workspaces/" + workspaceID + "/attachments/" + resource
+		readyFile := checkParticipantAttachments(t, server, workspaceID, path, attachmentPath,
+			work.ID, ownerID, firstCookie, ownerCookie, cookie)
 		for _, id := range []uint64{0, foreignUserID, disabled.ID} {
 			invalidInput := input
 			invalidInput.ParticipantIDs = []uint64{id}
@@ -102,8 +124,6 @@ func checkWorkParticipants(
 		assertForeignKey(t, connection.Create(&monthlyworkModels.Participant{
 			WorkspaceID: otherWorkspaceID, MonthlyWorkID: work.ID, UserID: first.ID,
 		}).Error, 1452)
-		assertForeignKey(t, connection.Where("workspace_id = ? AND id = ?", workspaceID, work.ID).
-			Delete(&monthlyworkModels.Record{}).Error, 1451)
 
 		// 旧客户端省略或传空值时保留参与人，撤权后的既有指派也可保留。
 		omitted := map[string]any{
@@ -111,46 +131,58 @@ func checkWorkParticipants(
 			"description": work.Description, "links": work.Links, "revision": work.Revision,
 		}
 		work = decode[monthlyworkModels.Info](t,
-			request(t, server, "PUT", path, omitted, cookie, 200))
+			request(t, server, "PUT", path, omitted, ownerCookie, 200))
 		grant(t, server, admin, workspaceID, first.ID, []string{})
 		request(t, server, "GET", minePath, nil, firstCookie, 403)
 		input = work.Input
 		input.ParticipantIDs = nil
 		work = decode[monthlyworkModels.Info](t, request(t, server, "PUT", path,
-			monthlyworkModels.Request{Input: input, Revision: work.Revision}, cookie, 200))
+			monthlyworkModels.Request{Input: input, Revision: work.Revision}, ownerCookie, 200))
 		if !slices.Equal(work.ParticipantIDs, []uint64{first.ID, second.ID}) {
 			t.Fatal("省略字段或参与人撤权导致既有指派丢失")
 		}
 		checkAssignmentNotices(t, workspaceID, work, nil)
-		checkParticipantAuditRollback(t, server, workspaceID, path, work, cookie)
+		checkParticipantAuditRollback(t, server, workspaceID, path, work, ownerCookie)
 		input.ParticipantIDs = []uint64{second.ID}
 		work = decode[monthlyworkModels.Info](t, request(t, server, "PUT", path,
-			monthlyworkModels.Request{Input: input, Revision: work.Revision}, cookie, 200))
+			monthlyworkModels.Request{Input: input, Revision: work.Revision}, ownerCookie, 200))
 		input.ParticipantIDs = []uint64{first.ID, second.ID}
 		request(t, server, "PUT", path,
-			monthlyworkModels.Request{Input: input, Revision: work.Revision}, cookie, 400)
-		grant(t, server, admin, workspaceID, first.ID, readActions)
+			monthlyworkModels.Request{Input: input, Revision: work.Revision}, ownerCookie, 400)
+		grant(t, server, admin, workspaceID, first.ID, actions)
 		mine = decode[monthlyworkModels.ListData](t,
 			request(t, server, "GET", minePath, nil, firstCookie, 200))
 		if mine.Total != 0 {
 			t.Fatal("移除参与人后我的工作仍包含对应记录")
 		}
 
-		// 负责人同时参与时只返回一条，清空参与人不会丢失本人负责的工作。
-		input.OwnerID, input.ParticipantIDs = first.ID, []uint64{first.ID}
+		// 转交后原负责人以参与人身份保留读取，现负责人同时参与只返回一条。
+		input.OwnerID, input.ParticipantIDs = first.ID, []uint64{first.ID, ownerID}
 		work = decode[monthlyworkModels.Info](t, request(t, server, "PUT", path,
-			monthlyworkModels.Request{Input: input, Revision: work.Revision}, cookie, 200))
+			monthlyworkModels.Request{Input: input, Revision: work.Revision}, ownerCookie, 200))
 		mine = decode[monthlyworkModels.ListData](t,
 			request(t, server, "GET", minePath, nil, firstCookie, 200))
 		if mine.Total != 1 || len(mine.Items) != 1 {
 			t.Fatal("负责人同时参与导致我的工作重复")
 		}
 		checkAssignmentNotices(t, workspaceID, work, []uint64{first.ID})
+		previousOwnerFiles := decode[attachmentModels.ListData](t, request(t, server, "GET",
+			fmt.Sprintf("%s?monthly_work_id=%d", attachmentPath, work.ID), nil, ownerCookie, 200))
+		if previousOwnerFiles.Total != 2 {
+			t.Fatal("转交后仍参与的原负责人无法查看附件")
+		}
+		request(t, server, "POST", path+"/attachments/complete", map[string]uint64{
+			"upload_id": readyFile, "revision": 1,
+		}, ownerCookie, 404)
+		request(t, server, "PUT", path,
+			monthlyworkModels.Request{Input: input, Revision: work.Revision}, ownerCookie, 404)
+
+		// 清空参与人后原负责人失去读取，现负责人仍可以操作。
 		input.ParticipantIDs = []uint64{}
 		request(t, server, "PUT", path,
-			monthlyworkModels.Request{Input: input, Revision: work.Revision - 1}, cookie, 409)
+			monthlyworkModels.Request{Input: input, Revision: work.Revision - 1}, firstCookie, 409)
 		work = decode[monthlyworkModels.Info](t, request(t, server, "PUT", path,
-			monthlyworkModels.Request{Input: input, Revision: work.Revision}, cookie, 200))
+			monthlyworkModels.Request{Input: input, Revision: work.Revision}, firstCookie, 200))
 		if work.ParticipantIDs == nil || len(work.ParticipantIDs) != 0 ||
 			work.Participants == nil ||
 			len(work.Participants) != 0 {
@@ -161,16 +193,18 @@ func checkWorkParticipants(
 		if mine.Total != 1 {
 			t.Fatal("清空参与人后丢失了本人负责的工作")
 		}
+		request(t, server, "GET", fmt.Sprintf("%s/%d/download", attachmentPath, readyFile),
+			nil, ownerCookie, 404)
 		input.ParticipantIDs = []uint64{second.ID}
 		work = decode[monthlyworkModels.Info](t, request(t, server, "PUT", path,
-			monthlyworkModels.Request{Input: input, Revision: work.Revision}, cookie, 200))
+			monthlyworkModels.Request{Input: input, Revision: work.Revision}, firstCookie, 200))
 		request(
 			t,
 			server,
 			"DELETE",
 			fmt.Sprintf("%s?revision=%d", path, work.Revision),
 			nil,
-			cookie,
+			firstCookie,
 			200,
 		)
 		var count int64
@@ -180,8 +214,9 @@ func checkWorkParticipants(
 			t.Fatal("删除工作未清理记录自有的参与人明细")
 		}
 		var audit auditModels.Record
-		if err := connection.Where("workspace_id = ? AND instance_id = ? AND action_id = ?",
-			workspaceID, fmt.Sprint(work.ID), deleteAction).
+		if err := connection.Where(
+			"workspace_id = ? AND instance_id = ? AND action_id = ? AND result_code = ?",
+			workspaceID, fmt.Sprint(work.ID), deleteAction, 0).
 			Take(&audit).Error; err != nil {
 			t.Fatal(err)
 		}
@@ -206,7 +241,7 @@ func checkWorkParticipants(
 			Count(&noticesAfter).Error; err != nil || noticesAfter != noticesBefore {
 			t.Fatal("导入失败未回滚工作分配通知")
 		}
-		importPath := base + "?scope=mine&year=2021"
+		importPath := base + "?year=2021"
 		imported := decode[monthlyworkModels.ListData](t,
 			request(t, server, "GET", importPath, nil, firstCookie, 200))
 		if imported.Total != 0 {
@@ -227,6 +262,64 @@ func checkWorkParticipants(
 			[]uint64{ownerID, first.ID, second.ID},
 		)
 	}
+}
+
+func checkParticipantAttachments(
+	t *testing.T,
+	server *echo.Echo,
+	workspaceID, workPath, attachmentPath string,
+	workID, ownerID uint64,
+	participant, owner, outsider *http.Cookie,
+) uint64 {
+	t.Helper()
+	// 使用虚构附件验证已完成确认、删除重试及无归属账号的附件范围。
+	files := make([]attachmentModels.MonthlyWorkAttachment, 0, 2)
+	for _, state := range []string{attachmentConstants.Ready, attachmentConstants.Deleting} {
+		key := fmt.Sprintf("fictional/%d/%s", workID, state)
+		files = append(files, attachmentModels.MonthlyWorkAttachment{
+			MonthlyWorkID: workID,
+			Record: attachmentModels.Record{
+				WorkspaceID: workspaceID, ObjectKey: key,
+				ObjectHash: fmt.Sprintf("%x", sha256.Sum256([]byte(key))),
+				Filename:   "虚构附件.pdf", ContentType: "application/pdf", Size: 1,
+				UploadActor: attachmentUtils.UploadActorKey(ownerID, 0), State: state, Revision: 1,
+			},
+		})
+	}
+	if err := db.DB().WithContext(t.Context()).Create(&files).Error; err != nil {
+		t.Fatal(err)
+	}
+	readyPath := fmt.Sprintf("%s/%d/download", attachmentPath, files[0].ID)
+	retryPath := fmt.Sprintf("%s/%d?revision=1", attachmentPath, files[1].ID)
+	upload := attachmentModels.UploadRequest{
+		Filename: "虚构附件.pdf", ContentType: "application/pdf", Size: 1,
+	}
+	complete := map[string]uint64{"upload_id": files[0].ID, "revision": 1}
+	for _, actor := range []*http.Cookie{participant, outsider} {
+		request(t, server, "POST", workPath+"/attachments", upload, actor, 404)
+		request(t, server, "POST", workPath+"/attachments/complete", complete, actor, 404)
+		request(t, server, "DELETE", retryPath, nil, actor, 404)
+	}
+	request(t, server, "POST", workPath+"/attachments/complete", complete, owner, 200)
+	request(t, server, "GET", readyPath, nil, outsider, 404)
+	if storage.Enabled() {
+		request(t, server, "GET", readyPath, nil, participant, 200)
+	} else {
+		request(t, server, "GET", readyPath, nil, participant, 503)
+	}
+	for _, query := range []string{"", fmt.Sprintf("?monthly_work_id=%d", workID)} {
+		visible := decode[attachmentModels.ListData](t,
+			request(t, server, "GET", attachmentPath+query, nil, participant, 200))
+		hidden := decode[attachmentModels.ListData](t,
+			request(t, server, "GET", attachmentPath+query, nil, outsider, 200))
+		if visible.Total != 2 || (query != "" && hidden.Total != 0) ||
+			slices.ContainsFunc(hidden.Items, func(file attachmentModels.Info) bool {
+				return file.MonthlyWorkID == workID
+			}) {
+			t.Fatal("附件目录未正确限制当前账号的工作范围")
+		}
+	}
+	return files[0].ID
 }
 
 func checkAssignmentNotices(

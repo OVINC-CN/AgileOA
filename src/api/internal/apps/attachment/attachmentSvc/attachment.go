@@ -53,7 +53,7 @@ func PrepareUpload(
 			); err != nil {
 				return err
 			}
-			if !storage.Enabled() {
+			if business.workCategory == "" && !storage.Enabled() {
 				return unavailable()
 			}
 			if !validFilename(filename) || size < 1 || size > config.Config.COS.MaxUploadBytes {
@@ -62,9 +62,12 @@ func PrepareUpload(
 			if err := attachmentUtils.ValidateUploadRequest(request); err != nil {
 				return err
 			}
-			object, err := objectName(tx, workspaceID, category, ownerID, nodeID, filename)
+			object, err := objectName(tx, principal, category, ownerID, nodeID, filename)
 			if err != nil {
 				return err
+			}
+			if !storage.Enabled() {
+				return unavailable()
 			}
 			if len(object) > attachmentConstants.ObjectKeyMaxBytes {
 				return failure(http.StatusBadRequest, "文件名过长")
@@ -74,7 +77,8 @@ func PrepareUpload(
 
 			// 每次上传创建独立附件，待完成和待删除的记录也占用名额。
 			var count int64
-			scope := business.scope(tx, workspaceID).Where(business.ownerColumn+" = ?", ownerID)
+			scope := business.scope(tx, principal, business.uploadAction).
+				Where(business.ownerColumn+" = ?", ownerID)
 			if category == attachmentConstants.CategoryCPCTimelineNode ||
 				category == attachmentConstants.CategoryCPCPersonTimelineNode {
 				scope = scope.Where("node_id = ?", nodeID)
@@ -132,7 +136,7 @@ func CompleteUpload(
 	err = accessUtils.Workspace(ctx, workspaceID, business.uploadAction,
 		attachmentEvent(workspaceID, category, id),
 		func(tx *gorm.DB, principal accessModels.Principal, audit *auditModels.Event) error {
-			pending, err := load(tx, business, workspaceID, id)
+			pending, err := load(business.scope(tx, principal, business.uploadAction), business, id)
 			if err != nil {
 				return err
 			}
@@ -165,12 +169,17 @@ func CompleteUpload(
 			audit.Before = snapshot(category, pending.OwnerID, pending.NodeID, pending.Record)
 			pending.State = attachmentConstants.Ready
 			pending.Revision++
-			if err := business.scope(tx, workspaceID).Where("id = ?", pending.ID).
+			if err := business.scope(tx, principal, business.uploadAction).
+				Where("id = ?", pending.ID).
 				Updates(map[string]any{"state": pending.State, "revision": pending.Revision}).
 				Error; err != nil {
 				return err
 			}
-			pending, err = load(tx, business, workspaceID, pending.ID)
+			pending, err = load(
+				business.scope(tx, principal, business.uploadAction),
+				business,
+				pending.ID,
+			)
 			if err != nil {
 				return err
 			}
@@ -215,7 +224,7 @@ func List(
 			); err != nil {
 				return err
 			}
-			scope := business.scope(tx, workspaceID)
+			scope := business.scope(tx, principal, business.readAction)
 			if category == attachmentConstants.CategoryCPCTimelineNode {
 				if err := requireTimelineNode(tx, workspaceID, ownerID, nodeID); err != nil {
 					return err
@@ -263,10 +272,10 @@ func Download(
 	err = accessUtils.Workspace(ctx, workspaceID, business.readAction,
 		attachmentEvent(workspaceID, category, id),
 		func(tx *gorm.DB, principal accessModels.Principal, audit *auditModels.Event) error {
-			if !storage.Enabled() {
+			if business.workCategory == "" && !storage.Enabled() {
 				return unavailable()
 			}
-			record, err := load(tx, business, workspaceID, id)
+			record, err := load(business.scope(tx, principal, business.readAction), business, id)
 			if err != nil {
 				return err
 			}
@@ -279,6 +288,9 @@ func Download(
 				business.readAction,
 			); err != nil {
 				return err
+			}
+			if !storage.Enabled() {
+				return unavailable()
 			}
 			if record.State != attachmentConstants.Ready {
 				return failure(http.StatusConflict, "附件暂时无法下载，请稍后重试")
@@ -301,10 +313,10 @@ func Delete(ctx context.Context, workspaceID, category string, id, revision uint
 	err = accessUtils.Workspace(ctx, workspaceID, business.deleteAction,
 		attachmentEvent(workspaceID, category, id),
 		func(tx *gorm.DB, principal accessModels.Principal, audit *auditModels.Event) error {
-			if !storage.Enabled() {
+			if business.workCategory == "" && !storage.Enabled() {
 				return unavailable()
 			}
-			record, err := load(tx, business, workspaceID, id)
+			record, err := load(business.scope(tx, principal, business.deleteAction), business, id)
 			if err != nil {
 				return err
 			}
@@ -318,6 +330,9 @@ func Delete(ctx context.Context, workspaceID, category string, id, revision uint
 			); err != nil {
 				return err
 			}
+			if !storage.Enabled() {
+				return unavailable()
+			}
 			if revision != record.Revision {
 				return failure(http.StatusConflict, "文件记录已改变，请刷新后重试")
 			}
@@ -325,7 +340,7 @@ func Delete(ctx context.Context, workspaceID, category string, id, revision uint
 			audit.Before = snapshot(category, record.OwnerID, record.NodeID, record.Record)
 			record.State = attachmentConstants.Deleting
 			record.Revision++
-			if err := business.scope(tx, workspaceID).Where("id = ?", id).
+			if err := business.scope(tx, principal, business.deleteAction).Where("id = ?", id).
 				Updates(map[string]any{
 					"state":    record.State,
 					"revision": record.Revision,
@@ -343,7 +358,7 @@ func Delete(ctx context.Context, workspaceID, category string, id, revision uint
 	err = accessUtils.Workspace(ctx, workspaceID, business.deleteAction,
 		attachmentEvent(workspaceID, category, id),
 		func(tx *gorm.DB, principal accessModels.Principal, audit *auditModels.Event) error {
-			record, err := load(tx, business, workspaceID, id)
+			record, err := load(business.scope(tx, principal, business.deleteAction), business, id)
 			if err != nil {
 				return err
 			}
@@ -376,7 +391,7 @@ func Delete(ctx context.Context, workspaceID, category string, id, revision uint
 				}
 			}
 			audit.Before = snapshot(category, record.OwnerID, record.NodeID, record.Record)
-			return business.scope(tx, workspaceID).Where("id = ?", id).
+			return business.scope(tx, principal, business.deleteAction).Where("id = ?", id).
 				Delete(&attachmentModels.Record{}).
 				Error
 		})
@@ -400,13 +415,12 @@ func logChange(
 }
 
 func load(
-	tx *gorm.DB,
+	scope *gorm.DB,
 	business attachmentPolicy,
-	workspaceID string,
 	id uint64,
 ) (attachmentModels.OwnedRecord, error) {
 	var record attachmentModels.OwnedRecord
-	err := business.scope(tx, workspaceID).Select(business.ownerSelection()).
+	err := scope.Select(business.ownerSelection()).
 		Where("id = ?", id).Take(&record).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		err = failure(http.StatusNotFound, "附件不存在或不可访问")

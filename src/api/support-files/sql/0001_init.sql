@@ -391,7 +391,7 @@ CREATE TABLE `monthly_work_records`
   `category` varchar(16) NOT NULL DEFAULT 'student' COMMENT '工作类别：student 学生工作，cpc 党建工作',
   `date` varchar(10) NOT NULL COMMENT '工作日期 YYYY-MM-DD，用于月份归组和上传目录',
   `work_item` varchar(100) NOT NULL COMMENT '工作项目',
-  `owner_id` bigint unsigned NOT NULL COMMENT '负责人用户编号，不用于授权判断',
+  `owner_id` bigint unsigned NOT NULL COMMENT '负责人用户编号，限定月度工作的读写范围',
   `description` text NOT NULL COMMENT '详细说明，最多 10000 字符',
   `links` json NOT NULL COMMENT '多条外部链接，包含 name 和 url，保持录入顺序',
   `revision` bigint unsigned NOT NULL DEFAULT '1' COMMENT '并发修改版本',
@@ -434,7 +434,7 @@ CREATE TABLE `monthly_work_participants`
 (
   `workspace_id` char(16) NOT NULL COMMENT '所属工作空间编号',
   `monthly_work_id` bigint unsigned NOT NULL COMMENT '所属月度工作记录编号',
-  `user_id` bigint unsigned NOT NULL COMMENT '参与人用户编号，不参与授权判断',
+  `user_id` bigint unsigned NOT NULL COMMENT '参与人用户编号，限定月度工作的读取范围',
   `created_at` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '创建时间，UTC，由数据库维护',
   `updated_at` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6) COMMENT '更新时间，UTC，由数据库维护',
   PRIMARY KEY (`workspace_id`, `monthly_work_id`, `user_id`),

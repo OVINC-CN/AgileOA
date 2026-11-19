@@ -54,7 +54,7 @@ func PersonTimelineDownload(
 				ownerID = templateID
 			}
 			var record attachmentModels.OwnedRecord
-			err = business.scope(tx, workspaceID).Select(business.ownerSelection()).
+			err = business.scope(tx, principal, action).Select(business.ownerSelection()).
 				Where("id = ? AND "+business.ownerColumn+" = ? AND node_id = ?", fileID, ownerID, nodeID).
 				Take(&record).Error
 			if errors.Is(err, gorm.ErrRecordNotFound) {

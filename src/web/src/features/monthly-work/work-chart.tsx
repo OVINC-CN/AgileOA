@@ -1,19 +1,24 @@
-import { useQuery } from '@tanstack/react-query';
 import { ClipboardCheck, UsersRound } from 'lucide-react';
 
 import { MetricCard } from '@/components/metric-card';
 import type { WorkRecord } from '@/features/monthly-work/api';
-import { currentUserOptions } from '@/features/user/api';
 
-export function WorkChart({ records }: { records: WorkRecord[] | undefined }) {
-  // 复用鉴权入口已读取的登录态，不额外请求用户接口。
-  const { data: user } = useQuery({ ...currentUserOptions, enabled: false });
-
+export function WorkChart({
+  records,
+  userID,
+}: {
+  records: WorkRecord[] | undefined;
+  userID: number | undefined;
+}) {
   // 分别统计当前筛选结果中本人负责和参与的工作，兼任时分别计入。
-  const owned = user ? records?.filter((record) => record.owner_id === user.id).length : undefined;
-  const participating = user
-    ? records?.filter((record) => record.participant_ids.includes(user.id)).length
-    : undefined;
+  const owned =
+    userID === undefined
+      ? undefined
+      : records?.filter((record) => record.owner_id === userID).length;
+  const participating =
+    userID === undefined
+      ? undefined
+      : records?.filter((record) => record.participant_ids.includes(userID)).length;
 
   return (
     <div aria-label="月度工作统计" className="grid grid-cols-2 gap-4">
