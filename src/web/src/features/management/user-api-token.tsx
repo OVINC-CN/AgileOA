@@ -83,6 +83,7 @@ export function UserAPITokenDrawer({ user, onClose }: { user: UserRow; onClose: 
   return (
     <Drawer
       title="MCP 配置"
+      truncateDescription
       description={formatIdentity(user.display_name, user.username)}
       busy={action.pending}
       onClose={onClose}
@@ -182,6 +183,7 @@ export function UserAPITokenDrawer({ user, onClose }: { user: UserRow; onClose: 
       {confirmation ? (
         <Drawer
           title={confirmation === 'reset' ? '重置 API Token' : '撤销 API Token'}
+          truncateDescription
           description={formatIdentity(user.display_name, user.username)}
           busy={action.pending}
           onClose={() => {

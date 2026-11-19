@@ -16,6 +16,7 @@ import { updateUser, type UserRow } from '@/features/management/api';
 import { createUser, type CurrentUser, currentUserKey, userEmailSchema } from '@/features/user/api';
 import { useApiMutation } from '@/lib/api-action';
 import { getConfig } from '@/lib/config';
+import { formatIdentity } from '@/lib/format';
 import { showMessage } from '@/lib/messages';
 import { generateInitialPassword } from '@/lib/password';
 
@@ -183,10 +184,11 @@ export function UserEditor({
   return (
     <Drawer
       title={user ? '编辑用户' : '添加用户'}
+      truncateDescription={!!user}
       busy={mutation.isPending}
       description={
         user
-          ? `更新 ${user.username} 的账号信息`
+          ? formatIdentity(user.display_name, user.username)
           : passwordLoginEnabled
             ? '填写用户名和显示名称，自动生成 16 位初始密码。'
             : '填写账号信息，用户通过邮件登录，无需设置或修改密码。'

@@ -10,14 +10,14 @@ export function Tooltip({
   content: string;
   onlyOverflow?: boolean;
 }) {
-  const trigger = useRef<HTMLButtonElement>(null);
+  const trigger = useRef<HTMLElement>(null);
   const [open, setOpen] = useState(false);
   return (
     <TooltipPrimitive.Provider delayDuration={300}>
       <TooltipPrimitive.Root
         open={open}
         onOpenChange={(next) => {
-          // 在实际悬停或聚焦时测量，适应下拉宽度及选项内容变化。
+          // 在实际悬停或聚焦时测量，适应触发元素的宽度及内容变化。
           const text =
             trigger.current?.querySelector<HTMLElement>('[data-tooltip-overflow]') ??
             trigger.current;
@@ -26,7 +26,12 @@ export function Tooltip({
           );
         }}
       >
-        <TooltipPrimitive.Trigger ref={trigger} asChild>
+        <TooltipPrimitive.Trigger
+          ref={(element) => {
+            trigger.current = element;
+          }}
+          asChild
+        >
           {children}
         </TooltipPrimitive.Trigger>
         <TooltipPrimitive.Portal>

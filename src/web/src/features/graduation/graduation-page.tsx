@@ -443,6 +443,7 @@ function GraduationWorkspace({
       {clearing ? (
         <Drawer
           title="清除毕业去向"
+          truncateDescription
           description={formatIdentity(clearing.student_name, clearing.student_no)}
           busy={remove.pending}
           onClose={() => {

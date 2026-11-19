@@ -397,6 +397,9 @@ export function AuditPage() {
       {selected ? (
         <AuditDetail
           row={selected}
+          actionName={
+            list.data?.actions.find((item) => item.value === selected.action_id)?.label ?? '操作'
+          }
           workspaceLabel={auditWorkspaceLabel(selected.workspace_id, list.data?.workspaces)}
           onClose={() => {
             setSelected(null);

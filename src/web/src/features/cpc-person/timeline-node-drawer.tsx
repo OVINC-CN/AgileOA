@@ -65,6 +65,7 @@ export function PersonTimelineNodeDrawer({
   return (
     <Drawer
       title={editing ? '编辑时间线节点' : '时间线节点详情'}
+      truncateDescription
       description={`${personLabel} · ${original.name}`}
       busy={refresh.pending}
       onClose={onClose}

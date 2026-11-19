@@ -129,6 +129,7 @@ export function PersonEditor({
       title={original ? '编辑党建人员' : '新增党建人员'}
       busy={mutation.isPending}
       onClose={onClose}
+      truncateDescription={!!original}
       description={
         original ? formatIdentity(original.name, original.student_no) : '从已有学生中选择人员'
       }

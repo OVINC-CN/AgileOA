@@ -43,7 +43,7 @@ export function PersonTimelineNodeEditor({
 }: {
   workspaceID: string;
   personID: number;
-  personLabel?: string;
+  personLabel?: string | undefined;
   original: PersonTimelineNode;
   current: PersonTimelineNode;
   nodes: TimelineNode[];
@@ -66,6 +66,7 @@ export function PersonTimelineNodeEditor({
   return (
     <Drawer
       title="编辑时间线节点"
+      truncateDescription={!!personLabel}
       description={personLabel ? `${personLabel} · ${original.name}` : original.name}
       busy={busy || confirmingReset || deleting !== null}
       onClose={onClose}

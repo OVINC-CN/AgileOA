@@ -490,6 +490,7 @@ function PersonWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
       {data && detail && can('detail') ? (
         <Drawer
           title="党建人员详情"
+          truncateDescription
           description={formatIdentity(detail.name, detail.student_no)}
           onClose={() => {
             setDetail(null);
@@ -511,6 +512,7 @@ function PersonWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
       {data && deleting && can('delete') ? (
         <Drawer
           title="删除党建人员"
+          truncateDescription
           description={formatIdentity(deleting.name, deleting.student_no)}
           busy={remove.pending}
           onClose={() => {

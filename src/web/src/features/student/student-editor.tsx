@@ -72,6 +72,7 @@ export function StudentEditor({
     return (
       <Drawer
         title="编辑学生"
+        truncateDescription
         description={formatIdentity(student.name, student.student_no)}
         onClose={onClose}
         footer={
@@ -198,6 +199,7 @@ function StudentEditorForm({
   return (
     <Drawer
       title={student ? '编辑学生' : '添加学生'}
+      truncateDescription={!!student}
       description={student ? formatIdentity(student.name, student.student_no) : '填写学生档案'}
       busy={busy}
       onClose={onClose}
@@ -393,6 +395,7 @@ export function DeleteStudent({
   return (
     <Drawer
       title="删除学生"
+      truncateDescription
       description={formatIdentity(student.name, student.student_no)}
       busy={mutation.isPending}
       onClose={onClose}

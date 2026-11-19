@@ -169,6 +169,7 @@ func buildTimelineTransfer(
 			DiscardedFields: []cpcpersonModels.TimelineDiscardedField{},
 			Timeline: cpcpersonModels.TimelineData{
 				PersonID:         person.ID,
+				PersonName:       person.Name,
 				PersonRevision:   person.Revision + 1,
 				TemplateID:       &target.ID,
 				TemplateName:     target.Name,

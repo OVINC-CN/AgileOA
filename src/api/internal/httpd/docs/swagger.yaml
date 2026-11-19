@@ -1520,6 +1520,10 @@ definitions:
         description: PersonID 是所属人员编号。
         example: 1
         type: integer
+      person_name:
+        description: PersonName 是所属人员的姓名。
+        example: 虚构学生甲
+        type: string
       person_revision:
         description: PersonRevision 是绑定模板时校验的人员版本。
         example: 1

@@ -20,7 +20,6 @@ import { timelineValueLabel } from '@/features/cpc-person/timeline-values';
 import { BaselineNodeBadge } from '@/features/cpc-timeline/baseline-node-badge';
 import { TimelineNodeGroups } from '@/features/cpc-timeline/node-groups';
 import { useApiAction } from '@/lib/api-action';
-import { formatIdentity } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 export type TimelineTransferState =
@@ -29,12 +28,14 @@ export type TimelineTransferState =
 
 export function TimelineTransferDrawer({
   workspaceID,
-  person,
+  personID,
+  personLabel,
   transfer,
   onClose,
 }: {
   workspaceID: string;
-  person: { id: number; name: string; student_no: string };
+  personID: number;
+  personLabel: string | undefined;
   transfer: TimelineTransferState;
   onClose: () => void;
 }) {
@@ -52,11 +53,8 @@ export function TimelineTransferDrawer({
   return (
     <Drawer
       title={reviewing ? '审核时间线转移' : '转移人员时间线'}
-      description={
-        person.name && person.student_no
-          ? formatIdentity(person.name, person.student_no)
-          : `人员编号：${String(person.id)}`
-      }
+      description={personLabel}
+      truncateDescription
       onClose={onClose}
       busy={busy}
       footer={
@@ -76,8 +74,8 @@ export function TimelineTransferDrawer({
               void prepare.run('preview', async () => {
                 try {
                   const result = reviewing
-                    ? await client.query(timelineTransferReviewOptions(workspaceID, person.id))
-                    : await previewTimelineTransfer(workspaceID, person.id, Number(targetID));
+                    ? await client.query(timelineTransferReviewOptions(workspaceID, personID))
+                    : await previewTimelineTransfer(workspaceID, personID, Number(targetID));
                   setPreview(result);
                   setStalePreview(false);
                 } catch (error) {
@@ -97,8 +95,8 @@ export function TimelineTransferDrawer({
               onClick={() => {
                 void confirm.run('confirm', async () => {
                   try {
-                    if (reviewing) await reviewTimelineTransfer(workspaceID, person.id, preview);
-                    else await requestTimelineTransfer(workspaceID, person.id, preview);
+                    if (reviewing) await reviewTimelineTransfer(workspaceID, personID, preview);
+                    else await requestTimelineTransfer(workspaceID, personID, preview);
                   } catch (error) {
                     setStalePreview(true);
                     throw error;
@@ -216,7 +214,7 @@ export function TimelineTransferDrawer({
                     </div>
                     <PersonTimelineNodeDetails
                       workspaceID={workspaceID}
-                      personID={person.id}
+                      personID={personID}
                       node={node}
                       nodes={preview.timeline.nodes}
                       editing

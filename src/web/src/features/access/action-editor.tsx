@@ -194,6 +194,7 @@ function ActionForm({
   return (
     <Drawer
       title={creating ? '添加操作权限' : '配置操作权限'}
+      truncateDescription
       description={`${workspaceName} · ${formatIdentity(user.display_name, user.username)}`}
       busy={mutation.isPending}
       onClose={onClose}
@@ -309,6 +310,7 @@ export function ActionEditor({
   return (
     <Drawer
       title="配置操作权限"
+      truncateDescription
       description={`${workspaceName} · ${formatIdentity(user.display_name, user.username)}`}
       onClose={onClose}
       footer={

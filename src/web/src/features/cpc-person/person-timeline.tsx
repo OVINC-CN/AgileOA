@@ -83,6 +83,12 @@ export function PersonTimelineDrawer({
     cancelTransfer.pending;
   const denied = query.error instanceof ApiError && [401, 403, 404].includes(query.error.status);
   const data = denied ? undefined : query.data;
+  const personName = (data?.person_name ?? person.name).trim();
+  const personLabel = personName
+    ? person.student_no
+      ? formatIdentity(personName, person.student_no)
+      : `${personName} (${String(person.id)})`
+    : undefined;
   const canEdit = canUpdate && data?.can_update && data.status !== 'transferring';
   const isVisible = (node: PersonTimelineNode) =>
     (!nodeStatus || node.status === nodeStatus) &&
@@ -99,11 +105,8 @@ export function PersonTimelineDrawer({
   return (
     <Drawer
       title="人员时间线"
-      description={
-        person.name && person.student_no
-          ? formatIdentity(person.name, person.student_no)
-          : `人员编号：${String(person.id)}`
-      }
+      description={personLabel}
+      truncateDescription
       busy={busy || (editing !== null && !!canEdit) || transfer !== null || rejectRevision !== null}
       onClose={onClose}
       footer={
@@ -352,6 +355,7 @@ export function PersonTimelineDrawer({
         <PersonTimelineNodeEditor
           workspaceID={workspaceID}
           personID={person.id}
+          personLabel={personLabel}
           original={editing.node}
           current={data.nodes.find((node) => node.id === editing.node.id) ?? editing.node}
           nodes={data.nodes}
@@ -365,7 +369,8 @@ export function PersonTimelineDrawer({
       {transfer ? (
         <TimelineTransferDrawer
           workspaceID={workspaceID}
-          person={person}
+          personID={person.id}
+          personLabel={personLabel}
           transfer={transfer}
           onClose={() => {
             setTransfer(null);
@@ -375,7 +380,8 @@ export function PersonTimelineDrawer({
       {rejectRevision !== null ? (
         <TimelineTransferRejectDrawer
           workspaceID={workspaceID}
-          person={person}
+          personID={person.id}
+          personLabel={personLabel}
           revision={rejectRevision}
           invalidate={invalidate}
           onClose={() => {

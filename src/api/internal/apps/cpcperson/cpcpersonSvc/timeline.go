@@ -360,8 +360,11 @@ func timelineData(
 	tx *gorm.DB, workspaceID string, person cpcpersonModels.Info,
 ) (cpcpersonModels.TimelineData, error) {
 	result := cpcpersonModels.TimelineData{
-		PersonID: person.ID, PersonRevision: person.Revision, TemplateID: person.TimelineTemplateID,
-		CanUpdate: person.CanUpdate, Nodes: []cpcpersonModels.TimelineNodeInfo{},
+		PersonID:       person.ID,
+		PersonName:     person.Name,
+		PersonRevision: person.Revision,
+		TemplateID:     person.TimelineTemplateID,
+		CanUpdate:      person.CanUpdate, Nodes: []cpcpersonModels.TimelineNodeInfo{},
 		CanReviewTransfer: person.CanReviewTimelineTransfer,
 		TransferTargetID:  person.TimelineTransferTargetID,
 	}

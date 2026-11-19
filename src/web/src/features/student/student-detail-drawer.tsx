@@ -71,6 +71,7 @@ export function StudentDetailDrawer({
   return (
     <Drawer
       title="学生详情"
+      truncateDescription={!!student}
       description={student ? formatIdentity(student.name, student.student_no) : '查看学生档案'}
       busy={refresh.pending || editingStudent}
       onClose={onClose}
