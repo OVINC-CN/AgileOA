@@ -30,12 +30,14 @@ export function WorkEditor({
   category = 'student',
   record,
   actions,
+  userID,
   onClose,
 }: {
   workspaceID: string;
   category?: WorkCategory;
   record: WorkRecord | null;
   actions: string[];
+  userID?: number | undefined;
   onClose: () => void;
 }) {
   const [original] = useState(record);
@@ -50,6 +52,11 @@ export function WorkEditor({
     },
   );
   const [attachments, setAttachments] = useState(false);
+  const isOwner = original !== null && original.owner_id === userID;
+  const canReadFiles = actions.includes(workAction(category, 'attachment.read'));
+  const canUpload = isOwner && actions.includes(workAction(category, 'attachment.upload'));
+  const canManageFiles =
+    canUpload || (isOwner && actions.includes(workAction(category, 'attachment.delete')));
   const client = useQueryClient();
   const owners = useQuery({
     ...workOwnerOptions(workspaceID, category),
@@ -188,23 +195,21 @@ export function WorkEditor({
           <section className="space-y-3 border-t border-border pt-5" aria-label="附件">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-base leading-5 font-medium">附件</h2>
-              {actions.includes(workAction(category, 'attachment.read')) ||
-              actions.includes(workAction(category, 'attachment.upload')) ? (
+              {original && (canReadFiles || canUpload) ? (
                 <Button
                   type="button"
                   variant="outline"
-                  disabled={!original}
                   onClick={() => {
                     setAttachments(true);
                   }}
                 >
                   <Paperclip aria-hidden="true" />
-                  管理附件
+                  {canManageFiles ? '管理附件' : '查看附件'}
                 </Button>
               ) : null}
             </div>
-            {original ? null : (
-              <p className="text-xs text-muted-foreground">创建记录后可上传附件</p>
+            {original || !actions.includes(workAction(category, 'attachment.upload')) ? null : (
+              <p className="text-xs text-muted-foreground">创建后由负责人上传附件</p>
             )}
           </section>
           <LinksEditor
@@ -215,12 +220,13 @@ export function WorkEditor({
           />
         </fieldset>
       </Drawer>
-      {attachments && original ? (
+      {attachments && original && (canReadFiles || canUpload) ? (
         <WorkAttachments
           workspaceID={workspaceID}
           category={category}
           record={original}
           actions={actions}
+          isOwner={isOwner}
           onClose={() => {
             setAttachments(false);
           }}

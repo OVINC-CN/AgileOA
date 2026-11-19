@@ -15,11 +15,11 @@ import (
 	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/audit/auditModels"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/monthlywork/monthlyworkConstants"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/monthlywork/monthlyworkModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/monthlywork/monthlyworkUtils"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/config"
-	"github.com/OVINC-CN/AgileOA/src/api/internal/queryfilter"
 )
 
-// List 一次读取所选年份及可选月份的全部记录，不分页。
+// List 一次读取筛选范围内当前账号负责或参与的工作，不分页。
 func List(
 	ctx context.Context,
 	workspaceID, category string,
@@ -33,7 +33,6 @@ func List(
 		"year":     query.Years,
 		"month":    query.Months,
 		"keyword":  query.Keyword,
-		"scope":    query.Scopes,
 	}
 	err := accessUtils.Workspace(
 		ctx,
@@ -41,7 +40,7 @@ func List(
 		actionFor(category, accessConstants.MonthlyWorkList),
 		auditEvent,
 		func(tx *gorm.DB, principal accessModels.Principal, audit *auditModels.Event) error {
-			// 校验每个年份、月份和工作范围，未选中的维度不限制。
+			// 校验年份、月份和关键词，未选中的维度不限制。
 			query.Keyword = strings.TrimSpace(query.Keyword)
 			for _, year := range query.Years {
 				if year < monthlyworkConstants.MinYear || year > monthlyworkConstants.MaxYear {
@@ -56,23 +55,9 @@ func List(
 			if !validText(query.Keyword, monthlyworkConstants.NameLength, false) {
 				return invalid("搜索关键词最多 100 字符，且不能包含控制字符")
 			}
-			if !queryfilter.ContainsOnly(query.Scopes,
-				monthlyworkConstants.ScopeMine, monthlyworkConstants.ScopeAll) {
-				return invalid("请选择我的工作或全部工作")
-			}
 
-			// 始终限定工作空间和类别，多个年份使用日期范围的并集。
-			scope := tx.Model(&monthlyworkModels.Record{}).
-				Where("workspace_id = ? AND category = ?", workspaceID, category)
-			if len(query.Scopes) > 0 &&
-				!slices.Contains(query.Scopes, monthlyworkConstants.ScopeAll) {
-				participating := tx.Model(&monthlyworkModels.Participant{}).
-					Select("monthly_work_id").
-					Where("workspace_id = ? AND user_id = ?", workspaceID, principal.User.ID)
-				scope = scope.Where(
-					tx.Where("owner_id = ?", principal.User.ID).Or("id IN (?)", participating),
-				)
-			}
+			// 先限定本人负责或参与的工作，多个年份使用日期范围的并集。
+			scope := monthlyworkUtils.VisibleRecords(tx, workspaceID, category, principal.User.ID)
 			if len(query.Years) > 0 {
 				years := tx.Where("1 = 0")
 				for _, year := range query.Years {
@@ -128,7 +113,7 @@ func List(
 	return result, err
 }
 
-// FilterOptions 提供当前空间完整的已有年份，月份使用固定的十二个月份。
+// FilterOptions 提供当前账号可见工作记录的年份，月份使用固定的十二个月份。
 func FilterOptions(
 	ctx context.Context,
 	workspaceID, category string,
@@ -139,10 +124,9 @@ func FilterOptions(
 		workspaceID,
 		actionFor(category, accessConstants.MonthlyWorkList),
 		event(workspaceID, category, 0),
-		func(tx *gorm.DB, _ accessModels.Principal, audit *auditModels.Event) error {
+		func(tx *gorm.DB, principal accessModels.Principal, audit *auditModels.Event) error {
 			var years []string
-			if err := tx.Model(&monthlyworkModels.Record{}).
-				Where("workspace_id = ? AND category = ?", workspaceID, category).
+			if err := monthlyworkUtils.VisibleRecords(tx, workspaceID, category, principal.User.ID).
 				Distinct().
 				Order("LEFT(date, 4) DESC").
 				Pluck("LEFT(date, 4)", &years).

@@ -25,7 +25,7 @@ type Record struct {
 // TableName 固定月度工作记录表。
 func (Record) TableName() string { return "monthly_work_records" }
 
-// Participant 保存记录自有的参与人明细，不参与授权推导。
+// Participant 保存记录自有的参与人关系，用于限定读取范围。
 type Participant struct {
 	WorkspaceID   string    `gorm:"primaryKey"`
 	MonthlyWorkID uint64    `gorm:"primaryKey;autoIncrement:false"`
@@ -78,9 +78,9 @@ type Info struct {
 	Input
 	// Participants 是按用户编号升序返回的参与人身份，不授予任何业务权限。
 	Participants []ParticipantInfo `json:"participants"`
-	// AttachmentIDs 是所属记录中已完成的附件编号。
+	// AttachmentIDs 是所属记录中已完成的附件编号，记录对当前账号不可见时为空。
 	AttachmentIDs []uint64 `json:"attachment_ids" example:"1,2"`
-	// Attachments 是可下载附件的元数据，仅在具备附件读取权限时返回，否则为空数组。
+	// Attachments 是可见工作中已完成的附件元数据，需要附件读取权限。
 	Attachments []File `json:"attachments"`
 	// OwnerName 是负责人的用户显示名称。
 	OwnerName string `json:"owner_name" example:"虚构负责人"`
@@ -109,18 +109,16 @@ type Query struct {
 	Years   []int
 	Months  []int
 	Keyword string
-	// Scopes 仅包含 mine 时查询当前用户负责或参与的工作，为空或含 all 时查询全部工作。
-	Scopes []string
 }
 
 type ListData struct {
-	// Items 是所选年份与月份范围内的全部记录，按日期和编号倒序排列，不分页。
+	// Items 是本人负责或参与且符合筛选的记录，按日期和编号倒序排列，不分页。
 	Items []Info `json:"items"`
 	// Total 是符合筛选条件的全部记录数。
 	Total int64 `json:"total" example:"1"`
 }
 
-// FilterOption 提供当前空间已有年份的固定筛选项。
+// FilterOption 提供当前账号可见工作记录的年份筛选项。
 type FilterOption struct {
 	// Value 是四位年份代码。
 	Value string `json:"value" example:"2026"`

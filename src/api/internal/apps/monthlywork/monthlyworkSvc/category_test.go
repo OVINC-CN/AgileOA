@@ -22,7 +22,7 @@ func checkWorkCategoryBoundaries(
 	t *testing.T,
 	server *echo.Echo,
 	workspaceID string,
-	userID uint64,
+	userID, otherOwnerID uint64,
 	cookie, admin *http.Cookie,
 	input monthlyworkModels.Input,
 	studentActions []string,
@@ -36,10 +36,15 @@ func checkWorkCategoryBoundaries(
 	request(t, server, "POST", cpcPath, monthlyworkModels.Request{Input: input}, cookie, 403)
 	request(t, server, "GET", cpcPath+"?year=2024", nil, admin, 403)
 	cpcActions := []string{
-		accessConstants.AccessWorkspace, accessConstants.CPCMonthlyWorkList,
-		accessConstants.CPCMonthlyWorkCreate, accessConstants.CPCMonthlyWorkUpdate,
-		accessConstants.CPCMonthlyWorkDelete, accessConstants.CPCMonthlyWorkImport,
+		accessConstants.AccessWorkspace,
+		accessConstants.CPCMonthlyWorkList,
+		accessConstants.CPCMonthlyWorkCreate,
+		accessConstants.CPCMonthlyWorkUpdate,
+		accessConstants.CPCMonthlyWorkDelete,
+		accessConstants.CPCMonthlyWorkImport,
 		accessConstants.CPCMonthlyWorkAttachmentRead,
+		accessConstants.CPCMonthlyWorkAttachmentUpload,
+		accessConstants.CPCMonthlyWorkAttachmentDelete,
 	}
 	grant(t, server, admin, workspaceID, userID, cpcActions)
 	request(t, server, "GET", base+"/monthly-work?year=2026", nil, cookie, 403)
@@ -91,7 +96,7 @@ func checkWorkCategoryBoundaries(
 	request(t, server, "GET", cpcPath+"/template", nil, cookie, 200)
 	request(t, server, "POST", cpcPath+"/import", monthlyworkModels.ImportRequest{
 		Content: spreadsheettest.Fixture(t, "日期,工作项目,负责人账号,详细说明,外部链接(JSON)\n"+
-			"2023-11-03,虚构党建导入,fixture.owner,,[]\n"),
+			"2023-11-03,虚构党建导入,fixture.work,,[]\n"),
 	}, cookie, 200)
 	studentList = decode[monthlyworkModels.ListData](t,
 		request(t, server, "GET", base+"/monthly-work?year=2023", nil, cookie, 200))
@@ -131,42 +136,41 @@ func checkWorkCategoryBoundaries(
 			t.Fatal("指定工作编号绕过了附件类别隔离")
 		}
 
-		// 我的工作按负责人识别，不将本人录入的他人工作混入，且继续复用类别列表权限。
+		// 旧范围参数不能扩大可见范围，年份选项和附件同样过滤他人工作。
 		item := []monthlyworkModels.Info{student, cpc}[index]
-		listPath := base + "/" + resource + "?year=" + item.Date[:4]
-		all := decode[monthlyworkModels.ListData](t,
-			request(t, server, "GET", listPath+"&scope=all", nil, cookie, 200))
-		mine := decode[monthlyworkModels.ListData](t,
-			request(t, server, "GET", listPath+"&scope=mine", nil, cookie, 200))
-		if all.Total == 0 || mine.Total != 0 || len(mine.Items) != 0 {
-			t.Fatal("我的工作包含了本人录入但由他人负责的记录")
+		workPath := base + "/" + resource
+		hiddenInput := item.Input
+		hiddenInput.OwnerID, hiddenInput.Date = otherOwnerID, "1902-11-03"
+		request(t, server, "POST", workPath,
+			monthlyworkModels.Request{Input: hiddenInput}, cookie, 200)
+		for _, query := range []string{"", "&scope=all", "&scope=mine&scope=all"} {
+			hidden := decode[monthlyworkModels.ListData](t,
+				request(t, server, "GET", workPath+"?year=1902"+query, nil, cookie, 200))
+			if hidden.Total != 0 || len(hidden.Items) != 0 {
+				t.Fatal("列表包含了本人录入但由他人负责的记录")
+			}
+		}
+		years := decode[monthlyworkModels.FilterOptionsData](t,
+			request(t, server, "GET", workPath+"/filter-options", nil, cookie, 200))
+		for _, year := range years.Years {
+			if year.Value == "1902" {
+				t.Fatal("年份选项包含仅他人可见的工作年份")
+			}
 		}
 		ownInput := item.Input
-		ownInput.OwnerID = userID
-		own := decode[monthlyworkModels.Info](t, request(t, server, "POST", base+"/"+resource,
+		ownInput.OwnerID, ownInput.Date = userID, "1901-11-03"
+		own := decode[monthlyworkModels.Info](t, request(t, server, "POST", workPath,
 			monthlyworkModels.Request{Input: ownInput}, cookie, 200))
-		mine = decode[monthlyworkModels.ListData](t, request(t, server, "GET",
-			listPath+"&scope=mine&month=11&keyword=fixture.work", nil, cookie, 200))
-		if mine.Total != 1 || len(mine.Items) != 1 || mine.Items[0].ID != own.ID {
-			t.Fatal("我的工作未同时限定当前用户、工作空间、类别、月份和关键词")
-		}
 		multiple := decode[monthlyworkModels.ListData](t, request(t, server, "GET",
-			base+"/"+resource+"?year=1900&year="+item.Date[:4]+
-				"&month=1&month=11&scope=mine&keyword=fixture.work", nil, cookie, 200))
+			workPath+"?year=1901&year=1902&month=1&month=11&keyword=虚构", nil, cookie, 200))
 		if multiple.Total != 1 || multiple.Items[0].ID != own.ID {
 			t.Fatal("年份和月份多选未取并集，或越过工作范围与类别边界")
 		}
 		unmatched := decode[monthlyworkModels.ListData](t, request(t, server, "GET",
-			listPath+"&scope=mine&keyword=fixture.owner", nil, cookie, 200))
+			workPath+"?year=1901&year=1902&scope=all&keyword=fixture.owner", nil, cookie, 200))
 		if unmatched.Total != 0 {
-			t.Fatal("负责人关键词绕过了我的工作筛选")
+			t.Fatal("负责人关键词绕过了工作可见范围")
 		}
-		updatedAll := decode[monthlyworkModels.ListData](t,
-			request(t, server, "GET", listPath+"&scope=all", nil, cookie, 200))
-		if updatedAll.Total != all.Total+1 {
-			t.Fatal("全部工作未包含本人和他人负责的记录")
-		}
-		request(t, server, "GET", listPath+"&scope=invalid", nil, cookie, 400)
 		request(t, server, "DELETE",
 			fmt.Sprintf("%s/%s/%d?revision=%d", base, resource, own.ID, own.Revision),
 			nil, cookie, 200)

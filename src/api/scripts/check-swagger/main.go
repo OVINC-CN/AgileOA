@@ -122,6 +122,19 @@ func check() error {
 		if method == "get" && strings.HasSuffix(path, "/download") {
 			expectedStatuses = []string{"200", "400"}
 		}
+		// 两类月度工作声明独立权限及记录范围相关的响应。
+		monthlyWorkPath := strings.Replace(path, "/cpc-monthly-work", "/monthly-work", 1)
+		switch monthlyWorkPath {
+		case "/v1/workspaces/{workspace_id}/monthly-work/{id}",
+			"/v1/workspaces/{workspace_id}/monthly-work/{work_id}/attachments",
+			"/v1/workspaces/{workspace_id}/monthly-work/{work_id}/attachments/complete",
+			"/v1/workspaces/{workspace_id}/attachments/monthly-work/{id}":
+			expectedStatuses = []string{"200", "403", "404"}
+		case "/v1/workspaces/{workspace_id}/attachments/monthly-work":
+			expectedStatuses = []string{"200", "403"}
+		case "/v1/workspaces/{workspace_id}/attachments/monthly-work/{id}/download":
+			expectedStatuses = []string{"200", "400", "403", "404"}
+		}
 		// 申报与审批接口显式声明身份、节点、版本及服务失败契约。
 		if strings.Contains(path, "/project-applications") ||
 			strings.Contains(path, "/project-reviews") {

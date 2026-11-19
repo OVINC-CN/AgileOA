@@ -24,6 +24,7 @@ import (
 	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/audit/auditModels"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/monthlywork/monthlyworkConstants"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/monthlywork/monthlyworkModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/monthlywork/monthlyworkUtils"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/notification/notificationModels"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/notification/notificationUtils"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/config"
@@ -46,12 +47,7 @@ func Save(
 	}
 	err := accessUtils.Workspace(ctx, workspaceID, action, event(workspaceID, category, id),
 		func(tx *gorm.DB, principal accessModels.Principal, audit *auditModels.Event) error {
-			input, err := clean(request.Input)
-			if err != nil {
-				return err
-			}
-
-			// 检查并发版本，负责人和参与人关联用户，不参与授权推导。
+			// 仅当前负责人可以编辑，转交以保存前的负责人和版本为准。
 			var previousOwner uint64
 			var previousParticipants []uint64
 			record := monthlyworkModels.Record{
@@ -60,7 +56,7 @@ func Save(
 				Revision:    1,
 			}
 			if id != 0 {
-				before, err := detail(tx, workspaceID, category, id, false)
+				before, err := detail(tx, workspaceID, category, id, principal.User.ID, false)
 				if err != nil {
 					return err
 				}
@@ -70,10 +66,16 @@ func Save(
 				audit.Before = snapshot(before)
 				previousOwner = before.OwnerID
 				previousParticipants = before.ParticipantIDs
-				if request.ParticipantIDs == nil {
-					input.ParticipantIDs = previousParticipants
-				}
 				record.ID, record.Revision = id, before.Revision+1
+			}
+
+			// 校验新的分派，未提交参与人时保留已存关联。
+			input, err := clean(request.Input)
+			if err != nil {
+				return err
+			}
+			if id != 0 && request.ParticipantIDs == nil {
+				input.ParticipantIDs = previousParticipants
 			}
 			if input.OwnerID != previousOwner {
 				if err := validateOwner(tx, workspaceID, input.OwnerID); err != nil {
@@ -90,8 +92,8 @@ func Save(
 				if err := tx.Create(&record).Error; err != nil {
 					return writeError(err)
 				}
-			} else if err := tx.Model(&monthlyworkModels.Record{}).
-				Where("workspace_id = ? AND category = ? AND id = ?", workspaceID, category, id).
+			} else if err := monthlyworkUtils.Records(tx, workspaceID, category).
+				Where("id = ? AND owner_id = ?", id, previousOwner).
 				Updates(map[string]any{
 					"date": record.Date, "work_item": record.WorkItem, "owner_id": record.OwnerID,
 					"description": record.Description, "links": record.Links,
@@ -113,12 +115,15 @@ func Save(
 			if err != nil {
 				return err
 			}
+			visible := record.OwnerID == principal.User.ID ||
+				slices.Contains(input.ParticipantIDs, principal.User.ID)
 			result, err = detail(
 				tx,
 				workspaceID,
 				category,
 				record.ID,
-				slices.Contains(
+				record.OwnerID,
+				visible && slices.Contains(
 					actions,
 					actionFor(category, accessConstants.MonthlyWorkAttachmentRead),
 				),
@@ -127,6 +132,9 @@ func Save(
 				return err
 			}
 			audit.ObjectID, audit.After = strconv.FormatUint(record.ID, 10), snapshot(result)
+			if !visible {
+				result.AttachmentIDs = []uint64{}
+			}
 			// 分配通知与工作及操作审计同事务，保存失败时不产生通知。
 			notifications, err = notifyAssignments(
 				tx, principal, record, previousOwner, input.ParticipantIDs, previousParticipants,
@@ -146,8 +154,8 @@ func Delete(ctx context.Context, workspaceID, category string, id, revision uint
 		workspaceID,
 		actionFor(category, accessConstants.MonthlyWorkDelete),
 		event(workspaceID, category, id),
-		func(tx *gorm.DB, _ accessModels.Principal, audit *auditModels.Event) error {
-			before, err := detail(tx, workspaceID, category, id, false)
+		func(tx *gorm.DB, principal accessModels.Principal, audit *auditModels.Event) error {
+			before, err := detail(tx, workspaceID, category, id, principal.User.ID, false)
 			if err != nil {
 				return err
 			}
@@ -158,7 +166,8 @@ func Delete(ctx context.Context, workspaceID, category string, id, revision uint
 
 			// 所属参与人关联及附件记录按外键级联清理。
 			return writeError(
-				tx.Where("workspace_id = ? AND category = ? AND id = ?", workspaceID, category, id).
+				monthlyworkUtils.Records(tx, workspaceID, category).
+					Where("id = ? AND owner_id = ?", id, principal.User.ID).
 					Delete(&monthlyworkModels.Record{}).Error,
 			)
 		},
@@ -219,11 +228,12 @@ func clean(input monthlyworkModels.Input) (monthlyworkModels.Input, error) {
 func detail(
 	tx *gorm.DB,
 	workspaceID, category string,
-	id uint64,
+	id, ownerID uint64,
 	includeFiles bool,
 ) (monthlyworkModels.Info, error) {
 	var record monthlyworkModels.Record
-	if err := tx.Where("workspace_id = ? AND category = ? AND id = ?", workspaceID, category, id).
+	if err := monthlyworkUtils.Records(tx, workspaceID, category).
+		Where("id = ? AND owner_id = ?", id, ownerID).
 		Take(&record).
 		Error; err != nil {
 		return monthlyworkModels.Info{}, lookupError(err)

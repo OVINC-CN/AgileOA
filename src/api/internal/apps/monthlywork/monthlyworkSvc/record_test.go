@@ -39,7 +39,7 @@ func TestMonthlyWorkTenantOwnerAndAuditBoundaries(t *testing.T) {
 	if err := connection.Model(&userModels.User{}).Count(&count).Error; err != nil || count != 0 {
 		t.Fatal("月度工作验收要求独立空数据库")
 	}
-	_, admin := fixture(t, "fixture.admin", strings.Repeat("a1", 32), true)
+	administrator, admin := fixture(t, "fixture.admin", strings.Repeat("a1", 32), true)
 	user, cookie := fixture(t, "fixture.work", strings.Repeat("b2", 32), false)
 	owner, ownerCookie := fixture(t, "fixture.owner", strings.Repeat("c3", 32), false)
 	otherOwner, _ := fixture(t, "fixture.other", strings.Repeat("d4", 32), false)
@@ -99,7 +99,7 @@ func TestMonthlyWorkTenantOwnerAndAuditBoundaries(t *testing.T) {
 		t.Fatal("负责人关联或多个链接未完整保存")
 	}
 	path := fmt.Sprintf("%s/monthly-work/%d", base, record.ID)
-	input.OwnerID = otherOwner.ID
+	input.OwnerID = user.ID
 	other := decode[monthlyworkModels.Info](t, request(t, server, "POST", otherBase+"/monthly-work",
 		monthlyworkModels.Request{Input: input}, cookie, 200))
 	input.OwnerID = owner.ID
@@ -115,8 +115,8 @@ func TestMonthlyWorkTenantOwnerAndAuditBoundaries(t *testing.T) {
 			200,
 		),
 	)
-	if listed.Total != 1 || len(listed.Items) != 1 || listed.Items[0].ID != record.ID {
-		t.Fatal("月份或负责人关键词查询越过租户边界")
+	if listed.Total != 0 {
+		t.Fatal("创建人读取了其他人负责的工作")
 	}
 	request(t, server, "PUT", fmt.Sprintf("%s/monthly-work/%d", otherBase, record.ID),
 		monthlyworkModels.Request{Input: input, Revision: record.Revision}, cookie, 404)
@@ -135,6 +135,24 @@ func TestMonthlyWorkTenantOwnerAndAuditBoundaries(t *testing.T) {
 		ownerCookie,
 		403,
 	)
+	claimed := input
+	claimed.OwnerID = user.ID
+	request(t, server, "PUT", path,
+		monthlyworkModels.Request{Input: claimed, Revision: record.Revision}, cookie, 404)
+	grant(t, server, admin, first.ID, administrator.ID, actions)
+	request(t, server, "PUT", path,
+		monthlyworkModels.Request{Input: input, Revision: record.Revision}, admin, 404)
+	adminList := decode[monthlyworkModels.ListData](t,
+		request(t, server, "GET", base+"/monthly-work?scope=all", nil, admin, 200))
+	if adminList.Total != 0 {
+		t.Fatal("系统管理员越过了工作可见范围")
+	}
+	grant(t, server, admin, first.ID, owner.ID, actions)
+	input.OwnerID = user.ID
+	record = decode[monthlyworkModels.Info](t, request(t, server, "PUT", path,
+		monthlyworkModels.Request{Input: input, Revision: record.Revision}, ownerCookie, 200))
+	request(t, server, "PUT", path,
+		monthlyworkModels.Request{Input: input, Revision: record.Revision}, ownerCookie, 404)
 	if err := connection.Where(
 		"workspace_id = ? AND user_id = ? AND action = ?",
 		first.ID,
@@ -154,19 +172,7 @@ func TestMonthlyWorkTenantOwnerAndAuditBoundaries(t *testing.T) {
 	)
 	grant(t, server, admin, first.ID, user.ID, actions)
 
-	// 用户外键和复合租户附件外键均保留删除保护。
-	if err := connection.Where("user_id = ?", owner.ID).
-		Delete(&userModels.Session{}).
-		Error; err != nil {
-		t.Fatal(err)
-	}
-	if err := connection.Where("user_id = ?", owner.ID).
-		Delete(&accessModels.Permission{}).
-		Error; err != nil {
-		t.Fatal(err)
-	}
-	assertForeignKey(t, connection.Where("id = ?", owner.ID).Delete(&userModels.User{}).Error, 1451)
-	grant(t, server, admin, first.ID, owner.ID, []string{accessConstants.AccessWorkspace})
+	// 附件归属受复合租户外键约束。
 	newFile := func(workspaceID string, workID uint64, hash string) attachmentModels.MonthlyWorkAttachment {
 		return attachmentModels.MonthlyWorkAttachment{
 			MonthlyWorkID: workID,
@@ -196,7 +202,7 @@ func TestMonthlyWorkTenantOwnerAndAuditBoundaries(t *testing.T) {
 		t,
 		server,
 		"DELETE",
-		path+fmt.Sprintf("?revision=%d", record.Revision),
+		path+fmt.Sprintf("?revision=%d", record.Revision-1),
 		nil,
 		cookie,
 		409,
@@ -207,8 +213,6 @@ func TestMonthlyWorkTenantOwnerAndAuditBoundaries(t *testing.T) {
 		withFiles.Items[0].Attachments[0].Filename != file.Filename {
 		t.Fatal("工作列表未返回当前记录所属附件的文件名")
 	}
-	assertForeignKey(t, connection.Where("workspace_id = ? AND id = ?", first.ID, record.ID).
-		Delete(&monthlyworkModels.Record{}).Error, 1451)
 	request(
 		t,
 		server,
@@ -321,12 +325,7 @@ func TestMonthlyWorkTenantOwnerAndAuditBoundaries(t *testing.T) {
 		t.Fatal("导入失败未整批回滚")
 	}
 
-	// 删除虚构文件记录后才允许删除工作，历史审计继续保留。
-	if err := connection.Where("workspace_id = ? AND id = ?", first.ID, file.ID).
-		Delete(&attachmentModels.MonthlyWorkAttachment{}).
-		Error; err != nil {
-		t.Fatal(err)
-	}
+	// 负责人删除工作后，所属附件元数据级联清理，历史审计继续保留。
 	request(
 		t,
 		server,
@@ -336,9 +335,14 @@ func TestMonthlyWorkTenantOwnerAndAuditBoundaries(t *testing.T) {
 		cookie,
 		200,
 	)
+	if err := connection.Model(&attachmentModels.MonthlyWorkAttachment{}).
+		Where("workspace_id = ? AND id = ?", first.ID, file.ID).
+		Count(&count).Error; err != nil || count != 0 {
+		t.Fatal("硬删除工作后未清理所属附件元数据")
+	}
 	if err := connection.Model(&auditModels.Record{}).
-		Where("workspace_id = ? AND instance_id = ? AND action_id = ?",
-			first.ID, fmt.Sprint(record.ID), accessConstants.MonthlyWorkDelete).
+		Where("workspace_id = ? AND instance_id = ? AND action_id = ? AND result_code = ?",
+			first.ID, fmt.Sprint(record.ID), accessConstants.MonthlyWorkDelete, 0).
 		Count(&count).
 		Error; err != nil ||
 		count != 1 {
@@ -402,9 +406,20 @@ func TestMonthlyWorkTenantOwnerAndAuditBoundaries(t *testing.T) {
 		t.Fatal("年份枚举未完整去重或排序")
 	}
 
-	checkWorkCategoryBoundaries(t, server, first.ID, user.ID, cookie, admin, input, actions)
+	checkWorkCategoryBoundaries(
+		t,
+		server,
+		first.ID,
+		user.ID,
+		owner.ID,
+		cookie,
+		admin,
+		input,
+		actions,
+	)
 	checkWorkParticipants(
-		t, server, first.ID, second.ID, user.ID, owner.ID, otherOwner.ID, cookie, admin, actions,
+		t, server, first.ID, second.ID, user.ID, owner.ID, otherOwner.ID,
+		cookie, ownerCookie, admin, actions,
 	)
 }
 

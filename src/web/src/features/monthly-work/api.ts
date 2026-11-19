@@ -86,7 +86,6 @@ export type WorkInput = z.infer<typeof inputSchema>;
 export type WorkLink = z.infer<typeof linkSchema>;
 export type WorkAttachment = z.infer<typeof fileSchema>;
 export interface WorkFilters {
-  scope: string[];
   year: string[];
   month: string[];
   keyword: string;

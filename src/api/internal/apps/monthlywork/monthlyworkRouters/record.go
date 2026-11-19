@@ -17,7 +17,7 @@ import (
 
 // List 查询月度工作时间轴记录。
 // @Summary 查询月度工作
-// @Description 年份与月份均支持多选，省略时不限制对应维度，一次返回筛选范围内的全部记录，不分页；按日期及编号倒序，附件元数据单独检查读取权限，审计提交后返回。
+// @Description 仅查询当前账号负责或参与的工作。年份与月份均支持多选，省略时不限制对应维度；按日期及编号倒序，不分页。附件元数据单独检查读取权限，审计提交后返回。
 // @Tags 月度工作
 // @Description 学生工作与党建工作通过各自路径访问，分别授权并隔离数据；请求体不接受类别字段。
 // @Produce json
@@ -25,7 +25,6 @@ import (
 // @Param year query []int false "年份，1900 至 9999；省略时不限制年份；支持多选，同一参数可重复传递" collectionFormat(multi)
 // @Param month query []int false "月份，1 至 12；省略时不限制月份；支持多选，同一参数可重复传递" collectionFormat(multi)
 // @Param keyword query string false "工作项目、负责人、参与人或详细说明关键词，最多 100 字符"
-// @Param scope query []string false "工作范围：mine 为当前用户负责或参与的工作，all 为全部工作，省略时兼容查询全部工作；支持多选，同一参数可重复传递" Enums(mine,all) collectionFormat(multi)
 // @Success 200 {object} monthlyworkModels.ListResponse "工作记录"
 // @Router /v1/workspaces/{workspace_id}/monthly-work [get]
 // @Router /v1/workspaces/{workspace_id}/cpc-monthly-work [get]
@@ -37,7 +36,6 @@ func List(c echo.Context) error {
 	}
 	query := monthlyworkModels.Query{
 		Keyword: strings.TrimSpace(c.QueryParam("keyword")),
-		Scopes:  queryfilter.Values(c.QueryParams()["scope"], false),
 	}
 	query.Years, err = queryfilter.Integers(c.QueryParams()["year"])
 	if err != nil {
@@ -80,7 +78,7 @@ func Create(c echo.Context) error {
 // Update 修改月度工作、参与人及外部链接集合。
 // @Summary 修改月度工作
 // @Description 仅向新负责人及新增参与人发送站内通知，跳过当前操作人，保留原指派或普通编辑不重复通知。
-// @Description 在工作空间锁内复核独立修改权限及并发版本；participant_ids 省略或传 null 时保留，空数组清空；原参与人停用或撤权后可保留，新增参与人按当前可用账号校验；附件通过独立接口管理。
+// @Description 在工作空间锁内复核当前负责人、独立修改权限及并发版本。负责人可以转交工作。participant_ids 省略或传 null 时保留，空数组清空；原参与人停用或撤权后可保留，新增参与人按当前可用账号校验；附件通过独立接口管理。
 // @Tags 月度工作
 // @Description 学生工作与党建工作通过各自路径访问，分别授权并隔离数据；请求体不接受类别字段。
 // @Accept json
@@ -90,6 +88,8 @@ func Create(c echo.Context) error {
 // @Param body body monthlyworkModels.Request true "完整字段及当前 revision"
 // @Param X-CSRF-Protection header string true "固定为 1" default(1)
 // @Success 200 {object} monthlyworkModels.InfoResponse "修改后的工作记录"
+// @Failure 403 {object} accessModels.EmptyResponse "没有修改权限"
+// @Failure 404 {object} accessModels.EmptyResponse "工作记录不存在或不可访问"
 // @Router /v1/workspaces/{workspace_id}/monthly-work/{id} [put]
 // @Router /v1/workspaces/{workspace_id}/cpc-monthly-work/{id} [put]
 func Update(c echo.Context) error {
@@ -126,9 +126,9 @@ func save(c echo.Context, update bool) error {
 	return response.Success(c, data)
 }
 
-// Delete 显式硬删除无附件的月度工作。
+// Delete 仅允许当前负责人硬删除月度工作。
 // @Summary 删除月度工作
-// @Description 检查当前版本，硬删除工作并级联删除参与人关联和附件记录，历史审计保留。
+// @Description 在工作空间锁内复核当前负责人、独立删除权限及并发版本，硬删除工作并级联删除参与人关联和附件记录，历史审计保留。
 // @Tags 月度工作
 // @Description 学生工作与党建工作通过各自路径访问，分别授权并隔离数据；请求体不接受类别字段。
 // @Produce json
@@ -137,6 +137,8 @@ func save(c echo.Context, update bool) error {
 // @Param revision query int true "当前并发版本"
 // @Param X-CSRF-Protection header string true "固定为 1" default(1)
 // @Success 200 {object} accessModels.EmptyResponse "删除成功"
+// @Failure 403 {object} accessModels.EmptyResponse "没有删除权限"
+// @Failure 404 {object} accessModels.EmptyResponse "工作记录不存在或不可访问"
 // @Router /v1/workspaces/{workspace_id}/monthly-work/{id} [delete]
 // @Router /v1/workspaces/{workspace_id}/cpc-monthly-work/{id} [delete]
 func Delete(c echo.Context) error {
@@ -279,7 +281,7 @@ func Owners(c echo.Context) error {
 
 // FilterOptions 查询当前空间完整的年份筛选项。
 // @Summary 月度工作年份筛选枚举
-// @Description 复用月度工作列表权限，仅查询当前空间已有记录的完整年份，供自定义选择器本地搜索。
+// @Description 复用月度工作列表权限，仅返回当前账号负责或参与的工作年份，供自定义选择器本地搜索。
 // @Tags 月度工作
 // @Description 学生工作与党建工作通过各自路径访问，分别授权并隔离数据；请求体不接受类别字段。
 // @Produce json

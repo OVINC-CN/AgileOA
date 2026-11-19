@@ -38,6 +38,13 @@ func TestMCPCatalogOnlyExposesWorkspaceJSONQueries(t *testing.T) {
 		if input["additionalProperties"] != false || tool.Tool.OutputSchema == nil {
 			t.Fatalf("工具缺少固定输入或响应模型：%s", tool.Tool.Name)
 		}
+		if tool.Path == mcpWorkspaceQueryPrefix+"/monthly-work" ||
+			tool.Path == mcpWorkspaceQueryPrefix+"/cpc-monthly-work" {
+			properties := input["properties"].(map[string]any)
+			if _, exists := properties["scope"]; exists {
+				t.Fatalf("月度工作工具仍接受已移除的工作范围：%s", tool.Tool.Name)
+			}
+		}
 	}
 	for _, path := range []string{
 		"/v1/workspaces", "/v1/workspaces/{workspace_id}",
@@ -45,6 +52,8 @@ func TestMCPCatalogOnlyExposesWorkspaceJSONQueries(t *testing.T) {
 		"/v1/workspaces/{workspace_id}/students/{id}/sensitive",
 		"/v1/workspaces/{workspace_id}/cpc-people/{id}/timeline",
 		"/v1/workspaces/{workspace_id}/monthly-work/owners",
+		"/v1/workspaces/{workspace_id}/monthly-work",
+		"/v1/workspaces/{workspace_id}/cpc-monthly-work",
 	} {
 		if !paths[path] {
 			t.Fatalf("遗漏了工作空间查询：%s", path)
