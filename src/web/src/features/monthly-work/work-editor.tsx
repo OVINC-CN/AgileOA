@@ -20,6 +20,7 @@ import {
 import { WorkAttachments } from '@/features/monthly-work/attachments';
 import { workAction, type WorkCategory } from '@/features/monthly-work/category';
 import { LinksEditor } from '@/features/monthly-work/links-editor';
+import type { CurrentUser } from '@/features/user/api';
 import { ApiError } from '@/lib/api';
 import { useApiMutation } from '@/lib/api-action';
 import { currentCalendarDate } from '@/lib/calendar';
@@ -30,14 +31,14 @@ export function WorkEditor({
   category = 'student',
   record,
   actions,
-  userID,
+  currentUser,
   onClose,
 }: {
   workspaceID: string;
   category?: WorkCategory;
   record: WorkRecord | null;
   actions: string[];
-  userID?: number | undefined;
+  currentUser?: Pick<CurrentUser, 'id' | 'display_name' | 'username'> | null | undefined;
   onClose: () => void;
 }) {
   const [original] = useState(record);
@@ -45,14 +46,14 @@ export function WorkEditor({
     record ?? {
       date: currentCalendarDate(),
       work_item: '',
-      owner_id: 0,
+      owner_id: currentUser?.id ?? 0,
       participant_ids: [],
       description: '',
       links: [],
     },
   );
   const [attachments, setAttachments] = useState(false);
-  const isOwner = original !== null && original.owner_id === userID;
+  const isOwner = original !== null && original.owner_id === currentUser?.id;
   const canReadFiles = actions.includes(workAction(category, 'attachment.read'));
   const canUpload = isOwner && actions.includes(workAction(category, 'attachment.upload'));
   const canManageFiles =
@@ -68,11 +69,17 @@ export function WorkEditor({
     label: item.label,
   }));
   const ownerOptions = [...availableOptions];
-  if (original && !ownerOptions.some((item) => item.value === String(original.owner_id))) {
-    ownerOptions.push({
-      value: String(original.owner_id),
-      label: formatIdentity(original.owner_name, original.owner_username),
-    });
+  const initialOwner = original
+    ? {
+        value: String(original.owner_id),
+        label: formatIdentity(original.owner_name, original.owner_username),
+      }
+    : currentUser && {
+        value: String(currentUser.id),
+        label: formatIdentity(currentUser.display_name, currentUser.username),
+      };
+  if (initialOwner && !ownerOptions.some((item) => item.value === initialOwner.value)) {
+    ownerOptions.push(initialOwner);
   }
   const participantOptions = [...availableOptions];
   for (const person of original?.participants ?? []) {

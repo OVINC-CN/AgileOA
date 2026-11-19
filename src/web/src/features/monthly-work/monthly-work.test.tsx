@@ -445,7 +445,7 @@ describe('月度工作', () => {
   );
 
   it.each(['student', 'cpc'] as const)(
-    '%s 负责人和多选参与人提交数字编号，多条链接保持顺序',
+    '%s 新增默认以本人为负责人，参与人提交数字编号，多条链接保持顺序',
     async (category) => {
       const bodies: WorkRequest[] = [];
       vi.stubGlobal(
@@ -459,6 +459,7 @@ describe('月度工作', () => {
                 { value: 4, label: '虚构参与人乙(fictional.second)' },
               ]),
             );
+          if (options.method !== 'POST') return Promise.resolve(listResponse(path, []));
           const input = JSON.parse(
             typeof options.body === 'string' ? options.body : '',
           ) as WorkRequest;
@@ -467,22 +468,36 @@ describe('月度工作', () => {
           return Promise.resolve(respond({ ...record, ...input, revision: 1 }));
         }),
       );
-      const close = vi.fn();
+      const client = createClient();
+      client.setQueryData(
+        currentUserKey,
+        userSchema.parse({
+          id: 2,
+          username: 'fictional.owner',
+          display_name: '虚构负责人',
+          email: '',
+          is_admin: false,
+          password_login_enabled: true,
+          password_change_required: false,
+        }),
+      );
       render(
-        <QueryClientProvider client={createClient()}>
-          <WorkEditor
+        <QueryClientProvider client={client}>
+          <MonthlyWorkPage
             workspaceID={first}
+            workspaceName="虚构空间"
             category={category}
-            record={null}
             actions={[workAction(category, 'list'), workAction(category, 'create')]}
-            onClose={close}
+            refresh={() => Promise.resolve()}
           />
         </QueryClientProvider>,
       );
       const user = userEvent.setup();
+      await user.click(screen.getByRole('button', { name: '新增工作' }));
+      expect(screen.getByRole('combobox', { name: '负责人' })).toHaveTextContent(
+        '虚构负责人(fictional.owner)',
+      );
       await user.type(screen.getByRole('textbox', { name: '工作项目' }), '虚构新增工作');
-      await user.click(screen.getByRole('combobox', { name: '负责人' }));
-      await user.click(await screen.findByRole('option', { name: '虚构负责人(fictional.owner)' }));
       await user.click(screen.getByRole('combobox', { name: '参与人' }));
       await user.click(screen.getByRole('option', { name: '虚构参与人甲(fictional.first)' }));
       await user.click(screen.getByRole('option', { name: '虚构参与人乙(fictional.second)' }));
@@ -496,7 +511,7 @@ describe('月度工作', () => {
       }
       await user.click(screen.getByRole('button', { name: '保存' }));
       await waitFor(() => {
-        expect(close).toHaveBeenCalledOnce();
+        expect(screen.queryByRole('dialog', { name: '新增月度工作' })).not.toBeInTheDocument();
       });
       expect(bodies).toHaveLength(1);
       expect(bodies[0]?.revision).toBe(0);
@@ -532,11 +547,15 @@ describe('月度工作', () => {
             category={category}
             record={record}
             actions={[workAction(category, 'list'), workAction(category, 'update')]}
+            currentUser={{ id: 3, username: 'fictional.first', display_name: '虚构参与人甲' }}
             onClose={() => undefined}
           />
         </QueryClientProvider>,
       );
       const user = userEvent.setup();
+      expect(screen.getByRole('combobox', { name: '负责人' })).toHaveTextContent(
+        '虚构负责人(fictional.owner)',
+      );
       expect(screen.getByRole('combobox', { name: '参与人' })).toHaveTextContent(
         '虚构参与人甲(fictional.first)、虚构参与人乙(fictional.second)',
       );
@@ -545,6 +564,7 @@ describe('月度工作', () => {
         expect(bodies).toHaveLength(1);
         expect(screen.getByRole('button', { name: '保存' })).toBeEnabled();
       });
+      expect(bodies[0]?.owner_id).toBe(record.owner_id);
       expect(bodies[0]?.participant_ids).toEqual([3, 4]);
       await user.click(screen.getByRole('combobox', { name: '参与人' }));
       await user.click(screen.getByRole('option', { name: '虚构参与人甲(fictional.first)' }));

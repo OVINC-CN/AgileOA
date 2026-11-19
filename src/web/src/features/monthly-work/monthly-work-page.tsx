@@ -459,7 +459,7 @@ function MonthlyWorkWorkspace({
           category={category}
           record={editing}
           actions={actions}
-          userID={userID}
+          currentUser={user}
           onClose={() => {
             setEditing(undefined);
           }}
