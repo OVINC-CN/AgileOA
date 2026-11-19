@@ -8,12 +8,9 @@ import (
 	"strings"
 
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
-	"golang.org/x/time/rate"
 
 	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessConstants"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/user/userConstants"
-	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/user/userSvc"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/user/userUtils"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/config"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/db"
@@ -91,27 +88,4 @@ func validOrigin(c echo.Context) bool {
 	sameOrigin := c.Scheme() + "://" + c.Request().Host
 	return origin == "" || origin == sameOrigin ||
 		slices.Contains(config.Config.HTTP.CORSAllowOrigins, origin)
-}
-
-func passwordLimiter(action string) echo.MiddlewareFunc {
-	// 按可信代理规则解析客户端 IP，使同一代理后的不同地址独立限流。
-	return middleware.RateLimiterWithConfig(middleware.RateLimiterConfig{
-		Store: middleware.NewRateLimiterMemoryStoreWithConfig(
-			middleware.RateLimiterMemoryStoreConfig{
-				Rate:      rate.Limit(config.Config.User.LoginRate),
-				Burst:     config.Config.User.LoginBurst,
-				ExpiresIn: config.Config.User.LoginLimiterTTL,
-			},
-		),
-		IdentifierExtractor: func(c echo.Context) (string, error) {
-			return c.RealIP(), nil
-		},
-		DenyHandler: rejectRateLimit(action),
-	})
-}
-
-func rejectRateLimit(action string) func(echo.Context, string, error) error {
-	return func(c echo.Context, _ string, _ error) error {
-		return userSvc.Reject(c.Request().Context(), action, http.StatusTooManyRequests)
-	}
 }

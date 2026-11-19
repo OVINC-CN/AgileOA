@@ -235,7 +235,7 @@
         },
         "/v1/login-captcha": {
             "post": {
-                "description": "每次尝试登录前获取新密文，默认按客户端 IP 每秒最多一次且连续一分钟最多五次。未启用验证码时 data 为 null。",
+                "description": "每次尝试登录前获取新密文。未启用验证码时 data 为 null。",
                 "produces": [
                     "application/json"
                 ],
@@ -321,7 +321,7 @@
                         }
                     },
                     "429": {
-                        "description": "请求过于频繁",
+                        "description": "同一组织账号请求发送验证码过于频繁",
                         "schema": {
                             "$ref": "#/definitions/userModels.EmptyResponse"
                         }
@@ -382,12 +382,6 @@
                     },
                     "401": {
                         "description": "验证码错误、已过期、已失效或用户名不匹配",
-                        "schema": {
-                            "$ref": "#/definitions/userModels.EmptyResponse"
-                        }
-                    },
-                    "429": {
-                        "description": "请求过于频繁",
                         "schema": {
                             "$ref": "#/definitions/userModels.EmptyResponse"
                         }
@@ -957,7 +951,7 @@
                         }
                     },
                     "429": {
-                        "description": "请求过于频繁",
+                        "description": "同一学生请求发送验证码过于频繁",
                         "schema": {
                             "$ref": "#/definitions/userModels.EmptyResponse"
                         }

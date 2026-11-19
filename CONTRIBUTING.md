@@ -301,7 +301,8 @@ make -C src/api swagger-check format-check lint build
 go test -race <测试包> -args --config <测试配置文件>
 ```
 
-账号验收可在测试 YAML 调整 `user.login_burst`，附件单元验证使用虚构 COS 和 STS；项目集成验收在本机临时 HTTP 服务中运行官方 SDK，不使用真实存储凭据。
+登录入口使用同一客户端 IP 连续发送请求，验证每个请求都按原有业务规则处理。
+附件单元验证使用虚构 COS 和 STS；项目集成验收在本机临时 HTTP 服务中运行官方 SDK，不使用真实存储凭据。
 权限、事务和删除变更检查跨租户、撤权复核、并发版本、删除保护及审计失败回滚。
 查询变更同时完成[执行计划验证](#查询与执行计划)。
 分区验收入口为 [check-audit-partitions.py](src/api/scripts/check-audit-partitions.py)，
