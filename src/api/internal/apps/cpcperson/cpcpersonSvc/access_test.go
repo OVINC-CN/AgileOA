@@ -89,7 +89,8 @@ func TestXLSXDoesNotOverrideDerivedOrStudentFields(t *testing.T) {
 	rows, err := parseWorkbook(
 		spreadsheettest.Fixture(
 			t,
-			"学号,姓名,发展阶段,所属党支部,党内职务,时间线模板\n000001,只读姓名,预备党员,只读支部,自定义职务,虚构时间线\n",
+			"学号,姓名,发展阶段,所属党支部,党内职务,时间线模板\n"+
+				"000001,只读姓名,中共预备党员,只读支部,自定义职务,虚构时间线\n",
 		),
 	)
 	if err != nil || len(rows) != 1 {

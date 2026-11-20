@@ -206,7 +206,7 @@ func summarize(
 		}
 	}
 
-	// 汇总姓名与人数，零值支部仍保留；合计只计算正式与预备党员。
+	// 汇总姓名与人数，零值支部仍保留；合计只计算中共党员和中共预备党员。
 	for index := range result.Items {
 		item := &result.Items[index]
 		values := names[item.PartyBranchID]

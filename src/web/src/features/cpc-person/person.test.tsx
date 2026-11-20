@@ -259,11 +259,11 @@ describe('党建人员', () => {
     expect(url.searchParams.has('student_status')).toBe(false);
     expect(result.filename).toBe('cpc-people-full.xlsx');
   });
-  it('党员数量合并统计，备注分别展示预备与正式人数，顺序符合业务要求', () => {
+  it('党员数量合并统计，备注分别展示中共预备党员和中共党员人数，顺序符合业务要求', () => {
     render(<PersonChart data={statistics} />);
     const cards = within(screen.getByLabelText('党建人员统计'));
     expect(cards.getByText('25')).toBeVisible();
-    expect(cards.getByText('预备党员 5 人，正式党员 20 人')).toBeVisible();
+    expect(cards.getByText('中共预备党员 5 人，中共党员 20 人')).toBeVisible();
     const labels = ['党员人数', '发展对象', '入党积极分子', '入党申请人'];
     for (let index = 1; index < labels.length; index += 1) {
       expect(

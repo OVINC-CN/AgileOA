@@ -14,16 +14,16 @@ var Fields = []cpcdashboardModels.Field{
 		Description: "党支部简称，保留当前空间全部支部", Example: "示例学生党支部",
 	},
 	{
-		Key: "full_members", Label: "正式党员", Type: "integer",
+		Key: "full_members", Label: "中共党员", Type: "integer",
 		Description: "在编且发展阶段为 full_member 的人数", Example: "34",
 	},
 	{
-		Key: "probationary_members", Label: "预备党员", Type: "integer",
+		Key: "probationary_members", Label: "中共预备党员", Type: "integer",
 		Description: "在编且发展阶段为 probationary_member 的人数", Example: "6",
 	},
 	{
 		Key: "total", Label: "合计", Type: "integer",
-		Description: "正式党员与预备党员人数之和", Example: "40",
+		Description: "中共党员与中共预备党员人数之和", Example: "40",
 	},
 	{
 		Key: "secretaries", Label: "支部书记", Type: "string",

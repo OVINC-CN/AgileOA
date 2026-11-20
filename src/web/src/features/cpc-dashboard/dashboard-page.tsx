@@ -26,8 +26,8 @@ import { useTableColumns } from '@/lib/table-columns';
 
 const columns = [
   { key: 'party_branch_name', label: '支部名称' },
-  { key: 'full_members', label: '正式党员' },
-  { key: 'probationary_members', label: '预备党员' },
+  { key: 'full_members', label: '中共党员' },
+  { key: 'probationary_members', label: '中共预备党员' },
   { key: 'total', label: '合计' },
   { key: 'secretaries', label: '支部书记' },
   { key: 'organization_members', label: '组织委员' },

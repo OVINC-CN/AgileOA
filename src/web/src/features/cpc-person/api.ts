@@ -14,7 +14,7 @@ export const stages = [
   { value: 'applicant', label: '入党申请人' },
   { value: 'activist', label: '入党积极分子' },
   { value: 'development_candidate', label: '发展对象' },
-  { value: 'probationary_member', label: '预备党员' },
+  { value: 'probationary_member', label: '中共预备党员' },
   { value: 'full_member', label: '中共党员' },
 ] as const;
 

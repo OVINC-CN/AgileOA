@@ -98,8 +98,8 @@ it('表格按参考列顺序将零人数留空，保留空值、英文逗号导�
   expect(screen.getByText('在编人员')).toBeVisible();
   expect(table.getAllByRole('columnheader').map((cell) => cell.textContent)).toEqual([
     '支部名称',
-    '正式党员',
-    '预备党员',
+    '中共党员',
+    '中共预备党员',
     '合计',
     '支部书记',
     '组织委员',
