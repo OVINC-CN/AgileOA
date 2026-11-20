@@ -98,9 +98,6 @@ API 侧先在业务事务中保存任务所需状态和操作审计，由 app �
 [0001_init.sql](src/api/support-files/sql/0001_init.sql) 保存当前完整结构，
 包括 `audit_events`、UTC 分区维护过程和每日 Event。
 修改表结构时直接编辑对应的 `CREATE TABLE` 定义，不在文件尾追加结构迁移或数据回填。
-COS 直传对已有库的独立结构调整见
-[0002_cos_direct_upload.sql](src/api/support-files/sql/0002_cos_direct_upload.sql)，
-其新表定义须与初始化脚本一致。
 初始化执行方式和分区维护见 [数据库与审计分区](README.md#数据库与审计分区)。
 
 静态核对时对照 Models 和查询，逐项检查字段类型、默认值、主键、索引列顺序、
