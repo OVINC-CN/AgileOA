@@ -262,7 +262,8 @@ func detailData(
 		values := offCampusValues(detail)
 		result.OffCampusDetails = &values
 	}
-	if record.Avatar != "" && storage.Enabled() && validAvatarKey(workspaceID, record.Avatar) {
+	// 头像路径在导入或上传时已校验，按本空间学生记录里的完整键签名。
+	if record.Avatar != "" && storage.Enabled() {
 		result.AvatarURL = storage.SignedCDNURL(tx.Statement.Context, record.Avatar)
 	}
 	return result, nil

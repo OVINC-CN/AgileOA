@@ -101,13 +101,19 @@ func TestTimelineNodeRejectsInvalidIdentityBeforeDatabaseAccess(t *testing.T) {
 }
 
 func TestTimelineNodeObjectKeepsStableIdentityAndRandomizesSameFilename(t *testing.T) {
+	original := config.Config.COS.Prefix
+	config.Config.COS.Prefix = "apps/agile"
+	t.Cleanup(func() { config.Config.COS.Prefix = original })
+
 	prefix := "workspaces/w7m2k9p4s6n8c3x5/cpc-timeline-templates/7/nodes/node_first"
 	first, err := randomObjectName(prefix, "虚构节点材料.pdf")
 	if err != nil {
 		t.Fatal(err)
 	}
 	second, err := randomObjectName(prefix, "虚构节点材料.pdf")
-	pattern := regexp.MustCompile("^" + regexp.QuoteMeta(prefix) + `/[0-9a-f]{10}/虚构节点材料\.pdf$`)
+	pattern := regexp.MustCompile(
+		"^apps/agile/" + regexp.QuoteMeta(prefix) + `/[0-9a-f]{10}/虚构节点材料\.pdf$`,
+	)
 	if err != nil || first == second || !pattern.MatchString(first) ||
 		!pattern.MatchString(second) {
 		t.Fatal("节点对象键丢失稳定标识、原始文件名，或同名上传覆盖了原对象")

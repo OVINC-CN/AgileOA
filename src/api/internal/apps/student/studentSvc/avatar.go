@@ -254,7 +254,11 @@ func avatarPrefix(workspaceID string) string {
 }
 
 func validAvatarKey(workspaceID, key string) bool {
-	relative, ok := strings.CutPrefix(key, avatarPrefix(workspaceID))
+	prefix := avatarPrefix(workspaceID)
+	relative, ok := strings.CutPrefix(key, prefix)
+	if !ok {
+		relative, ok = strings.CutPrefix(key, attachmentUtils.WithObjectPrefix(prefix))
+	}
 	if !ok || len(key) > studentConstants.AvatarMaxKeyBytes ||
 		!validText(key, studentConstants.AvatarMaxKeyBytes, false) ||
 		strings.ContainsAny(relative, `\%?#`) {

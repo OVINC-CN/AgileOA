@@ -13,6 +13,7 @@ import (
 	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessConstants"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessModels"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/access/accessUtils"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/attachment/attachmentUtils"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/audit/auditConstants"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/audit/auditModels"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/audit/auditSvc"
@@ -54,11 +55,12 @@ func Template(
 				header = append(header, field.Label)
 				event.ReturnedIDs = append(event.ReturnedIDs, field.Key)
 			}
+			avatarExample := attachmentUtils.WithObjectPrefix(avatarPrefix(workspaceID) + "照片.png")
 			notes := []string{
 				"# 导入说明：所有业务字段按文本读取和存储；模板已将所有列设置为文本，保留学号、证件和电话的前导零。",
 				"# 必填字段：" + strings.Join(required, "、") + "；其他列可以留空。",
 				"# 只新增学生，不覆盖已有学号；任何一行失败时整批不保存。",
-				"# 头像可留空，或填写 workspaces/" + workspaceID + "/students/avatars/照片.png 格式的原始 COS 对象键。",
+				"# 头像可留空，或填写原始 COS 对象键，例如 " + avatarExample + "。",
 				"# 在第一张工作表填写数据，请保留列名行，不要重复列名；填写说明不参与导入。",
 				"# 自由文本维度可填写已有名称或新名称；出生日期由身份证号码生成。",
 				"# 来校时间和毕（肄）业时间使用 YYYY-MM，例如 2026-09；年份为 1900 至 9999，可留空。",

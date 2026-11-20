@@ -106,6 +106,7 @@ type cosConfig struct {
 	Enabled             bool          `yaml:"enabled"`
 	Region              string        `yaml:"region"`
 	Bucket              string        `yaml:"bucket"`
+	Prefix              string        `yaml:"prefix"`
 	SecretID            string        `yaml:"secret_id"`
 	SecretKey           string        `yaml:"secret_key"`
 	UploadCredentialTTL time.Duration `yaml:"upload_credential_ttl"`

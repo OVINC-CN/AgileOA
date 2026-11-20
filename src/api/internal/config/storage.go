@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"net/url"
+	"path"
 	"regexp"
 	"strings"
 	"time"
@@ -30,6 +31,19 @@ func (c *config) validateStorage() error {
 		c.COS.UploadCredentialTTL%time.Second != 0 {
 		return errors.New("invalid COS limits, credential TTL, or timeout")
 	}
+
+	// 前缀用于正式对象键和 STS 资源，统一移除首尾斜杠并拒绝歧义路径。
+	c.COS.Prefix = strings.Trim(c.COS.Prefix, "/")
+	if prefix := c.COS.Prefix; prefix != "" &&
+		(!regexp.MustCompile(`^[A-Za-z0-9_.-]+(/[A-Za-z0-9_.-]+)*$`).MatchString(prefix) ||
+			path.Clean("/"+prefix) != "/"+prefix) {
+		return errors.New("cos.prefix must contain plain ASCII path segments")
+	}
+	// 保留桶根的旧版租户目录，避免新对象进入其他工作空间的旧版头像路径。
+	if c.COS.Prefix == "workspaces" || strings.HasPrefix(c.COS.Prefix, "workspaces/") {
+		return errors.New("cos.prefix must be outside the reserved workspaces directory")
+	}
+
 	if len(c.COS.AllowedContentTypes) == 0 {
 		return errors.New("upload content types must not be empty")
 	}

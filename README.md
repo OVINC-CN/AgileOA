@@ -173,6 +173,10 @@ email:
 
 启用附件时在 `cos` 配置腾讯云私有桶的 `bucket`（含 APPID）、`region`、
 `secret_id`、`secret_key`、`enabled` 和 `upload_credential_ttl`，并配置 CDN 签名。
+可选的 `cos.prefix` 为桶内目录，例如 `apps/agile`。新上传的附件、头像和克隆产生的附件
+自动保存到该目录下，例如 `apps/agile/workspaces/...`。留空时直接使用桶根路径。
+首尾斜杠会自动去除，每段可使用英文字母、数字、点、下划线和连字符。桶根 `workspaces` 为保留目录。
+修改前缀后，已有对象仍按保存的完整路径访问。若桶权限按目录授权，请同时保留对已有对象的访问权限。
 运行账号需要申请 STS 的 `GetFederationToken` 权限，及指定桶内的 `PutObject`、
 `HeadObject`、`DeleteObject`；模板克隆还需来源对象的 `GetObject`。
 COS、STS 使用腾讯云官方 SDK 和固定 HTTPS 端点，配置的 `request_timeout` 控制请求超时。
@@ -192,12 +196,6 @@ COS、STS 使用腾讯云官方 SDK 和固定 HTTPS 端点，配置的 `request_
 配置 Redis 后，附件下载和头像链接按 `cdn.signing_cache_ttl` 缓存签名，默认 `10m`，命中时不续期。
 缓存时间须短于 [EdgeOne 鉴权有效期](https://edgeone.ai/zh/document/46164)，给浏览器请求留出时间。
 Redis 未配置或缓存访问失败时按需签发。
-
-全新数据库执行 [0001_init.sql](src/api/support-files/sql/0001_init.sql)。
-已有旧版 S3 附件结构的数据库单独执行
-[0002_cos_direct_upload.sql](src/api/support-files/sql/0002_cos_direct_upload.sql)，
-再部署本版本；该文件将对象键列改为 `object_key`、增加附件声明类型和头像直传记录表，
-已有附件及头像的对象键和文件内容保持原值，已有库不得重跑初始化脚本。
 
 `cos.max_upload_bytes` 与前端 `fileMaxUploadBytes`、业务导入字节上限保持一致，默认 5242880；允许类型通过 `cos.allowed_content_types` 与前端 `fileAllowedContentTypes` 配套配置。Office 预览需要完整发布构建目录中的 WASM、Worker 资源，并正确提供 JavaScript 与 WASM 内容类型，处理时限由 `filePreviewTimeoutMs` 控制。
 

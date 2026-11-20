@@ -169,6 +169,7 @@ cos:
   enabled: false
   region: ap-guangzhou
   bucket: examplebucket-1250000000
+  prefix: "" # 桶内对象目录，例如 apps/agile；留空从桶根路径开始
   secret_id: ""
   secret_key: ""
   upload_credential_ttl: 30m # 直传 STS 有效期，1 秒至 2 小时；pending 不自动过期
