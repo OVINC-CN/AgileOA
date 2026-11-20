@@ -2,13 +2,13 @@ package cpcdashboardModels
 
 import "github.com/OVINC-CN/AgileOA/src/api/internal/response"
 
-// Counts 保存正式党员、预备党员及两者合计。
+// Counts 保存中共党员、中共预备党员及两者合计。
 type Counts struct {
-	// FullMembers 是在编正式党员人数。
+	// FullMembers 是在编中共党员人数。
 	FullMembers int64 `json:"full_members" example:"34"`
-	// ProbationaryMembers 是在编预备党员人数。
+	// ProbationaryMembers 是在编中共预备党员人数。
 	ProbationaryMembers int64 `json:"probationary_members" example:"6"`
-	// Total 是正式党员与预备党员人数之和，不包含其他发展阶段。
+	// Total 是中共党员与中共预备党员人数之和，不包含其他发展阶段。
 	Total int64 `json:"total" example:"40"`
 }
 

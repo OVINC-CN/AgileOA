@@ -2758,7 +2758,7 @@
         },
         "/v1/workspaces/{workspace_id}/cpc-dashboard": {
             "get": {
-                "description": "独立要求 cpc.dashboard.list，汇总当前空间全部党支部的在编人员。\n正式和预备党员分别计数，书记及委员从人员党内职务读取，导师从关联学生读取。\n姓名去重后以英文逗号拼接，保留空支部并提供人数合计，审计保存后返回。",
+                "description": "独立要求 cpc.dashboard.list，汇总当前空间全部党支部的在编人员。\n中共党员和中共预备党员分别计数，书记及委员从人员党内职务读取，导师从关联学生读取。\n姓名去重后以英文逗号拼接，保留空支部并提供人数合计，审计保存后返回。",
                 "produces": [
                     "application/json"
                 ],
@@ -16186,7 +16186,7 @@
                     "example": "虚构学生丁"
                 },
                 "full_members": {
-                    "description": "FullMembers 是在编正式党员人数。",
+                    "description": "FullMembers 是在编中共党员人数。",
                     "type": "integer",
                     "example": 34
                 },
@@ -16206,7 +16206,7 @@
                     "example": "示例学生党支部"
                 },
                 "probationary_members": {
-                    "description": "ProbationaryMembers 是在编预备党员人数。",
+                    "description": "ProbationaryMembers 是在编中共预备党员人数。",
                     "type": "integer",
                     "example": 6
                 },
@@ -16221,7 +16221,7 @@
                     "example": "虚构学生甲"
                 },
                 "total": {
-                    "description": "Total 是正式党员与预备党员人数之和，不包含其他发展阶段。",
+                    "description": "Total 是中共党员与中共预备党员人数之和，不包含其他发展阶段。",
                     "type": "integer",
                     "example": 40
                 }
@@ -16231,17 +16231,17 @@
             "type": "object",
             "properties": {
                 "full_members": {
-                    "description": "FullMembers 是在编正式党员人数。",
+                    "description": "FullMembers 是在编中共党员人数。",
                     "type": "integer",
                     "example": 34
                 },
                 "probationary_members": {
-                    "description": "ProbationaryMembers 是在编预备党员人数。",
+                    "description": "ProbationaryMembers 是在编中共预备党员人数。",
                     "type": "integer",
                     "example": 6
                 },
                 "total": {
-                    "description": "Total 是正式党员与预备党员人数之和，不包含其他发展阶段。",
+                    "description": "Total 是中共党员与中共预备党员人数之和，不包含其他发展阶段。",
                     "type": "integer",
                     "example": 40
                 }

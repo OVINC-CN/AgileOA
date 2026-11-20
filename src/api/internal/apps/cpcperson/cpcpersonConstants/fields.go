@@ -22,7 +22,7 @@ var Stages = []cpcpersonModels.Option{
 	{Value: "applicant", Label: "入党申请人"},
 	{Value: "activist", Label: "入党积极分子"},
 	{Value: "development_candidate", Label: "发展对象"},
-	{Value: "probationary_member", Label: "预备党员"},
+	{Value: "probationary_member", Label: "中共预备党员"},
 	{Value: "full_member", Label: "中共党员"},
 }
 
@@ -105,7 +105,7 @@ var StudentFields = []cpcpersonModels.Field{
 	{Key: "previous_graduation_month", Label: "毕（肄）业时间", Example: "2026-06"},
 }
 
-// StageValue 只在导入边界将中文显示名称转换为英文代码。
+// StageValue 将发展阶段的代码或名称统一为英文代码。
 func StageValue(value string) (string, bool) {
 	for _, stage := range Stages {
 		if value == stage.Value || value == stage.Label {

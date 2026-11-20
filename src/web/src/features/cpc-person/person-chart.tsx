@@ -15,8 +15,8 @@ export function PersonChart({ data }: { data: PersonStatistics | undefined }) {
         value={data ? (probationary ?? 0) + (full ?? 0) : undefined}
         note={
           data
-            ? `预备党员 ${formatNumber(probationary ?? 0)} 人，正式党员 ${formatNumber(full ?? 0)} 人`
-            : '预备党员与正式党员合计'
+            ? `中共预备党员 ${formatNumber(probationary ?? 0)} 人，中共党员 ${formatNumber(full ?? 0)} 人`
+            : '中共预备党员与中共党员合计'
         }
         icon={UsersRound}
         valueSize="large"

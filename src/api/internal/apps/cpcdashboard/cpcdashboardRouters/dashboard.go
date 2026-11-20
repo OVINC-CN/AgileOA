@@ -11,7 +11,7 @@ import (
 // Summary 查询各党支部在编党员数量和姓名汇总。
 // @Summary 查询党建数据仪表
 // @Description 独立要求 cpc.dashboard.list，汇总当前空间全部党支部的在编人员。
-// @Description 正式和预备党员分别计数，书记及委员从人员党内职务读取，导师从关联学生读取。
+// @Description 中共党员和中共预备党员分别计数，书记及委员从人员党内职务读取，导师从关联学生读取。
 // @Description 姓名去重后以英文逗号拼接，保留空支部并提供人数合计，审计保存后返回。
 // @Tags 党建数据仪表
 // @Produce json

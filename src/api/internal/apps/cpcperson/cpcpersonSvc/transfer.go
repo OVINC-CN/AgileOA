@@ -45,7 +45,9 @@ func Template(ctx context.Context, workspaceID string) (cpcpersonModels.FileData
 				"# 时间线模板填写本空间已存在的完整模板名称，导入时绑定并生成待处理节点。",
 				"# 状态可自定义，最多 8 字符，省略或留空时默认为在编，与学生状态独立。",
 				"# 党内职务可以自定义，不参与书记身份判断；基础信息请在学生信息中维护。",
-				"# 发展阶段：applicant 入党申请人、activist 入党积极分子、development_candidate 发展对象、probationary_member 预备党员、full_member 中共党员。",
+				"# 发展阶段：applicant 入党申请人、activist 入党积极分子、" +
+					"development_candidate 发展对象、probationary_member 中共预备党员、" +
+					"full_member 中共党员。",
 			}
 			var err error
 			result, err = xlsxFile("cpc-people-template.xlsx", [][]string{importHeader}, notes...)
