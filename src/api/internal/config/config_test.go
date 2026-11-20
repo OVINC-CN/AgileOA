@@ -33,6 +33,7 @@ func TestLoadYAMLIgnoresEnvironment(t *testing.T) {
 		content = strings.Replace(content, "name: agile-workspace", "name: test-workspace.v2_1", 1)
 		content = strings.Replace(content, "environment: development", "environment: staging", 1)
 		content = strings.Replace(content, "addr: 127.0.0.1:8080", "addr: 127.0.0.1:9080", 1)
+		content = strings.Replace(content, `  prefix: ""`, "  prefix: /apps/agile/", 1)
 		return strings.Replace(content, "request_timeout: 30s", "request_timeout: 12s", 1)
 	})
 
@@ -48,6 +49,9 @@ func TestLoadYAMLIgnoresEnvironment(t *testing.T) {
 	}
 	if cfg.Redis.Addr != "" || cfg.HTTP.ReadTimeout != 30*time.Second {
 		t.Fatal("环境变量覆盖了 YAML 配置，或独立超时字段相互影响")
+	}
+	if cfg.COS.Prefix != "apps/agile" {
+		t.Fatalf("COS 前缀解析错误：%q", cfg.COS.Prefix)
 	}
 }
 

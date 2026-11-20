@@ -173,6 +173,10 @@ email:
 
 启用附件时在 `cos` 配置腾讯云私有桶的 `bucket`（含 APPID）、`region`、
 `secret_id`、`secret_key`、`enabled` 和 `upload_credential_ttl`，并配置 CDN 签名。
+可选的 `cos.prefix` 为桶内目录，例如 `apps/agile`。新上传的附件、头像和克隆产生的附件
+自动保存到该目录下，例如 `apps/agile/workspaces/...`。留空时直接使用桶根路径。
+首尾斜杠会自动去除，每段可使用英文字母、数字、点、下划线和连字符。桶根 `workspaces` 为保留目录。
+修改前缀后，已有对象仍按保存的完整路径访问。若桶权限按目录授权，请同时保留对已有对象的访问权限。
 运行账号需要申请 STS 的 `GetFederationToken` 权限，及指定桶内的 `PutObject`、
 `HeadObject`、`DeleteObject`；模板克隆还需来源对象的 `GetObject`。
 COS、STS 使用腾讯云官方 SDK 和固定 HTTPS 端点，配置的 `request_timeout` 控制请求超时。
