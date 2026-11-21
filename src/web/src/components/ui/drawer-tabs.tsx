@@ -1,6 +1,7 @@
-import { NavigationMotion } from '@/components/navigation-motion';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import {
+  NavigationButtonGroup,
+  NavigationGroupButton,
+} from '@/components/ui/navigation-button-group';
 
 export function DrawerTabs({
   id,
@@ -20,28 +21,16 @@ export function DrawerTabs({
   className?: string;
 }) {
   return (
-    <NavigationMotion
-      value={value}
-      role="tablist"
-      aria-label={label}
-      className={cn(
-        'inline-flex max-w-full gap-1 overflow-x-auto rounded-lg border border-border bg-background/60 p-1 backdrop-blur-xl',
-        className,
-      )}
-    >
+    <NavigationButtonGroup value={value} role="tablist" aria-label={label} className={className}>
       {items.map((item, index) => (
-        <Button
+        <NavigationGroupButton
           key={item.value}
-          type="button"
-          variant="ghost"
-          size="sm"
           role="tab"
           id={`${id}-tab-${item.value}`}
           aria-selected={value === item.value}
           aria-controls={`${id}-panel-${item.value}`}
           tabIndex={value === item.value ? 0 : -1}
           disabled={disabled}
-          className="px-2 hover:bg-transparent aria-selected:text-accent-foreground"
           onClick={() => {
             onChange(item.value);
           }}
@@ -65,8 +54,8 @@ export function DrawerTabs({
           }}
         >
           {item.label}
-        </Button>
+        </NavigationGroupButton>
       ))}
-    </NavigationMotion>
+    </NavigationButtonGroup>
   );
 }

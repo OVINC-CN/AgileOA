@@ -235,7 +235,7 @@
     --table-row-surface: var(--table-hover);
   }
   table > tbody > tr[data-state='selected'],
-  table > tbody > tr:has([aria-expanded='true']) {
+  table > tbody > tr:has([aria-expanded='true']:not([aria-haspopup='menu'])) {
     --table-row-surface: var(--table-selected);
   }
   .table-pinned,
