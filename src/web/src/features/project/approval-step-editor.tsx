@@ -124,7 +124,6 @@ export function ApprovalStepEditor({
                 label={`第 ${String(index + 1)} 级处理人类型`}
                 options={approverKinds}
                 value={step.kind}
-                defaultValue={step.kind}
                 className="w-full"
                 onValueChange={(kind) => {
                   onChange(
@@ -151,7 +150,6 @@ export function ApprovalStepEditor({
                   className="w-full"
                   options={approvalSignModes}
                   value={step.sign_mode}
-                  defaultValue={step.sign_mode}
                   onValueChange={(sign_mode) => {
                     onChange(
                       steps.map((current, position) =>
@@ -217,7 +215,6 @@ function ApproverSelector({
     step.kind === 'class_position'
       ? step.class_positions
       : (step.kind === 'student' ? step.student_ids : step.user_ids).map(String);
-  const [initialValues] = useState(values);
   const options = [...(query.data?.items ?? [])];
   for (const option of step.reviewer_options) {
     if (!options.some((item) => item.value === option.value)) options.push(option);
@@ -237,7 +234,6 @@ function ApproverSelector({
         showAllOption={false}
         placeholder={`请选择${label}`}
         value={values}
-        defaultValue={initialValues}
         className="w-full"
         loading={query.isFetching}
         onSearchChange={setKeyword}

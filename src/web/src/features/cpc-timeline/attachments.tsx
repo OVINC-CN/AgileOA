@@ -104,12 +104,13 @@ function AttachmentPanel({
       {can('upload') || (data?.total ?? 0) > 0 ? (
         <section aria-label={`${node.name}的附件`} className="min-w-0 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h4 className="text-sm font-semibold">附件管理</h4>
+            <h4 className="text-sm font-medium">节点附件</h4>
             <div className="flex items-center gap-2">
               {canRead && !readOnly ? (
                 <Button
                   type="button"
                   variant="outline"
+                  size="sm"
                   disabled={upload.pending || remove.pending}
                   loading={refresh.pending || query.isPending}
                   onClick={() => {
@@ -145,7 +146,7 @@ function AttachmentPanel({
           </div>
           <div className="space-y-3">
             {can('upload') && !available ? (
-              <p className="text-xs text-muted-foreground">请先保存节点</p>
+              <p className="text-xs text-muted-foreground">保存模板后可上传节点附件</p>
             ) : null}
             {data?.items.length ? (
               <ul className="space-y-1 text-sm" aria-busy={loading}>
@@ -218,7 +219,7 @@ function AttachmentPanel({
             <>
               <Button
                 type="button"
-                variant="secondary"
+                variant="outline"
                 disabled={remove.pending}
                 onClick={() => {
                   setDeleting(null);

@@ -89,7 +89,7 @@ export function UserGrantPicker({
       busy={selection.pending}
       onClose={onClose}
       footer={
-        <Button variant="secondary" disabled={selection.pending} onClick={onClose}>
+        <Button variant="outline" disabled={selection.pending} onClick={onClose}>
           取消
         </Button>
       }

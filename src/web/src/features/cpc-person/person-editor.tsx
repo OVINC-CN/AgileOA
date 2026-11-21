@@ -141,7 +141,7 @@ export function PersonEditor({
       }}
       footer={
         <>
-          <Button type="button" variant="secondary" disabled={mutation.isPending} onClick={onClose}>
+          <Button type="button" variant="outline" disabled={mutation.isPending} onClick={onClose}>
             取消
           </Button>
           <Button type="submit" loading={mutation.isPending} disabled={!canSave}>
@@ -168,10 +168,6 @@ export function PersonEditor({
               disabled={blocked}
               onOpenChange={setStudentOpen}
               onSearchChange={setKeyword}
-              onSearchReset={async () => {
-                setKeyword('');
-                await client.query(personCandidateOptions(workspaceID, ''));
-              }}
               onValueChange={(value) => {
                 const next = candidateValues.find((item) => item.value === Number(value)) ?? null;
                 setSelected(next);

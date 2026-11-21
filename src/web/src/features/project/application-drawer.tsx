@@ -7,7 +7,9 @@ import { TableTimestamp } from '@/components/table-timestamp';
 import { AutoTextarea } from '@/components/ui/auto-textarea';
 import { Button } from '@/components/ui/button';
 import { Drawer } from '@/components/ui/drawer';
+import { DrawerSteps } from '@/components/ui/drawer-steps';
 import { DrawerTabs } from '@/components/ui/drawer-tabs';
+import { FileUploadButton } from '@/components/ui/file-upload-button';
 import { Label } from '@/components/ui/label';
 import { SearchSelect } from '@/components/ui/search-select';
 import { type Project, projectKey } from '@/features/project/api';
@@ -34,7 +36,7 @@ import { ApplicationContentVersions } from '@/features/project/application-conte
 import { ApplicationFlow, ApplicationHistory } from '@/features/project/application-timeline';
 import { validateUniqueDetailNames } from '@/features/project/detail-validation';
 import { useApiAction } from '@/lib/api-action';
-import { validateUploadFile } from '@/lib/file-upload';
+import { uploadHint, validateUploadFile } from '@/lib/file-upload';
 import { formatValue } from '@/lib/format';
 
 const emptyValues: ApplicationValues = { statement: '', rank: null, score: null };
@@ -89,6 +91,7 @@ export function ApplicationDrawer({
   const [decision, setDecision] = useState<'approve' | 'reject' | null>(null);
   const [comment, setComment] = useState('');
   const [deleting, setDeleting] = useState<ApplicationAttachment | null>(null);
+  const [uploadTarget, setUploadTarget] = useState<string | null>(null);
   // 项目配置刷新立即生效，编辑草稿及原并发版本保留到保存时复核。
   const record =
     savedRecord &&
@@ -115,6 +118,10 @@ export function ApplicationDrawer({
   const busy = action.pending || files.pending;
   const calculationEnabled =
     record?.score_calculation_enabled ?? project?.score_calculation?.enabled ?? false;
+  const needsSave =
+    !record ||
+    JSON.stringify(contentOf(values, items, calculationEnabled)) !==
+      JSON.stringify(storedContent(record));
   const projects = useQuery({
     ...studentProjectOptions(workspaceID, keyword),
     enabled: record === null,
@@ -207,22 +214,20 @@ export function ApplicationDrawer({
   const upload = (key: string, file: File) => {
     if (record && !record.can_edit) return;
     void files.run(`upload:${key}`, async () => {
-      validateUniqueDetailNames(items);
       validateUploadFile(file);
+      const content = formContent();
       if (!items.find((item) => item.key === key)?.name.trim())
         throw new Error('请选择子项名称后上传附件');
       let working = record;
+      let contentSaved = false;
       try {
-        const content = contentOf(
-          values,
-          items.filter((item) => item.name.trim() !== ''),
-          calculationEnabled,
-        );
-        if (working)
+        if (working && needsSave) {
           working = await changeApplication(workspaceID, scope, working, 'update', content, '');
-        else {
+          contentSaved = true;
+        } else if (!working) {
           if (!project) throw new Error('请选择申报项目');
           working = await createApplication(workspaceID, project.id, content, true);
+          contentSaved = true;
         }
         setRecord(working);
         await accept(
@@ -241,7 +246,13 @@ export function ApplicationDrawer({
             // 保留原始上传错误，后续刷新可重新读取待完成附件。
           }
         }
+        if (contentSaved) {
+          const message = cause instanceof Error ? cause.message : '上传失败，请重试';
+          throw new Error(`申报内容已保存，附件上传未完成。${message}`);
+        }
         throw cause;
+      } finally {
+        setUploadTarget(null);
       }
     });
   };
@@ -292,23 +303,41 @@ export function ApplicationDrawer({
         onClose={onClose}
         busy={busy}
         contentClassName="p-6 text-sm"
+        headerNavigation={
+          editing ? (
+            <DrawerSteps
+              id={tabsID}
+              label="申报内容分类"
+              value={tab}
+              items={[
+                { value: 'main', label: '主要信息' },
+                { value: 'flow', label: '审批流程' },
+                { value: 'history', label: '流转记录' },
+              ]}
+              onChange={setTab}
+              disabled={busy}
+            />
+          ) : undefined
+        }
         footerNavigation={
-          <DrawerTabs
-            id={tabsID}
-            label="申报内容分类"
-            value={tab}
-            items={[
-              { value: 'main', label: '主要信息' },
-              { value: 'flow', label: '审批流程' },
-              { value: 'history', label: '流转记录' },
-            ]}
-            onChange={setTab}
-          />
+          !editing ? (
+            <DrawerTabs
+              id={tabsID}
+              label="申报内容分类"
+              value={tab}
+              items={[
+                { value: 'main', label: '主要信息' },
+                { value: 'flow', label: '审批流程' },
+                { value: 'history', label: '流转记录' },
+              ]}
+              onChange={setTab}
+            />
+          ) : undefined
         }
         footer={
           editing ? (
             <>
-              <Button type="button" variant="secondary" disabled={busy} onClick={cancelEdit}>
+              <Button type="button" variant="outline" disabled={busy} onClick={cancelEdit}>
                 取消
               </Button>
               <Button
@@ -487,6 +516,11 @@ export function ApplicationDrawer({
                 onUpload: (file) => {
                   upload(key, file);
                 },
+                onPrepareUpload: needsSave
+                  ? () => {
+                      setUploadTarget(key);
+                    }
+                  : undefined,
                 onDelete: setDeleting,
               })}
             />
@@ -516,6 +550,44 @@ export function ApplicationDrawer({
           <ApplicationHistory record={record} />
         </section>
       </Drawer>
+      {uploadTarget ? (
+        <Drawer
+          title="保存内容并上传附件"
+          description={items.find((item) => item.key === uploadTarget)?.name ?? '申报子项附件'}
+          onClose={() => {
+            setUploadTarget(null);
+          }}
+          busy={files.pending}
+          footer={
+            <>
+              <Button
+                variant="outline"
+                disabled={files.pending}
+                onClick={() => {
+                  setUploadTarget(null);
+                }}
+              >
+                取消
+              </Button>
+              <FileUploadButton
+                label="选择文件并保存上传"
+                loading={files.isPending(`upload:${uploadTarget}`)}
+                disabled={busy}
+                onFileSelect={(file) => {
+                  upload(uploadTarget, file);
+                }}
+              />
+            </>
+          }
+        >
+          <div className="space-y-3 p-5 text-sm leading-5">
+            <p>选择文件后，将先保存当前申报说明、排名、分数及全部子项，再上传附件。</p>
+            <p>保存成功后，取消编辑或上传失败均不会撤销本次保存。</p>
+            {record?.status === 'pending' ? <p>修改申报内容或附件会清除本级已有签署。</p> : null}
+            <p className="text-xs text-muted-foreground">{uploadHint()}</p>
+          </div>
+        </Drawer>
+      ) : null}
       {decision ? (
         <Drawer
           title={decision === 'reject' ? '驳回申报' : '通过申报'}
@@ -531,7 +603,7 @@ export function ApplicationDrawer({
           footer={
             <>
               <Button
-                variant="secondary"
+                variant="outline"
                 disabled={action.pending}
                 onClick={() => {
                   setDecision(null);
@@ -582,7 +654,7 @@ export function ApplicationDrawer({
           footer={
             <>
               <Button
-                variant="secondary"
+                variant="outline"
                 disabled={files.pending}
                 onClick={() => {
                   setDeleting(null);

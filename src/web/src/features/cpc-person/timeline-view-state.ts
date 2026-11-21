@@ -91,7 +91,6 @@ export function usePersonTimelineView({
     templates,
     template,
     templateID,
-    defaultTemplateValue: defaultTemplate?.value ?? '',
     node,
     nodes,
     query,

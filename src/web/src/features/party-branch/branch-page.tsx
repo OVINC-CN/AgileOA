@@ -177,6 +177,23 @@ function BranchWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
       ),
     },
   ];
+  const refreshButton = (
+    <Button
+      type="button"
+      size="sm"
+      variant="ghost"
+      loading={refresh.pending || (canList && query.isPending)}
+      onClick={() => {
+        void refresh.run('refresh', async () => {
+          await refreshWorkspace();
+          if (canList) await fetchPage(pagination.page, pagination.pageSize);
+        });
+      }}
+    >
+      <RefreshCw aria-hidden="true" />
+      刷新
+    </Button>
+  );
   return (
     <section className="space-y-5" aria-labelledby="cpc-data-title">
       <header className="flex min-h-8 flex-wrap items-center justify-between gap-3">
@@ -248,19 +265,7 @@ function BranchWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
               新增党支部
             </Button>
           ) : null}
-          <Button
-            variant="outline"
-            loading={refresh.pending || (canList && query.isPending)}
-            onClick={() => {
-              void refresh.run('refresh', async () => {
-                await refreshWorkspace();
-                if (canList) await fetchPage(pagination.page, pagination.pageSize);
-              });
-            }}
-          >
-            <RefreshCw aria-hidden="true" />
-            刷新
-          </Button>
+          {!canList ? refreshButton : null}
         </div>
       </header>
       {query.error ? <ErrorMessage>{query.error.message}</ErrorMessage> : null}
@@ -315,6 +320,7 @@ function BranchWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
           </FilterPanel>
           <Card className="gap-0 overflow-hidden py-0">
             <ManagementTable
+              refreshAction={refreshButton}
               tableID="cpc-party-branches"
               columns={columns}
               data={data?.items ?? []}
@@ -367,7 +373,7 @@ function BranchWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
           footer={
             <>
               <Button
-                variant="secondary"
+                variant="outline"
                 disabled={reorder.pending}
                 onClick={() => {
                   setReordering(false);
@@ -456,7 +462,7 @@ function BranchWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
           footer={
             <>
               <Button
-                variant="secondary"
+                variant="outline"
                 disabled={remove.pending}
                 onClick={() => {
                   setDeleting(null);

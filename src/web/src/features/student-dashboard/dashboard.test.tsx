@@ -222,12 +222,12 @@ it('导出直接下载当前专业表，隐藏专业列后仍导出完整表格�
   vi.stubGlobal('fetch', fetchMock);
   renderDashboard(['student.dashboard.list', 'student.dashboard.export']);
   await screen.findByRole('rowheader', { name: '一班' });
-  const settings = screen.getAllByRole('button', { name: '显示字段' })[0];
+  const settings = screen.getAllByRole('button', { name: '列显示' })[0];
   if (!settings) throw new Error('缺少专业表字段设置');
   await userEvent.click(settings);
-  const drawer = within(screen.getByRole('dialog', { name: '显示字段' }));
+  const drawer = within(screen.getByRole('dialog', { name: '列显示' }));
   await userEvent.click(drawer.getByRole('checkbox', { name: '会计学' }));
-  await userEvent.click(drawer.getByRole('button', { name: '完成' }));
+  await userEvent.keyboard('{Escape}');
   expect(screen.queryByRole('columnheader', { name: /^会计学/ })).not.toBeInTheDocument();
   const download = screen.getByRole('button', { name: '导出' });
   await userEvent.click(download);
@@ -288,6 +288,7 @@ it('链接直达住宿表，表头多选立即筛选，导出沿用四项条件�
   const user = userEvent.setup();
   expect(screen.getByRole('link', { name: '住宿信息表', current: 'page' })).toBeVisible();
   let table = within(screen.getByRole('table', { name: '住宿信息表' }));
+  expect(screen.queryByLabelText('已应用筛选')).not.toBeInTheDocument();
   await table.findByRole('cell', { name: '0102' });
   expect(table.getByLabelText('住宿类型共有2个唯一选项')).toHaveTextContent('（2）');
   expect(table.getByLabelText('宿舍号共有2个唯一选项')).toHaveTextContent('（2）');
@@ -312,6 +313,8 @@ it('链接直达住宿表，表头多选立即筛选，导出沿用四项条件�
   });
   expect(table.getByLabelText('住宿类型共有1个唯一选项')).toHaveTextContent('（1）');
   expect(table.getByLabelText('宿舍号共有1个唯一选项')).toHaveTextContent('（1）');
+  expect(within(screen.getByLabelText('已应用筛选')).getAllByRole('button')).toHaveLength(4);
+  expect(table.getByRole('combobox', { name: '宿舍号' })).toHaveTextContent('1');
 
   await user.click(screen.getByRole('link', { name: '学生专业表' }));
   await user.click(screen.getByRole('link', { name: '住宿信息表' }));
@@ -332,7 +335,29 @@ it('链接直达住宿表，表头多选立即筛选，导出沿用四项条件�
   expect(exported?.searchParams.getAll('room')).toEqual(['0101']);
   expect(fetchMock.mock.calls.map(([path]) => path)).not.toContain(`${base}/export`);
 
-  await user.click(screen.getByRole('button', { name: '重置' }));
+  // 隐藏列后仍显示生效条件，并可单独清除，不影响其他筛选。
+  await user.click(screen.getByRole('button', { name: '列显示' }));
+  await user.click(screen.getByRole('checkbox', { name: '宿舍号' }));
+  await user.keyboard('{Escape}');
+  expect(table.queryByRole('combobox', { name: '宿舍号' })).not.toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: '移除筛选 宿舍号：0101' }));
+  const updated = fetchMock.mock.calls
+    .map(([path]) => new URL(path, 'https://example.com'))
+    .filter((url) => url.pathname.endsWith('/accommodation'))
+    .at(-1);
+  expect(updated?.searchParams.getAll('room')).toEqual([]);
+  expect(updated?.searchParams.getAll('accommodation_type')).toEqual(['on_campus']);
+  expect(updated?.searchParams.getAll('campus')).toEqual(['虚构园区']);
+  expect(updated?.searchParams.getAll('building')).toEqual(['1号楼']);
+
+  await user.click(screen.getByRole('button', { name: '列显示' }));
+  await user.click(screen.getByRole('button', { name: '恢复全部' }));
+  await user.keyboard('{Escape}');
+  await table.findByRole('cell', { name: '0102' });
+  for (const condition of ['住宿类型：校内', '住宿园区：虚构园区', '宿舍楼：1号楼']) {
+    await user.click(screen.getByRole('button', { name: `移除筛选 ${condition}` }));
+  }
+  expect(screen.queryByLabelText('已应用筛选')).not.toBeInTheDocument();
   await table.findByRole('cell', { name: '0102' });
   expect(table.getByLabelText('宿舍号共有2个唯一选项')).toHaveTextContent('（2）');
   expect(table.getAllByRole('row')).toHaveLength(5);

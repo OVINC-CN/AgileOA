@@ -1,4 +1,6 @@
 import { InRuleTree } from '@/components/in-rule-tree';
+import { Badge } from '@/components/ui/badge';
+import { ProjectEnabledBadge } from '@/features/project/project-status';
 import {
   rankingDimensionFields,
   type ScoreCalculation,
@@ -11,21 +13,31 @@ const fieldLabels = Object.fromEntries(
 );
 
 export function ScoreCalculationDetail({ value }: { value: ScoreCalculation | null | undefined }) {
+  const rankingLabels = rankingDimensionFields
+    .filter(({ value: field }) => value?.ranking_dimensions.includes(field))
+    .map(({ label }) => label);
   return (
     <div className="space-y-5 text-sm">
       <dl className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1">
           <dt className="text-xs text-muted-foreground">总分计算</dt>
-          <dd>{value?.enabled ? '开启' : '关闭'}</dd>
+          <dd>
+            <ProjectEnabledBadge enabled={value?.enabled ?? false} />
+          </dd>
         </div>
         {value?.enabled ? (
           <div className="space-y-1">
             <dt className="text-xs text-muted-foreground">排名维度</dt>
-            <dd>
-              {rankingDimensionFields
-                .filter(({ value: field }) => value.ranking_dimensions.includes(field))
-                .map(({ label }) => label)
-                .join('、') || '全奖项统一排名'}
+            <dd className="flex flex-wrap gap-1">
+              {(rankingLabels.length ? rankingLabels : ['全奖项统一排名']).map((label) => (
+                <Badge
+                  key={label}
+                  variant="outline"
+                  className="bg-secondary/70 text-foreground-secondary"
+                >
+                  {label}
+                </Badge>
+              ))}
             </dd>
           </div>
         ) : null}

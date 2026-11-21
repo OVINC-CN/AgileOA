@@ -18,6 +18,7 @@ interface Props {
   title: string;
   description?: string | undefined;
   truncateDescription?: boolean;
+  headerNavigation?: ReactNode;
   footerNavigation?: ReactNode;
   children: ReactNode;
   footer?: ReactNode;
@@ -38,6 +39,7 @@ export function Drawer({
   title,
   description,
   truncateDescription = false,
+  headerNavigation,
   footerNavigation,
   children,
   footer,
@@ -114,7 +116,7 @@ export function Drawer({
     <>
       <div
         className={cn(
-          'flex shrink-0 items-center justify-between gap-3 border-b border-border-subtle px-6 py-3',
+          'flex shrink-0 items-center justify-between gap-3 border-b border-border-subtle px-4 py-3 sm:px-6',
           viewportScroll && 'sticky top-0 z-10 bg-popover backdrop-blur-xl',
         )}
       >
@@ -149,6 +151,9 @@ export function Drawer({
           </Button>
         </Dialog.Close>
       </div>
+      {headerNavigation ? (
+        <div className="shrink-0 border-b border-border-subtle px-5 py-4">{headerNavigation}</div>
+      ) : null}
       <div
         className={cn(
           viewportScroll ? 'shrink-0' : 'min-h-0 flex-1 overflow-y-auto overscroll-contain',
@@ -160,8 +165,10 @@ export function Drawer({
       {footer || footerNavigation ? (
         <div
           className={cn(
-            'flex shrink-0 flex-wrap items-center justify-end border-t border-border-subtle px-6',
-            footerNavigation ? 'gap-2 py-2' : 'gap-3 py-3',
+            'flex shrink-0 flex-wrap items-center justify-end border-t border-border-subtle px-4 sm:px-6',
+            footerNavigation
+              ? 'gap-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))]'
+              : 'gap-2 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] sm:gap-3',
           )}
         >
           {footerNavigation ? (

@@ -1,4 +1,4 @@
-import { Paperclip, Plus, Trash2 } from 'lucide-react';
+import { Paperclip, Plus, Trash2, Upload } from 'lucide-react';
 
 import { AttachmentFilename } from '@/components/attachment-filename';
 import { DetailValue } from '@/components/detail-value';
@@ -37,6 +37,7 @@ interface FileProps {
   uploading: boolean;
   deleting: (id: number) => boolean;
   onUpload?: (file: File) => void;
+  onPrepareUpload?: (() => void) | undefined;
   onDelete?: (file: ApplicationAttachment) => void;
 }
 
@@ -92,6 +93,7 @@ export function ApplicationFiles({
   uploading,
   deleting,
   onUpload,
+  onPrepareUpload,
   onDelete,
 }: FileProps & { files: ApplicationAttachment[] }) {
   return (
@@ -129,12 +131,25 @@ export function ApplicationFiles({
       ))}
       {onUpload ? (
         <div className="flex flex-wrap items-center gap-2">
-          <FileUploadButton
-            label="上传附件"
-            loading={uploading}
-            disabled={busy}
-            onFileSelect={onUpload}
-          />
+          {onPrepareUpload ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={busy}
+              onClick={onPrepareUpload}
+            >
+              <Upload aria-hidden="true" />
+              保存内容并上传
+            </Button>
+          ) : (
+            <FileUploadButton
+              label="上传附件"
+              loading={uploading}
+              disabled={busy}
+              onFileSelect={onUpload}
+            />
+          )}
           <span className="text-xs text-muted-foreground">{uploadHint()}</span>
         </div>
       ) : null}

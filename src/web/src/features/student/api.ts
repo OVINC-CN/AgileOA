@@ -64,15 +64,31 @@ const writeInputSchema = inputSchema.superRefine((values, context) => {
   }
 });
 
+export class StudentValidationError extends Error {
+  readonly field: string;
+
+  constructor(message: string, field: string) {
+    super(message);
+    this.name = 'StudentValidationError';
+    this.field = field;
+  }
+}
+
 function parseStudentInput(values: StudentInput) {
   const parsed = writeInputSchema.safeParse(values);
-  if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? '学生信息无效');
+  if (!parsed.success) {
+    const issue = parsed.error.issues[0];
+    throw new StudentValidationError(
+      issue?.message ?? '学生信息无效',
+      String(issue?.path[0] ?? ''),
+    );
+  }
   return parsed.data;
 }
 
 function validateSensitiveInput(values: SensitiveData['values'] | undefined) {
   if (!values?.find((item) => item.field === 'identity_number')?.value.trim()) {
-    throw new Error('身份证号码不能为空');
+    throw new StudentValidationError('身份证号码不能为空', 'identity_number');
   }
   return values;
 }
@@ -250,9 +266,9 @@ export const studentStatisticsOptions = (workspaceID: string, filters: StudentFi
     retry: false,
   });
 
-export const studentSensitiveOptions = (workspaceID: string, id: number) =>
+export const studentSensitiveOptions = (workspaceID: string, id: number, revision?: number) =>
   queryOptions({
-    queryKey: [...studentKey(workspaceID), 'sensitive', id],
+    queryKey: [...studentKey(workspaceID), 'sensitive', id, revision],
     queryFn: ({ signal }) =>
       apiGet(`${base(workspaceID)}/${String(id)}/sensitive`, sensitiveSchema, signal),
     staleTime: 0,
@@ -303,9 +319,6 @@ export function deleteStudent(workspaceID: string, student: Student) {
     `${base(workspaceID)}/${String(student.id)}?revision=${String(student.revision)}`,
     z.null(),
   );
-}
-export function readStudentSensitive(workspaceID: string, id: number) {
-  return apiGet(`${base(workspaceID)}/${String(id)}/sensitive`, sensitiveSchema);
 }
 export function updateStudentSensitive(
   workspaceID: string,

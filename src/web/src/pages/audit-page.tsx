@@ -76,7 +76,11 @@ export function AuditPage() {
       client.query({ ...auditStatisticsOptions(next), staleTime: 0 }),
     ]);
   };
-  const { draft, setDraft, changeFilters } = useFilterForm(defaultAuditFilters, applyFilters);
+  const { draft, setDraft, changeFilters, hasUnappliedChanges } = useFilterForm(
+    defaultAuditFilters,
+    applyFilters,
+    filters,
+  );
   const columns = useMemo<ColumnDef<AuditRow>[]>(
     () => [
       { accessorKey: 'id', header: 'ID' },
@@ -187,14 +191,11 @@ export function AuditPage() {
   );
   return (
     <section className="space-y-6" aria-labelledby="audit-title">
-      <ManagementPageHeader id="audit-title" title="审计日志">
-        <RefreshButton
-          onRefresh={() => client.invalidateQueries({ queryKey: ['management', 'audit'] })}
-        />
-      </ManagementPageHeader>
+      <ManagementPageHeader id="audit-title" title="审计日志" />
       <AuditCharts data={stats.data} loading={stats.isPending} />
       {stats.error ? <ErrorMessage>{stats.error.message}</ErrorMessage> : null}
       <FilterPanel
+        hasUnappliedChanges={hasUnappliedChanges}
         onSubmit={(event) => {
           event.preventDefault();
           void searchAction.run('search', () => applyFilters(draft));
@@ -357,7 +358,6 @@ export function AuditPage() {
             label="操作"
             className="w-full"
             value={draft.action_id}
-            defaultValue={defaultAuditFilters.action_id}
             options={actionOptions}
             onValueChange={(action_id) => {
               if (action_id.length > 1 && action_id.includes(excludeAuditAction)) {
@@ -376,6 +376,11 @@ export function AuditPage() {
       <Card className="gap-0 overflow-hidden border-border py-0">
         {list.error ? <ErrorMessage>{list.error.message}</ErrorMessage> : null}
         <ManagementTable
+          refreshAction={
+            <RefreshButton
+              onRefresh={() => client.invalidateQueries({ queryKey: ['management', 'audit'] })}
+            />
+          }
           tableID="system-audit"
           columns={columns}
           data={list.data?.items ?? emptyRows}

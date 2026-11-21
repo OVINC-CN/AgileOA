@@ -67,7 +67,7 @@ it('图表数据固定展示全部字段，下载 XLSX 以文本保留数值、�
   );
   const user = userEvent.setup();
   await user.click(screen.getByText('查看人数数据'));
-  expect(screen.queryByRole('button', { name: '显示字段' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: '列显示' })).not.toBeInTheDocument();
   expect(screen.getAllByRole('columnheader').map((header) => header.textContent)).toEqual([
     '归属年份',
     '奖项',

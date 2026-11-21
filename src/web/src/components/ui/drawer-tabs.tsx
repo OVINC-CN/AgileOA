@@ -1,5 +1,6 @@
 import { NavigationMotion } from '@/components/navigation-motion';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 export function DrawerTabs({
   id,
@@ -8,6 +9,7 @@ export function DrawerTabs({
   items,
   onChange,
   disabled = false,
+  className,
 }: {
   id: string;
   label: string;
@@ -15,13 +17,17 @@ export function DrawerTabs({
   items: readonly { value: string; label: string }[];
   onChange: (value: string) => void;
   disabled?: boolean;
+  className?: string;
 }) {
   return (
     <NavigationMotion
       value={value}
       role="tablist"
       aria-label={label}
-      className="inline-flex max-w-full gap-1 overflow-x-auto rounded-lg border border-border bg-background/60 p-1 backdrop-blur-xl"
+      className={cn(
+        'inline-flex max-w-full gap-1 overflow-x-auto rounded-lg border border-border bg-background/60 p-1 backdrop-blur-xl',
+        className,
+      )}
     >
       {items.map((item, index) => (
         <Button

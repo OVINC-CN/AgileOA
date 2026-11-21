@@ -1,16 +1,22 @@
 import { Badge } from '@/components/ui/badge';
 
-export function ProjectSelfApplyBadge({ allowed }: { allowed: boolean }) {
+export function ProjectEnabledBadge({
+  enabled,
+  enabledLabel = '开启',
+}: {
+  enabled: boolean;
+  enabledLabel?: string;
+}) {
   return (
     <Badge
       variant="outline"
       className={
-        allowed
+        enabled
           ? 'border-success-border/80 bg-success text-success-foreground'
           : 'border-border bg-secondary/70 text-foreground-secondary'
       }
     >
-      {allowed ? '允许' : '关闭'}
+      {enabled ? enabledLabel : '关闭'}
     </Badge>
   );
 }

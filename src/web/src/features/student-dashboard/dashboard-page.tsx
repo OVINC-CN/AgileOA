@@ -1,6 +1,6 @@
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Download, RefreshCw } from 'lucide-react';
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 
 import { TableColumnSettings } from '@/components/table-column-settings';
 import { Button } from '@/components/ui/button';
@@ -76,6 +76,30 @@ function DashboardWorkspace({ workspaceID, actions, refresh: refreshWorkspace }:
     return <Card className="p-6 text-sm text-muted-foreground">暂无查看数据仪表的权限</Card>;
   }
 
+  const refreshButton = (
+    <Button
+      type="button"
+      size="sm"
+      variant="ghost"
+      loading={refresh.pending || query.isPending || accommodation.isPending}
+      onClick={() => {
+        void refresh.run('refresh', async () => {
+          await refreshWorkspace();
+          await Promise.all([
+            client.query({ ...dashboardOptions(workspaceID), staleTime: 0 }),
+            client.query({
+              ...accommodationSummaryOptions(workspaceID, filters),
+              staleTime: 0,
+            }),
+            client.query({ ...accommodationFilterOptions(workspaceID), staleTime: 0 }),
+          ]);
+        });
+      }}
+    >
+      <RefreshCw aria-hidden="true" />
+      刷新
+    </Button>
+  );
   return (
     <section aria-labelledby="student-dashboard-title" className="min-w-0 space-y-5">
       <header className="flex min-h-8 flex-wrap items-center justify-between gap-3">
@@ -118,35 +142,21 @@ function DashboardWorkspace({ workspaceID, actions, refresh: refreshWorkspace }:
               </Button>
             </span>
           ) : null}
-          <Button
-            variant="outline"
-            loading={refresh.pending || query.isPending || accommodation.isPending}
-            onClick={() => {
-              void refresh.run('refresh', async () => {
-                await refreshWorkspace();
-                await Promise.all([
-                  client.query({ ...dashboardOptions(workspaceID), staleTime: 0 }),
-                  client.query({
-                    ...accommodationSummaryOptions(workspaceID, filters),
-                    staleTime: 0,
-                  }),
-                  client.query({ ...accommodationFilterOptions(workspaceID), staleTime: 0 }),
-                ]);
-              });
-            }}
-          >
-            <RefreshCw aria-hidden="true" />
-            刷新
-          </Button>
         </div>
       </header>
       <div role="region" id={`student-dashboard-panel-${tab}`} aria-label={selected?.label}>
         {tab === 'majors' ? (
           <Card className="gap-0 overflow-hidden py-0">
-            <SummaryTable workspaceID={workspaceID} data={data} loading={query.isFetching} />
+            <SummaryTable
+              refreshAction={refreshButton}
+              workspaceID={workspaceID}
+              data={data}
+              loading={query.isFetching}
+            />
           </Card>
         ) : (
           <AccommodationTable
+            refreshAction={refreshButton}
             workspaceID={workspaceID}
             data={accommodationData}
             loading={accommodation.isFetching}
@@ -165,10 +175,12 @@ function SummaryTable({
   workspaceID,
   data,
   loading,
+  refreshAction,
 }: {
   workspaceID: string;
   data: StudentDashboard | undefined;
   loading: boolean;
+  refreshAction?: ReactNode;
 }) {
   const columns: SummaryColumn[] = [
     { id: 'class_name', key: 'class_name', label: '班级' },
@@ -187,7 +199,10 @@ function SummaryTable({
     <>
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-4">
         <span className="text-xs text-muted-foreground">在籍学生</span>
-        <TableColumnSettings settings={settings} />
+        <div className="flex items-center gap-3">
+          <TableColumnSettings settings={settings} />
+          {refreshAction}
+        </div>
       </div>
       <Table aria-label="学生专业表" aria-busy={loading}>
         <TableHeader className="bg-table-header">

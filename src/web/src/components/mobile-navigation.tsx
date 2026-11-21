@@ -49,8 +49,7 @@ export function MobileNavigation({
         ref={trigger}
         type="button"
         variant="ghost"
-        size="sm"
-        className="shrink-0 gap-1.5 px-2 text-foreground-secondary lg:hidden"
+        className="shrink-0 gap-1 px-2 font-normal text-foreground-secondary lg:hidden"
         aria-label="打开导航菜单"
         aria-haspopup="dialog"
         aria-expanded={open}

@@ -6,15 +6,18 @@ import { useApiAction } from '@/lib/api-action';
 export function RefreshButton({
   onRefresh,
   label = '刷新',
+  size = 'sm',
 }: {
   onRefresh: () => Promise<unknown>;
   label?: string;
+  size?: 'default' | 'sm';
 }) {
   const action = useApiAction();
   return (
     <Button
-      variant="outline"
-      size="sm"
+      type="button"
+      variant="ghost"
+      size={size}
       loading={action.pending}
       aria-label={label}
       onClick={() => {

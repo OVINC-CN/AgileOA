@@ -5,24 +5,28 @@ export function Tooltip({
   children,
   content,
   onlyOverflow = false,
+  disabled = false,
 }: {
   children: ReactElement;
   content: string;
   onlyOverflow?: boolean;
+  disabled?: boolean;
 }) {
   const trigger = useRef<HTMLElement>(null);
   const [open, setOpen] = useState(false);
   return (
     <TooltipPrimitive.Provider delayDuration={300}>
       <TooltipPrimitive.Root
-        open={open}
+        open={open && !disabled}
         onOpenChange={(next) => {
           // 在实际悬停或聚焦时测量，适应触发元素的宽度及内容变化。
           const text =
             trigger.current?.querySelector<HTMLElement>('[data-tooltip-overflow]') ??
             trigger.current;
           setOpen(
-            next && (!onlyOverflow || (text !== null && text.scrollWidth > text.clientWidth)),
+            next &&
+              !disabled &&
+              (!onlyOverflow || (text !== null && text.scrollWidth > text.clientWidth)),
           );
         }}
       >

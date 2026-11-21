@@ -123,7 +123,11 @@ function GraduationWorkspace({
     pagination.setPage(1);
     await fetchResults(next, 1);
   };
-  const { draft, setDraft, changeFilters } = useFilterForm(emptyFilters, applyFilters);
+  const { draft, setDraft, changeFilters, hasUnappliedChanges } = useFilterForm(
+    emptyFilters,
+    applyFilters,
+    filters,
+  );
   const columns: ColumnDef<Graduation>[] = [
     { accessorKey: 'student_no', header: '学号' },
     { accessorKey: 'student_name', header: '姓名' },
@@ -176,6 +180,39 @@ function GraduationWorkspace({
       ),
     },
   ];
+  const refreshButton = (
+    <Button
+      type="button"
+      size="sm"
+      variant="ghost"
+      loading={
+        refresh.pending ||
+        (canList && list.isPending) ||
+        (canStatistics && statistics.isPending) ||
+        ((canList || canStatistics) && options.isPending)
+      }
+      disabled={search.pending || changeDimension.pending}
+      onClick={() => {
+        void refresh.run('refresh', async () => {
+          await refreshWorkspace();
+          await Promise.all([
+            fetchResults(filters, pagination.page),
+            ...(canList || canStatistics
+              ? [
+                  client.query({
+                    ...graduationFilterOptions(workspaceID, !canList),
+                    staleTime: 0,
+                  }),
+                ]
+              : []),
+          ]);
+        });
+      }}
+    >
+      <RefreshCw aria-hidden="true" />
+      刷新
+    </Button>
+  );
   return (
     <section className="space-y-5" aria-labelledby="graduation-page-title">
       <header className="flex min-h-8 flex-wrap items-center justify-between gap-3">
@@ -193,7 +230,7 @@ function GraduationWorkspace({
           {canStatistics ? (
             <ButtonGroup
               aria-label="统计维度"
-              className="max-w-full rounded-lg bg-muted/60 p-px max-sm:w-full [&>button]:flex-1 [&>button]:rounded-md"
+              className="max-w-full rounded-lg max-sm:w-full [&>button]:flex-1"
             >
               {statisticDimensions.map(({ value, label, icon: Icon }) => (
                 <Button
@@ -201,7 +238,6 @@ function GraduationWorkspace({
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="aria-pressed:bg-background aria-pressed:text-accent-foreground aria-pressed:shadow-panel"
                   aria-pressed={dimension === value}
                   loading={changeDimension.isPending(value)}
                   disabled={
@@ -258,35 +294,7 @@ function GraduationWorkspace({
               </Button>
             </span>
           ) : null}
-          <Button
-            variant="outline"
-            loading={
-              refresh.pending ||
-              (canList && list.isPending) ||
-              (canStatistics && statistics.isPending) ||
-              ((canList || canStatistics) && options.isPending)
-            }
-            disabled={search.pending || changeDimension.pending}
-            onClick={() => {
-              void refresh.run('refresh', async () => {
-                await refreshWorkspace();
-                await Promise.all([
-                  fetchResults(filters, pagination.page),
-                  ...(canList || canStatistics
-                    ? [
-                        client.query({
-                          ...graduationFilterOptions(workspaceID, !canList),
-                          staleTime: 0,
-                        }),
-                      ]
-                    : []),
-                ]);
-              });
-            }}
-          >
-            <RefreshCw aria-hidden="true" />
-            刷新
-          </Button>
+          {!canList && !canStatistics ? refreshButton : null}
         </div>
       </header>
       {canStatistics && !denied(statistics.error) ? (
@@ -294,6 +302,8 @@ function GraduationWorkspace({
       ) : null}
       {canList || canStatistics ? (
         <FilterPanel
+          refreshAction={!canList ? refreshButton : undefined}
+          hasUnappliedChanges={hasUnappliedChanges}
           onSubmit={(event) => {
             event.preventDefault();
             void search.run('search', () => applyFilters(draft));
@@ -409,6 +419,7 @@ function GraduationWorkspace({
       {canList ? (
         <Card className="gap-0 overflow-hidden py-0">
           <ManagementTable
+            refreshAction={refreshButton}
             tableID="graduations"
             columns={columns}
             data={data?.items ?? []}
@@ -452,7 +463,7 @@ function GraduationWorkspace({
           footer={
             <>
               <Button
-                variant="secondary"
+                variant="outline"
                 disabled={remove.pending}
                 onClick={() => {
                   setClearing(null);

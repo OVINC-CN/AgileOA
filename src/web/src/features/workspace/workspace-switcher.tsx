@@ -68,14 +68,14 @@ export function WorkspaceSwitcher({
     >
       <DropdownMenu.Trigger asChild>
         <Button
+          type="button"
           variant="ghost"
-          size="sm"
           disabled={disabled || action.pending}
           aria-label={workspaceName ? `切换工作空间，当前为${workspaceName}` : label}
           aria-busy={listLoading || action.pending}
           className={cn(
-            'group max-w-40 min-w-0 shrink gap-2 rounded-lg text-muted-foreground sm:max-w-56',
-            'hover:bg-accent hover:text-foreground data-[state=open]:bg-accent',
+            'group max-w-40 min-w-0 shrink gap-2 rounded-lg bg-muted/70 px-2 font-normal text-foreground sm:max-w-56 lg:px-3',
+            'hover:bg-secondary data-[state=open]:bg-secondary',
           )}
         >
           <LoadingIcon

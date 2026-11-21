@@ -39,7 +39,7 @@ import { ProjectChart } from '@/features/project/project-chart';
 import { ProjectDetail } from '@/features/project/project-detail';
 import { ProjectEditor } from '@/features/project/project-editor';
 import { ProjectNameYearFilters, ProjectStudentFilter } from '@/features/project/project-filters';
-import { ProjectSelfApplyBadge } from '@/features/project/project-status';
+import { ProjectEnabledBadge } from '@/features/project/project-status';
 import { ProjectTransfer } from '@/features/project/project-transfer';
 import type { WorkspaceContext } from '@/features/workspace/context';
 import { projectTabs } from '@/features/workspace/navigation';
@@ -117,7 +117,9 @@ function ProjectWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: W
     {
       accessorKey: 'allow_self_apply',
       header: '自行申报',
-      cell: ({ row }) => <ProjectSelfApplyBadge allowed={row.original.allow_self_apply} />,
+      cell: ({ row }) => (
+        <ProjectEnabledBadge enabled={row.original.allow_self_apply} enabledLabel="允许" />
+      ),
     },
     {
       accessorKey: 'self_apply_deadline',
@@ -294,7 +296,11 @@ function ProjectWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: W
     pagination.setPage(1);
     await fetchResults(next, 1);
   };
-  const { draft, setDraft, changeFilters } = useFilterForm(emptyFilters, applyFilters);
+  const { draft, setDraft, changeFilters, hasUnappliedChanges } = useFilterForm(
+    emptyFilters,
+    applyFilters,
+    filters,
+  );
 
   // 子菜单由 URL 驱动，切换视图时保留公共条件，重置分页及子项关键词。
   if (previousTab !== tab) {
@@ -334,6 +340,37 @@ function ProjectWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: W
         />
       </section>
     );
+  const refreshButton = (
+    <Button
+      type="button"
+      size="sm"
+      variant="ghost"
+      loading={
+        refresh.pending ||
+        (canList && (activeQuery.isPending || filterOptions.isPending)) ||
+        (canViewStatistics && statistics.isPending)
+      }
+      onClick={() => {
+        void refresh.run('refresh', async () => {
+          await refreshWorkspace();
+          await Promise.all([
+            fetchResults(filters, pagination.page),
+            ...(canList
+              ? [
+                  client.query({
+                    ...projectFilterOptions(workspaceID, isParticipation),
+                    staleTime: 0,
+                  }),
+                ]
+              : []),
+          ]);
+        });
+      }}
+    >
+      <RefreshCw aria-hidden="true" />
+      刷新
+    </Button>
+  );
   return (
     <section className="space-y-5" aria-labelledby="project-page-title">
       <header className="flex min-h-8 flex-wrap items-center justify-between gap-3">
@@ -403,33 +440,7 @@ function ProjectWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: W
               绑定学生
             </Button>
           ) : null}
-          <Button
-            variant="outline"
-            loading={
-              refresh.pending ||
-              (canList && (activeQuery.isPending || filterOptions.isPending)) ||
-              (canViewStatistics && statistics.isPending)
-            }
-            onClick={() => {
-              void refresh.run('refresh', async () => {
-                await refreshWorkspace();
-                await Promise.all([
-                  fetchResults(filters, pagination.page),
-                  ...(canList
-                    ? [
-                        client.query({
-                          ...projectFilterOptions(workspaceID, isParticipation),
-                          staleTime: 0,
-                        }),
-                      ]
-                    : []),
-                ]);
-              });
-            }}
-          >
-            <RefreshCw aria-hidden="true" />
-            刷新
-          </Button>
+          {!canList ? refreshButton : null}
         </div>
       </header>
       {canViewStatistics && !denied(statistics.error) ? (
@@ -447,6 +458,7 @@ function ProjectWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: W
       >
         {canList ? (
           <FilterPanel
+            hasUnappliedChanges={hasUnappliedChanges}
             onSubmit={(event) => {
               event.preventDefault();
               void search.run('search', () => applyFilters(draft));
@@ -572,6 +584,7 @@ function ProjectWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: W
           <Card className="gap-0 overflow-hidden py-0">
             {isParticipation ? (
               <ManagementTable
+                refreshAction={refreshButton}
                 tableID="project-participations"
                 columns={participationColumns}
                 data={participations?.items ?? []}
@@ -591,6 +604,7 @@ function ProjectWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: W
               />
             ) : (
               <ManagementTable
+                refreshAction={refreshButton}
                 tableID="projects"
                 columns={columns}
                 data={projects?.items ?? []}
@@ -677,7 +691,7 @@ function ProjectWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: W
           footer={
             <>
               <Button
-                variant="secondary"
+                variant="outline"
                 disabled={remove.pending}
                 onClick={() => {
                   setDeleting(null);

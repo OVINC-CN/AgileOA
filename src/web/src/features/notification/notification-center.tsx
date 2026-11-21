@@ -52,8 +52,9 @@ export function NotificationCenter({
   return (
     <>
       <Button
+        type="button"
         variant="ghost"
-        size="icon-sm"
+        size="icon"
         className="relative"
         aria-label={count > 0 ? `通知（${String(count)} 条未读）` : '通知'}
         aria-haspopup="dialog"

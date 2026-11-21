@@ -151,6 +151,23 @@ export function TimelinePage({
       ),
     },
   ];
+  const refreshButton = (
+    <Button
+      type="button"
+      size="sm"
+      variant="ghost"
+      loading={refresh.pending || query.isPending}
+      onClick={() => {
+        void refresh.run('refresh', async () => {
+          await refreshWorkspace();
+          await fetchPage(pagination.page, pagination.pageSize);
+        });
+      }}
+    >
+      <RefreshCw aria-hidden="true" />
+      刷新
+    </Button>
+  );
   return (
     <section className="space-y-5" aria-labelledby="timeline-template-title">
       <h1 id="timeline-template-title" className="sr-only">
@@ -188,19 +205,6 @@ export function TimelinePage({
               新增模板
             </Button>
           ) : null}
-          <Button
-            variant="outline"
-            loading={refresh.pending || query.isPending}
-            onClick={() => {
-              void refresh.run('refresh', async () => {
-                await refreshWorkspace();
-                await fetchPage(pagination.page, pagination.pageSize);
-              });
-            }}
-          >
-            <RefreshCw aria-hidden="true" />
-            刷新
-          </Button>
         </div>
       </header>
       {query.error ? <ErrorMessage>{query.error.message}</ErrorMessage> : null}
@@ -250,6 +254,7 @@ export function TimelinePage({
         </FilterPanel>
         <Card className="gap-0 overflow-hidden py-0">
           <ManagementTable
+            refreshAction={refreshButton}
             tableID="cpc-timeline-templates"
             columns={columns}
             data={data?.items ?? []}
@@ -321,7 +326,7 @@ export function TimelinePage({
           footer={
             <>
               <Button
-                variant="secondary"
+                variant="outline"
                 disabled={remove.pending}
                 onClick={() => {
                   setDeleting(null);

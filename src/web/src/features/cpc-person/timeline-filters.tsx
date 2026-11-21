@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -35,7 +35,6 @@ function TimelineCondition({
 }) {
   const [open, setOpen] = useState(false);
   const [keyword, setKeyword] = useState('');
-  const client = useQueryClient();
   const query = useQuery({
     ...personTimelineFilterFieldOptions(workspaceID, keyword),
     enabled: open,
@@ -64,15 +63,10 @@ function TimelineCondition({
                 : item.label,
           }))}
           value={field ? fieldKey(field) : ''}
-          defaultValue=""
           loading={query.isFetching}
           disabled={denied}
           onOpenChange={setOpen}
           onSearchChange={setKeyword}
-          onSearchReset={async () => {
-            setKeyword('');
-            await client.query(personTimelineFilterFieldOptions(workspaceID, ''));
-          }}
           onValueChange={(key) => {
             // 失效字段仅作为当前值展示，必须选择目录中仍然可用的字段才能解除标记。
             if (key && condition.invalid && !query.data?.some((item) => fieldKey(item) === key)) {
@@ -99,7 +93,6 @@ function TimelineCondition({
             className="w-full"
             options={operators}
             value={operator}
-            defaultValue={field?.type === 'text' || field?.type === 'textarea' ? 'contains' : 'eq'}
             disabled={!field}
             onValueChange={(next) => {
               onChange({

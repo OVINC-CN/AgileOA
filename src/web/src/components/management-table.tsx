@@ -1,8 +1,10 @@
 import { type ColumnDef, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { Inbox } from 'lucide-react';
+import type { ReactNode } from 'react';
 
 import { ManagementPagination } from '@/components/management-pagination';
 import { TableColumnSettings } from '@/components/table-column-settings';
+import { LoadingIcon } from '@/components/ui/loading-icon';
 import {
   Table,
   TableBody,
@@ -15,6 +17,7 @@ import { useApiAction } from '@/lib/api-action';
 import { formatValue } from '@/lib/format';
 import { useLoadingDelay } from '@/lib/loading';
 import { type TableColumn, useTableColumns } from '@/lib/table-columns';
+import { cn } from '@/lib/utils';
 
 interface Props<T> {
   tableID: string;
@@ -27,6 +30,11 @@ interface Props<T> {
   onPage: (page: number) => Promise<unknown>;
   onPageSize: (pageSize: number) => Promise<unknown>;
   emptyMessage?: string;
+  emptyAction?: ReactNode;
+  refreshAction?: ReactNode;
+  title?: string;
+  rowID?: (record: T) => string;
+  pinnedColumn?: string;
 }
 
 function columnOptions<T>(columns: ColumnDef<T>[]): TableColumn[] {
@@ -50,6 +58,11 @@ export function ManagementTable<T>({
   onPage,
   onPageSize,
   emptyMessage,
+  emptyAction,
+  refreshAction,
+  title,
+  rowID,
+  pinnedColumn,
 }: Props<T>) {
   const settings = useTableColumns(tableID, columnOptions(columns));
   const table = useReactTable({
@@ -60,7 +73,7 @@ export function ManagementTable<T>({
     },
     getCoreRowModel: getCoreRowModel(),
     manualPagination: true,
-    getRowId: (_, index) => String(index),
+    getRowId: (record, index) => rowID?.(record) ?? String(index),
     state: {
       columnVisibility: Object.fromEntries(
         settings.columns.map((column) => [column.id, settings.isVisible(column.id)]),
@@ -71,10 +84,17 @@ export function ManagementTable<T>({
   const visibleLoading = useLoadingDelay(loading);
   return (
     <>
-      <div className="flex justify-end border-b border-border px-5 py-2">
+      <div className="flex flex-wrap items-center justify-end gap-3 border-b border-border px-4 py-3 sm:px-5">
+        {title ? (
+          <div className="mr-auto flex min-w-0 items-center gap-2">
+            <h2 className="text-base font-medium">{title}</h2>
+            {loading ? <LoadingIcon /> : null}
+          </div>
+        ) : null}
         <TableColumnSettings settings={settings} />
+        {refreshAction}
       </div>
-      <Table aria-busy={loading || pagination.pending}>
+      <Table aria-label={title} aria-busy={loading || pagination.pending}>
         <TableHeader className="bg-table-header">
           {table.getHeaderGroups().map((group) => (
             <TableRow key={group.id} className="border-border hover:bg-transparent">
@@ -83,7 +103,12 @@ export function ManagementTable<T>({
                   key={header.id}
                   scope="col"
                   colSpan={header.colSpan}
-                  className="h-8 px-5 py-1 text-xs font-medium text-muted-foreground"
+                  className={cn(
+                    'h-8 px-4 py-1 text-xs font-medium text-muted-foreground',
+                    header.column.id === pinnedColumn && 'table-pinned left-0',
+                    ['actions', 'operations'].includes(header.column.id) &&
+                      'table-pinned-end right-0',
+                  )}
                 >
                   {flexRender(header.column.columnDef.header, header.getContext())}
                 </TableHead>
@@ -96,7 +121,15 @@ export function ManagementTable<T>({
             table.getRowModel().rows.map((row) => (
               <TableRow key={row.id} className="border-border-subtle hover:bg-table-hover">
                 {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id} className="h-12 px-5 py-2">
+                  <TableCell
+                    key={cell.id}
+                    className={cn(
+                      'h-12 px-4 py-2',
+                      cell.column.id === pinnedColumn && 'table-pinned left-0',
+                      ['actions', 'operations'].includes(cell.column.id) &&
+                        'table-pinned-end right-0',
+                    )}
+                  >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>
                 ))}
@@ -109,6 +142,7 @@ export function ManagementTable<T>({
                   <div className="flex flex-col items-center gap-3 text-muted-foreground">
                     <Inbox className="size-7 opacity-50" aria-hidden="true" />
                     <p>{emptyMessage}</p>
+                    {emptyAction}
                   </div>
                 ) : null}
               </TableCell>

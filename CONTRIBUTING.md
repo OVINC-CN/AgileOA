@@ -148,7 +148,10 @@ API 侧先在业务事务中保存任务所需状态和操作审计，由 app �
 查询键加入工作空间、业务对象及适用的学生身份；URL 状态通过
 [navigation-tabs.ts](src/web/src/lib/navigation-tabs.ts) 恢复。
 
-[useFilterForm](src/web/src/lib/filter-form.ts) 保存草稿并通过 `changeFilters` 提交条件，
+[useFilterForm](src/web/src/lib/filter-form.ts) 接收当前已提交条件，保存文本草稿，
+通过 `changeFilters` 仅合并本次选项或日期变化。搜索和重置提交完整条件；
+`hasUnappliedChanges` 交给公共筛选面板提示待搜索内容。学生页面将状态和专业放在常用区，
+展示已应用条件，并为收起的更多筛选提供条件计数。
 [filterParams](src/web/src/lib/filter-params.ts) 生成重复多选参数。
 列表、统计和导出接到同一份已提交条件，条件变化时重置分页。
 按钮 loading 和请求后缓存刷新通过
@@ -173,6 +176,11 @@ API 侧先在业务事务中保存任务所需状态和操作审计，由 app �
 并列分区通过 `DrawerTabs`、`footerNavigation` 接到底部，操作放入 `footer`，
 切换时保留原表单状态。导航修改同时连接 `features/*/navigation.ts`，并核对
 [cdn-urls.ts](src/web/scripts/cdn-urls.ts) 及其覆盖验证。
+取消按钮统一使用公共 `Button` 的 `outline` 样式。
+
+学生档案的编辑与详情通过 [studentRecordTabs](src/web/src/features/student/fields.ts)
+共用学籍资料、联系住宿、敏感信息三个分区。敏感分区仅向有处理权限的用户开放，
+进入详情的敏感分区时自动读取并展示原始值。
 
 下拉的排序、分组和置顶入口由 [select-options.ts](src/web/src/lib/select-options.ts) 处理；
 使用 `defaultValue` 连接字段重置目标。日期与日期时间共用
@@ -193,6 +201,9 @@ COS 和 STS 协议位于 [tencentcos](src/api/internal/apis/tencentcos/)。
 [cdn.go](src/api/internal/storage/cdn.go) 生成签名下载地址，并在 Redis 配置后复用缓存签名。
 前端 [cos-upload.ts](src/web/src/lib/cos-upload.ts) 统一申请、COS 简单直传和完成确认，
 申请响应不可写入查询缓存或浏览器存储。上传失败保留 pending 并占用名额，沿用显式删除。
+[ApplicationDrawer](src/web/src/features/project/application-drawer.tsx) 在有未保存内容时，
+通过确认抽屉说明保存范围，再由公共文件按钮选择文件并立即执行保存、上传；
+内容未修改时直接上传。取消确认或选文件不保存，保存后的上传失败保留已保存内容并明确提示。
 [Vite](src/web/vite.config.ts) 从 COS SDK 发布包的 `index.js` 构建，使用
 [pnpm 配置](src/web/pnpm-workspace.yaml) 固定的 XML 解析器版本。
 头像入口为 [avatar.go](src/api/internal/apps/student/studentSvc/avatar.go)，
@@ -228,11 +239,16 @@ COS 和 STS 协议位于 [tencentcos](src/api/internal/apis/tencentcos/)。
 `projectTask/ranking.go` 和 `projectSvc/ranking.go`；失败通知位于 `ranking_notifications.go`。
 前端对应 `application-drawer.tsx`、`score-calculation-editor.tsx`、`score-calculation-detail.tsx`
 及 `application-content-versions.tsx`。修改时联动原事务、Task 和配置读取位置。
+[项目表单](src/web/src/features/project/project-editor.tsx)的新建和编辑共用底部分区，
+包含主要信息、申报设置和分数计算。
+项目详情的自行申报与总分计算共用状态标签，排名维度逐项展示为标签。
 
 党支部规则变更沿候选范围、人员归属和后台重排检查；时间线变更沿模板、人员节点、异常、
 筛选、导出及转移映射检查。转移预览、发起及审核仅以来源时间线异常阻断，目标异常在预览中
 展示并按实际状态保存。通知从业务事务连接 notification 模块，再由前端
 [notification/navigation.ts](src/web/src/features/notification/navigation.ts) 处理已读和对象定位。
+[时间线模板表单](src/web/src/features/cpc-timeline/template-editor.tsx)从底部切换节点配置与转移配置。
+模板名称和说明在节点配置中编辑。转移映射面板填满可用高度，并在并排布局中分别滚动两侧。
 
 ### 首页日历与节日
 

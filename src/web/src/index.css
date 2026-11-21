@@ -85,6 +85,7 @@
   --font-size-page: 1rem;
   --font-size-metric-emphasis: 1.5rem;
   --motion-navigation-duration: 200ms;
+  --motion-sidebar-duration: 220ms;
   --motion-easing-standard: cubic-bezier(0.22, 1, 0.36, 1);
   --radius: 0.5rem;
   --background: #fff;
@@ -223,6 +224,34 @@
 }
 
 @layer components {
+  table > tbody > tr {
+    --table-row-surface: var(--background);
+  }
+  table > tbody > tr:nth-child(even) {
+    --table-row-surface: var(--table-stripe);
+  }
+  table > tbody > tr:hover,
+  table > tbody > tr:focus-within {
+    --table-row-surface: var(--table-hover);
+  }
+  table > tbody > tr[data-state='selected'],
+  table > tbody > tr:has([aria-expanded='true']) {
+    --table-row-surface: var(--table-selected);
+  }
+  .table-pinned {
+    position: sticky;
+    z-index: 2;
+    border-right: 1px solid var(--border-subtle);
+    background-color: var(--table-row-surface, var(--table-header));
+  }
+  @media (min-width: 768px) {
+    .table-pinned-end {
+      position: sticky;
+      z-index: 2;
+      border-left: 1px solid var(--border-subtle);
+      background-color: var(--table-row-surface, var(--table-header));
+    }
+  }
   .form-control {
     border-color: var(--input);
     background-color: var(--control-background);
@@ -250,7 +279,6 @@
     position: absolute;
     top: 0;
     left: 0;
-    border: 1px solid #f1737726;
     border-radius: 0.5rem;
     background: var(--accent);
     opacity: 0;
@@ -261,6 +289,40 @@
     transition:
       transform var(--motion-navigation-duration) var(--motion-easing-standard),
       opacity var(--motion-navigation-duration) var(--motion-easing-standard);
+  }
+  @media (min-width: 1024px) {
+    .side-navigation-layout {
+      grid-template-columns: 160px minmax(0, 1fr);
+      transition: grid-template-columns var(--motion-sidebar-duration) var(--motion-easing-standard);
+    }
+    .side-navigation-layout[data-collapsed='true'] {
+      grid-template-columns: 56px minmax(0, 1fr);
+    }
+  }
+  .side-navigation-item > .side-navigation-icon {
+    position: absolute;
+    left: 20px;
+  }
+  .side-navigation-label {
+    position: absolute;
+    left: 44px;
+    width: 104px;
+    opacity: 1;
+    pointer-events: none;
+    transition: opacity 100ms var(--motion-easing-standard) 60ms;
+  }
+  @starting-style {
+    .side-navigation-label {
+      opacity: 0;
+    }
+  }
+  .side-navigation-layout[data-collapsed='true'] .side-navigation-item > .side-navigation-icon {
+    left: 10px;
+  }
+  .side-navigation-layout[data-collapsed='true'] .side-navigation-label {
+    left: 34px;
+    opacity: 0;
+    transition-delay: 0ms;
   }
   .watermark-layer::backdrop {
     display: none;
@@ -484,6 +546,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .form-control,
+  .side-navigation-layout,
+  .side-navigation-label,
   .navigation-motion-indicator[data-ready='true'],
   .navigation-motion > [role='tab'] {
     transition: none;

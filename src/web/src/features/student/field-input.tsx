@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useId, useState } from 'react';
 
 import { ErrorMessage } from '@/components/error-message';
+import { FilterField } from '@/components/filter-panel';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,6 +23,7 @@ export function StudentFieldInput({
   canQuery,
   disabled = false,
   required = field.required ?? false,
+  invalid = false,
 }: {
   field: StudentField;
   value: string;
@@ -30,6 +32,7 @@ export function StudentFieldInput({
   canQuery: boolean;
   disabled?: boolean;
   required?: boolean;
+  invalid?: boolean;
 }) {
   const id = useId();
   const [open, setOpen] = useState(false);
@@ -46,7 +49,7 @@ export function StudentFieldInput({
     field.options.length === 0 ? value : '',
   );
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" data-student-field={field.key}>
       <Label htmlFor={id}>
         {field.label}
         {required ? ' *' : ''}
@@ -60,6 +63,7 @@ export function StudentFieldInput({
           mode="month"
           disabled={disabled}
           required={required}
+          invalid={invalid}
         />
       ) : field.enumerable || presets.length > 0 ? (
         <SearchSelect
@@ -77,6 +81,7 @@ export function StudentFieldInput({
           }
           value={accommodation && !required ? value || 'unknown' : value}
           required={required}
+          invalid={invalid}
           disabled={disabled}
           loading={loading}
           allowCreate={field.options.length === 0}
@@ -91,6 +96,7 @@ export function StudentFieldInput({
           maxLength={field.maxLength}
           disabled={disabled}
           required={required}
+          aria-invalid={invalid || undefined}
           autoComplete="off"
           data-1p-ignore="true"
           onChange={(event) => {
@@ -104,6 +110,7 @@ export function StudentFieldInput({
           maxLength={field.maxLength}
           disabled={disabled}
           required={required}
+          aria-invalid={invalid || undefined}
           autoComplete="off"
           data-1p-ignore="true"
           onChange={(event) => {
@@ -139,21 +146,19 @@ export function StudentFilterSelect({
     options.unshift(defaultOption);
   }
   return (
-    <div className="space-y-1.5">
-      <span className="text-xs text-muted-foreground">{field.label}</span>
+    <FilterField label={field.label}>
       <SearchSelect
         multiple
         label={field.label}
         className="w-full"
         options={options}
         value={value}
-        defaultValue={defaultOption ? [defaultOption.value] : []}
         onValueChange={onChange}
         loading={loading}
         disabled={!canQuery}
         onOpenChange={setOpen}
       />
       {query.error ? <ErrorMessage>{query.error.message}</ErrorMessage> : null}
-    </div>
+    </FilterField>
   );
 }

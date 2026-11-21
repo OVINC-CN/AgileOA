@@ -57,8 +57,9 @@ it('未保存节点直接展示禁用的上传入口并提示先保存，不发�
       />
     </QueryClientProvider>,
   );
+  expect(screen.getByRole('heading', { name: '节点附件' })).toBeVisible();
   expect(screen.getByRole('button', { name: '上传' })).toBeDisabled();
-  expect(screen.getByText('请先保存节点')).toBeVisible();
+  expect(screen.getByText('保存模板后可上传节点附件')).toBeVisible();
   expect(fetch).not.toHaveBeenCalled();
 });
 

@@ -7,7 +7,7 @@ export function SearchResetButton(
   props: Pick<ComponentProps<typeof Button>, 'onClick' | 'loading' | 'disabled'>,
 ) {
   return (
-    <Button type="button" variant="secondary" {...props}>
+    <Button type="button" variant="outline" {...props}>
       <RotateCcw aria-hidden="true" />
       重置
     </Button>

@@ -14,13 +14,14 @@ import {
 } from 'lucide-react';
 import { DropdownMenu } from 'radix-ui';
 import { useState } from 'react';
-import { Link, useSearchParams } from 'react-router';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
 
 import { ErrorMessage } from '@/components/error-message';
-import { FilterPanel } from '@/components/filter-panel';
+import { type AppliedFilter, FilterField, FilterPanel } from '@/components/filter-panel';
 import { ManagementTable } from '@/components/management-table';
 import { SearchResetButton } from '@/components/search-reset-button';
 import { TableActionButton } from '@/components/table-action-button';
+import { TableActionsMenu } from '@/components/table-actions-menu';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -43,7 +44,7 @@ import { StudentTransfer } from '@/features/student/student-transfer';
 import { ApiError } from '@/lib/api';
 import { useApiAction, useInitialLoading } from '@/lib/api-action';
 import { useFilterForm } from '@/lib/filter-form';
-import { formatValue } from '@/lib/format';
+import { formatIdentity, formatValue } from '@/lib/format';
 import { useTablePagination } from '@/lib/pagination';
 import { recordTimeColumns } from '@/lib/record-time-columns';
 
@@ -77,8 +78,10 @@ export function StudentPage({
   onRefresh: () => Promise<unknown>;
 }) {
   const client = useQueryClient();
+  const location = useLocation();
+  const navigate = useNavigate();
   const pagination = useTablePagination();
-  const [params, setParams] = useSearchParams();
+  const [params] = useSearchParams();
   const studentID = params.get(studentDetailParam);
   const [filters, setFilters] = useState(defaultFilters);
   const [editor, setEditor] = useState<Student | null | undefined>(undefined);
@@ -125,10 +128,32 @@ export function StudentPage({
     if (failure)
       throw failure.reason instanceof Error ? failure.reason : new Error('查询学生失败，请重试');
   };
-  const { draft, setDraft, changeFilters } = useFilterForm(defaultFilters, applyFilters);
+  const { draft, setDraft, changeFilters, applyChanges, hasUnappliedChanges } = useFilterForm(
+    defaultFilters,
+    applyFilters,
+    filters,
+  );
   const columns: ColumnDef<Student>[] = [
     { accessorKey: 'student_no', header: '学号' },
-    { accessorKey: 'name', header: '姓名' },
+    {
+      accessorKey: 'name',
+      header: '姓名',
+      cell: ({ row }) => {
+        const student = row.original;
+        if (!can('student.detail')) return formatValue(student.name);
+        const next = new URLSearchParams(params);
+        next.set(studentDetailParam, String(student.id));
+        return (
+          <Link
+            to={{ search: next.toString(), hash: location.hash }}
+            aria-label={`查看 ${formatIdentity(student.name, student.student_no)} 的详情`}
+            className="rounded-sm font-medium text-accent-foreground underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring/30"
+          >
+            {student.name}
+          </Link>
+        );
+      },
+    },
     { accessorKey: 'grade', header: '年级' },
     { accessorKey: 'status', header: '状态' },
     { accessorKey: 'advisor', header: '导师' },
@@ -159,7 +184,7 @@ export function StudentPage({
           <div className="flex items-center gap-1">
             {can('student.detail') ? (
               <TableActionButton asChild>
-                <Link to={{ search: detailParams.toString() }}>
+                <Link to={{ search: detailParams.toString(), hash: location.hash }}>
                   <Eye aria-hidden="true" />
                   详情
                 </Link>
@@ -176,14 +201,19 @@ export function StudentPage({
               </TableActionButton>
             ) : null}
             {can('student.delete') ? (
-              <TableActionButton
-                onClick={() => {
-                  setDeleting(student);
-                }}
-              >
-                <Trash2 aria-hidden="true" />
-                删除
-              </TableActionButton>
+              <TableActionsMenu
+                label={formatIdentity(student.name, student.student_no)}
+                actions={[
+                  {
+                    label: '删除学生',
+                    icon: Trash2,
+                    destructive: true,
+                    onSelect: () => {
+                      setDeleting(student);
+                    },
+                  },
+                ]}
+              />
             ) : null}
           </div>
         );
@@ -191,13 +221,75 @@ export function StudentPage({
     },
   ];
   const selectors = studentFields.filter((field) => field.enumerable);
+  const defaultStatusApplied =
+    Array.isArray(filters['status']) &&
+    filters['status'].length === 1 &&
+    filters['status'][0] === enrolledStatus.value;
   const selectedValues = (key: string) => {
     const values = draft[key];
     return Array.isArray(values) ? values : [];
   };
+  const appliedConditions = selectors.flatMap((field) => {
+    const values = filters[field.key];
+    if (
+      !Array.isArray(values) ||
+      values.length === 0 ||
+      (field.key === 'status' && defaultStatusApplied) ||
+      (field.group === 'sensitive' && !can(sensitiveAction))
+    )
+      return [];
+    return [
+      {
+        key: field.key,
+        label: field.label,
+        values: values.map(
+          (value) => field.options.find((item) => item.value === value)?.label ?? value,
+        ),
+      },
+    ];
+  });
+  if (filters.keyword) {
+    appliedConditions.unshift({ key: 'keyword', label: '学号或姓名', values: [filters.keyword] });
+  }
+  if (Array.isArray(filters['position_status']) && filters['position_status'].length > 0) {
+    appliedConditions.push({
+      key: 'position_status',
+      label: '班内任职状态',
+      values: filters['position_status'].map((value) =>
+        value === 'assigned' ? '有任职' : '无任职或未填写',
+      ),
+    });
+  }
+  const appliedFilters: AppliedFilter[] = appliedConditions.map((item) => ({
+    id: item.key,
+    label: item.label,
+    value: item.values.map((value) => value || '未填写').join('、'),
+    onRemove: () => applyChanges({ [item.key]: item.key === 'keyword' ? '' : [] }),
+  }));
+  const resetFilters = async () => {
+    setDraft(defaultFilters);
+    await applyFilters(defaultFilters);
+  };
+  const refreshButton = (
+    <Button
+      type="button"
+      size="sm"
+      variant="ghost"
+      loading={refresh.pending || initial}
+      onClick={() => {
+        void refresh.run('refresh', async () => {
+          await onRefresh();
+          await client.invalidateQueries({ queryKey: studentKey(workspaceID) });
+        });
+      }}
+    >
+      <RefreshCw aria-hidden="true" />
+      刷新
+    </Button>
+  );
   return (
     <section className="space-y-5" aria-labelledby="student-page-title">
-      <header className="flex min-h-8 flex-wrap items-center justify-between gap-3">
+      <header className="flex min-h-8 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <h1 id="student-page-title" className="sr-only">
           学生信息
         </h1>
@@ -208,7 +300,7 @@ export function StudentPage({
             <li aria-current="page">学生信息</li>
           </ol>
         </nav>
-        <div className="ml-auto flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
           {can('student.import') && can(sensitiveAction) ? (
             <Button
               variant="outline"
@@ -293,19 +385,6 @@ export function StudentPage({
               添加学生
             </Button>
           ) : null}
-          <Button
-            variant="outline"
-            loading={refresh.pending || initial}
-            onClick={() => {
-              void refresh.run('refresh', async () => {
-                await onRefresh();
-                await client.invalidateQueries({ queryKey: studentKey(workspaceID) });
-              });
-            }}
-          >
-            <RefreshCw aria-hidden="true" />
-            刷新
-          </Button>
         </div>
       </header>
       {can('student.statistics') ? (
@@ -313,6 +392,13 @@ export function StudentPage({
       ) : null}
       {can('student.list') || can('student.statistics') || can('student.export') ? (
         <FilterPanel
+          refreshAction={!can('student.list') ? refreshButton : undefined}
+          hasUnappliedChanges={hasUnappliedChanges}
+          moreActiveCount={
+            appliedConditions.filter((item) => item.key !== 'keyword' && !common.includes(item.key))
+              .length
+          }
+          appliedFilters={appliedFilters}
           onSubmit={(event) => {
             event.preventDefault();
             void search.run('search', () => applyFilters(draft));
@@ -359,10 +445,7 @@ export function StudentPage({
                 loading={search.isPending('reset')}
                 disabled={search.pending}
                 onClick={() => {
-                  void search.run('reset', async () => {
-                    setDraft(defaultFilters);
-                    await applyFilters(defaultFilters);
-                  });
+                  void search.run('reset', resetFilters);
                 }}
               />
               <Button type="submit" loading={search.isPending('search')} disabled={search.pending}>
@@ -372,8 +455,7 @@ export function StudentPage({
             </>
           }
         >
-          <label htmlFor="student-keyword" className="space-y-1.5">
-            <span className="text-xs text-muted-foreground">学号或姓名</span>
+          <FilterField htmlFor="student-keyword" label="学号或姓名">
             <Input
               id="student-keyword"
               name="student-filter-keyword"
@@ -381,14 +463,14 @@ export function StudentPage({
               autoComplete="off"
               data-1p-ignore="true"
               aria-label="学号或姓名"
-              placeholder="搜索"
+              placeholder="输入学号或姓名，回车搜索"
               maxLength={100}
               value={draft.keyword}
               onChange={(event) => {
                 setDraft((current) => ({ ...current, keyword: event.target.value }));
               }}
             />
-          </label>
+          </FilterField>
           {common.map((key) => {
             const field = selectors.find((item) => item.key === key);
             return field ? (
@@ -397,6 +479,7 @@ export function StudentPage({
                 field={field}
                 workspaceID={workspaceID}
                 canQuery={can(field.group === 'basic' ? 'student.list' : sensitiveAction)}
+                defaultOption={key === 'status' ? enrolledStatus : undefined}
                 value={selectedValues(key)}
                 onChange={(value) => {
                   changeFilters({ [key]: value });
@@ -413,7 +496,11 @@ export function StudentPage({
         <Card className="gap-0 overflow-hidden border-border py-0">
           {list.error ? <ErrorMessage>{list.error.message}</ErrorMessage> : null}
           <ManagementTable
+            refreshAction={refreshButton}
+            title="学生列表"
             tableID="students"
+            rowID={(student) => String(student.id)}
+            pinnedColumn="student_no"
             columns={columns}
             data={data?.items ?? empty}
             total={data?.total ?? 0}
@@ -450,7 +537,10 @@ export function StudentPage({
           onClose={() => {
             const next = new URLSearchParams(params);
             next.delete(studentDetailParam);
-            setParams(next, { replace: true });
+            void navigate(
+              { pathname: location.pathname, search: next.toString(), hash: location.hash },
+              { replace: true, preventScrollReset: true },
+            );
           }}
         />
       ) : null}

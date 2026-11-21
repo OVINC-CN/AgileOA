@@ -1,11 +1,11 @@
-import { Check, ChevronsUpDown, Filter, Maximize2, Minimize2, Plus, RotateCcw } from 'lucide-react';
+import { Check, ChevronDown, Filter, Maximize2, Minimize2, Plus, Search } from 'lucide-react';
 import { Popover } from 'radix-ui';
 import { Fragment, useId, useMemo, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { LoadingIcon } from '@/components/ui/loading-icon';
 import { Tooltip } from '@/components/ui/tooltip';
-import { useApiAction } from '@/lib/api-action';
 import { sortSelectOptions } from '@/lib/select-options';
 import { cn } from '@/lib/utils';
 
@@ -36,11 +36,11 @@ interface SharedProps {
   loading?: boolean;
   disabled?: boolean;
   required?: boolean;
+  invalid?: boolean;
   className?: string;
   labelTooltip?: boolean;
   onOpenChange?: (open: boolean) => void;
   onSearchChange?: (keyword: string) => void;
-  onSearchReset?: () => Promise<unknown>;
   id?: string;
   allowCreate?: boolean;
   maxLength?: number;
@@ -52,7 +52,6 @@ type SearchSelectProps = SharedProps &
     | {
         multiple: true;
         value: string[];
-        defaultValue?: string[];
         onValueChange: (value: string[]) => void;
         allLabel?: string;
         showAllOption?: boolean;
@@ -60,7 +59,6 @@ type SearchSelectProps = SharedProps &
     | {
         multiple?: false;
         value: string;
-        defaultValue?: string;
         onValueChange: (value: string) => void;
         allLabel?: never;
         showAllOption?: never;
@@ -79,31 +77,24 @@ export function SearchSelect(props: SearchSelectProps) {
     labelTooltip = false,
     onOpenChange,
     onSearchChange,
-    onSearchReset,
     id,
     allowCreate = false,
     maxLength,
     appearance = 'default',
+    invalid = false,
   } = props;
   const listID = useId();
   const [mode, setMode] = useState<'closed' | 'popover' | 'expanded'>('closed');
   const [expandedSide, setExpandedSide] = useState<'top' | 'bottom'>('bottom');
-  const [initialValue] = useState(() => value);
   const [keyword, setKeyword] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
   const [activeInitial, setActiveInitial] = useState('');
-  const reset = useApiAction();
   const trigger = useRef<HTMLButtonElement>(null);
   const input = useRef<HTMLInputElement>(null);
   const list = useRef<HTMLDivElement>(null);
   const open = mode !== 'closed';
   const expanded = mode === 'expanded';
   const selectedValues = Array.isArray(value) ? value : [value];
-  const defaultValue = props.defaultValue ?? (props.multiple ? [] : initialValue);
-  const defaultValues = Array.isArray(defaultValue) ? defaultValue : [defaultValue];
-  const atDefault =
-    selectedValues.length === defaultValues.length &&
-    selectedValues.every((entry) => defaultValues.includes(entry));
   const selectedLabels = selectedValues.map(
     (entry) => options.find((option) => option.value === entry)?.label ?? entry,
   );
@@ -148,6 +139,7 @@ export function SearchSelect(props: SearchSelectProps) {
         { value: newValue, label: `新建“${newValue}”`, initial: 'create', create: true },
       ]
     : filtered;
+  const hasAvailableChoices = choices.some((choice) => choice.value !== null);
   const separatorIndex =
     props.optionSeparator && props.optionSeparator.beforeValue !== null
       ? ordered.findIndex((option) => option.value === props.optionSeparator?.beforeValue)
@@ -216,78 +208,53 @@ export function SearchSelect(props: SearchSelectProps) {
       [next]?.scrollIntoView({ block: 'nearest' });
   };
   const searchControls = (
-    <div className="mb-1 flex shrink-0 gap-1">
-      <Input
-        ref={input}
-        type="search"
-        name={`filter-${listID}`}
-        autoComplete="off"
-        data-1p-ignore="true"
-        spellCheck={false}
-        maxLength={maxLength}
-        aria-label={`搜索${label}`}
-        placeholder="搜索"
-        value={keyword}
-        aria-controls={listID}
-        aria-activedescendant={
-          choices.length
-            ? `${listID}-${String(Math.min(activeIndex, choices.length - 1))}`
-            : undefined
-        }
-        onChange={(event) => {
-          setKeyword(event.target.value);
-          onSearchChange?.(event.target.value);
-          setActiveIndex(0);
-          setActiveInitial('');
-          if (list.current) list.current.scrollTop = 0;
-        }}
-        onKeyDown={(event) => {
-          if (event.nativeEvent.isComposing) return;
-          if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-            event.preventDefault();
-            move(activeIndex + (event.key === 'ArrowDown' ? 1 : -1));
+    <div className="flex shrink-0 items-center gap-1 border-b border-border-subtle p-2">
+      <div className="flex min-w-0 flex-1 items-center rounded-lg bg-secondary/60 px-2 focus-within:ring-1 focus-within:ring-ring/50">
+        <Search className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+        <Input
+          ref={input}
+          type="search"
+          name={`filter-${listID}`}
+          autoComplete="off"
+          data-1p-ignore="true"
+          spellCheck={false}
+          maxLength={maxLength}
+          aria-label={`搜索${label}`}
+          placeholder={allowCreate ? '搜索或输入新选项' : '搜索选项'}
+          className="h-8 border-0 bg-transparent px-2 shadow-none backdrop-blur-none focus-visible:ring-0"
+          value={keyword}
+          aria-controls={listID}
+          aria-activedescendant={
+            choices.length
+              ? `${listID}-${String(Math.min(activeIndex, choices.length - 1))}`
+              : undefined
           }
-          if (event.key === 'Enter') {
-            event.preventDefault();
-            const option = choices[Math.min(activeIndex, choices.length - 1)];
-            if (option) choose(option.value);
-          }
-        }}
-      />
-      <Tooltip content="恢复默认选项并清空搜索">
-        <Button
-          type="button"
-          variant="secondary"
-          size="icon"
-          aria-label={`重置${label}`}
-          loading={reset.pending}
-          disabled={atDefault && keyword === ''}
-          onClick={() => {
-            // 重置当前字段的选值与搜索，不改动页面中的其他筛选条件。
-            setKeyword('');
-            onSearchChange?.('');
-            if (!atDefault) {
-              if (props.multiple) {
-                props.onValueChange([...defaultValues]);
-              } else {
-                props.onValueChange(defaultValues[0] ?? '');
-              }
-            }
+          onChange={(event) => {
+            setKeyword(event.target.value);
+            onSearchChange?.(event.target.value);
             setActiveIndex(0);
             setActiveInitial('');
             if (list.current) list.current.scrollTop = 0;
-            input.current?.focus();
-            if (onSearchReset) void reset.run('reset', onSearchReset);
           }}
-        >
-          <RotateCcw aria-hidden="true" />
-        </Button>
-      </Tooltip>
+          onKeyDown={(event) => {
+            if (event.nativeEvent.isComposing) return;
+            if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+              event.preventDefault();
+              move(activeIndex + (event.key === 'ArrowDown' ? 1 : -1));
+            }
+            if (event.key === 'Enter') {
+              event.preventDefault();
+              const option = choices[Math.min(activeIndex, choices.length - 1)];
+              if (option) choose(option.value);
+            }
+          }}
+        />
+      </div>
       <Tooltip content={expanded ? '收起选择器' : '展开选择器'}>
         <Button
           type="button"
-          variant="secondary"
-          size="icon"
+          variant="ghost"
+          size="icon-sm"
           aria-label={`${expanded ? '收起' : '展开'}${label}选择器`}
           aria-expanded={expanded}
           aria-controls={listID}
@@ -317,8 +284,10 @@ export function SearchSelect(props: SearchSelectProps) {
         role="option"
         aria-selected={isSelected(option.value)}
         className={cn(
-          'flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors outline-none hover:bg-secondary focus-visible:ring-2 focus-visible:ring-ring/30 focus-visible:ring-inset aria-selected:bg-accent aria-selected:font-medium aria-selected:text-accent-foreground motion-reduce:transition-none',
-          index === activeIndex && 'bg-secondary ring-1 ring-border ring-inset',
+          'flex min-h-8 w-full items-center gap-2 rounded-lg px-3 py-1.5 text-left text-sm font-normal transition-colors outline-none hover:bg-secondary focus-visible:ring-2 focus-visible:ring-ring/30 focus-visible:ring-inset aria-selected:bg-accent/60 aria-selected:text-accent-foreground motion-reduce:transition-none',
+          option.value === null &&
+            'aria-selected:bg-secondary/60 aria-selected:text-foreground-secondary',
+          index === activeIndex && 'bg-secondary',
           expanded && 'min-h-11 scroll-mt-8',
         )}
         onMouseMove={() => {
@@ -367,8 +336,9 @@ export function SearchSelect(props: SearchSelectProps) {
       role="listbox"
       aria-label={label}
       aria-multiselectable={props.multiple}
+      aria-busy={loading || undefined}
       className={cn(
-        'min-h-0 min-w-0 overflow-y-auto overscroll-contain',
+        'min-h-0 min-w-0 space-y-1 overflow-y-auto overscroll-contain p-1',
         expanded ? 'flex-1' : 'max-h-64',
       )}
       onScroll={
@@ -396,32 +366,43 @@ export function SearchSelect(props: SearchSelectProps) {
             <div
               key={group.initial}
               role="group"
-              aria-labelledby={`${listID}-group-${group.initial}`}
-              className={
-                group.initial === 'pinned' ? 'mb-1 border-b border-border pb-1' : undefined
+              aria-label={group.initial === 'pinned' ? groupLabels['pinned'] : undefined}
+              aria-labelledby={
+                group.initial === 'pinned' ? undefined : `${listID}-group-${group.initial}`
               }
+              className={cn(
+                'space-y-1',
+                group.initial === 'pinned' && 'mb-1 border-b border-border pb-1',
+              )}
             >
-              <div
-                id={`${listID}-group-${group.initial}`}
-                data-select-initial={
-                  ['create', 'pinned'].includes(group.initial) ? undefined : group.initial
-                }
-                className={cn(
-                  'sticky top-0 z-10 flex items-center gap-3 bg-popover px-3 py-2 text-xs font-medium text-muted-foreground backdrop-blur-md',
-                  group.initial === 'pinned' && 'sr-only',
-                )}
-              >
-                <span>{groupLabels[group.initial] ?? group.initial}</span>
-                <span aria-hidden="true" className="h-px flex-1 bg-border/80" />
-              </div>
+              {group.initial !== 'pinned' ? (
+                <div
+                  id={`${listID}-group-${group.initial}`}
+                  data-select-initial={group.initial === 'create' ? undefined : group.initial}
+                  className="sticky top-0 z-10 flex items-center gap-3 bg-popover px-3 py-2 text-xs font-medium text-muted-foreground backdrop-blur-md"
+                >
+                  <span>{groupLabels[group.initial] ?? group.initial}</span>
+                  <span aria-hidden="true" className="h-px flex-1 bg-border/80" />
+                </div>
+              ) : null}
               {group.entries.map(({ option, index }) => renderChoice(option, index))}
             </div>
           ))
         : choices.map(renderChoice)}
       {renderSeparator(null)}
-      {choices.length === 0 ? (
-        <p role="status" className="px-3 py-4 text-sm text-muted-foreground">
-          没有符合条件的选项
+      {loading || !hasAvailableChoices ? (
+        <p
+          role="status"
+          className="flex items-center justify-center gap-2 px-3 py-5 text-xs text-muted-foreground"
+        >
+          {loading ? <LoadingIcon /> : null}
+          {loading
+            ? '正在加载选项'
+            : keyword.trim()
+              ? '没有符合条件的选项'
+              : allowCreate
+                ? '输入内容可新建选项'
+                : '暂无可选项'}
         </p>
       ) : null}
     </div>
@@ -435,12 +416,13 @@ export function SearchSelect(props: SearchSelectProps) {
           type="button"
           data-1p-ignore="true"
           role="combobox"
+          aria-invalid={invalid || undefined}
           variant={tableFilter ? 'ghost' : 'outline'}
-          size={tableFilter ? 'icon-xs' : 'default'}
+          size={tableFilter ? 'xs' : 'default'}
           className={cn(
             tableFilter
-              ? 'size-5 rounded-sm text-muted-foreground data-[active=true]:text-primary'
-              : 'w-64 max-w-full min-w-0 shrink justify-between',
+              ? 'h-6 min-w-6 gap-1 rounded-md px-1 text-muted-foreground data-[active=true]:bg-accent data-[active=true]:text-accent-foreground'
+              : 'w-64 max-w-full min-w-0 shrink justify-between font-normal',
             className,
           )}
           data-active={tableFilter && selectedValues.length > 0}
@@ -450,16 +432,35 @@ export function SearchSelect(props: SearchSelectProps) {
           aria-expanded={open}
           aria-controls={listID}
           disabled={disabled}
-          loading={loading}
         >
           {tableFilter ? (
-            <Filter aria-hidden="true" className="size-3" />
+            <>
+              <Filter aria-hidden="true" className="size-3" />
+              {selectedValues.length > 0 ? (
+                <span aria-hidden="true" className="tabular-nums">
+                  {selectedValues.length}
+                </span>
+              ) : null}
+            </>
           ) : (
             <>
               <Tooltip content={selectionLabel} onlyOverflow={!labelTooltip}>
-                <span className="min-w-0 truncate">{selectionLabel}</span>
+                <span
+                  className={cn(
+                    'min-w-0 truncate',
+                    props.multiple && selectedValues.length === 0 && 'text-muted-foreground',
+                  )}
+                >
+                  {selectionLabel}
+                </span>
               </Tooltip>
-              <ChevronsUpDown aria-hidden="true" className="size-4 text-muted-foreground" />
+              <ChevronDown
+                aria-hidden="true"
+                className={cn(
+                  'size-4 text-muted-foreground transition-transform duration-160 motion-reduce:transition-none',
+                  open && 'rotate-180',
+                )}
+              />
             </>
           )}
         </Button>
@@ -471,14 +472,14 @@ export function SearchSelect(props: SearchSelectProps) {
       ) : null}
       <Popover.Portal>
         <Popover.Content
-          align="end"
+          align={tableFilter ? 'end' : 'start'}
           side={expanded ? expandedSide : 'bottom'}
           sideOffset={6}
           collisionPadding={16}
           sticky="always"
           updatePositionStrategy="always"
           className={cn(
-            'glass-panel menu-motion z-50 flex flex-col overflow-hidden rounded-xl border bg-popover p-1 shadow-popover',
+            'glass-panel menu-motion z-50 flex flex-col overflow-hidden rounded-xl border bg-popover shadow-popover',
             'max-h-[min(var(--radix-popover-content-available-height),calc(100dvh-2rem))]',
             'max-w-[min(var(--radix-popover-content-available-width),calc(100vw-2rem))]',
             'min-w-[min(16rem,var(--radix-popover-content-available-width),calc(100vw-2rem))]',

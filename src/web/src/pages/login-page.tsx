@@ -241,7 +241,6 @@ export function LoginPage({ student = false }: { student?: boolean }) {
               <Button
                 type="button"
                 variant="ghost"
-                className="aria-pressed:bg-background aria-pressed:text-accent-foreground aria-pressed:shadow-panel"
                 aria-pressed={!student}
                 disabled={pending}
                 onClick={() => {
@@ -254,7 +253,6 @@ export function LoginPage({ student = false }: { student?: boolean }) {
               <Button
                 type="button"
                 variant="ghost"
-                className="aria-pressed:bg-background aria-pressed:text-accent-foreground aria-pressed:shadow-panel"
                 aria-pressed={student}
                 disabled={pending}
                 onClick={() => {

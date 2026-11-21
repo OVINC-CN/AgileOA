@@ -68,7 +68,6 @@ function Filter({
               : options
         }
         value={value}
-        defaultValue={defaultFilters[field.key]}
         onValueChange={onChange}
         onOpenChange={setOpen}
         loading={open && query.isFetching}
@@ -84,6 +83,7 @@ export function PersonFilterPanel({
   setDraft,
   changeFilters,
   onApply,
+  hasUnappliedChanges,
   nodeView = false,
 }: {
   workspaceID: string;
@@ -91,11 +91,13 @@ export function PersonFilterPanel({
   setDraft: (values: SetStateAction<PersonFilters>) => void;
   changeFilters: (changes: Partial<PersonFilters>) => void;
   onApply: (values: PersonFilters) => Promise<unknown>;
+  hasUnappliedChanges?: boolean;
   nodeView?: boolean;
 }) {
   const search = useApiAction();
   return (
     <FilterPanel
+      hasUnappliedChanges={hasUnappliedChanges}
       onSubmit={(event) => {
         event.preventDefault();
         void search.run('search', () => onApply(draft));
@@ -185,7 +187,6 @@ export function PersonFilterPanel({
                 className="w-full"
                 options={[...nodeStatuses]}
                 value={draft.node_status}
-                defaultValue={defaultFilters.node_status}
                 onValueChange={(value) => {
                   changeFilters({ node_status: value });
                 }}

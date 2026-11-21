@@ -9,7 +9,7 @@ import { Drawer } from '@/components/ui/drawer';
 import { DrawerTabs } from '@/components/ui/drawer-tabs';
 import { attachmentDownload, type Project } from '@/features/project/api';
 import { ApplicationFlow } from '@/features/project/application-timeline';
-import { ProjectSelfApplyBadge } from '@/features/project/project-status';
+import { ProjectEnabledBadge } from '@/features/project/project-status';
 import { ScoreCalculationDetail } from '@/features/project/score-calculation-detail';
 import { formatValue } from '@/lib/format';
 
@@ -141,7 +141,7 @@ export function ProjectDetail({
             <div className="space-y-1">
               <dt className="text-xs text-muted-foreground">允许学生自行申报</dt>
               <dd>
-                <ProjectSelfApplyBadge allowed={project.allow_self_apply} />
+                <ProjectEnabledBadge enabled={project.allow_self_apply} enabledLabel="允许" />
               </dd>
             </div>
             {project.allow_self_apply ? (

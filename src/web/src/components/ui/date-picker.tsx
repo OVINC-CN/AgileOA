@@ -26,6 +26,7 @@ export function DatePicker({
   max = mode === 'date' ? maximumCalendarDate : maximumCalendarDate.slice(0, 7),
   required = false,
   disabled = false,
+  invalid = false,
   className,
 }: {
   id?: string;
@@ -37,6 +38,7 @@ export function DatePicker({
   max?: string;
   required?: boolean;
   disabled?: boolean;
+  invalid?: boolean;
   className?: string;
 }) {
   const popupID = useId();
@@ -81,6 +83,7 @@ export function DatePicker({
           aria-expanded={open}
           aria-controls={popupID}
           aria-required={required}
+          aria-invalid={invalid || undefined}
           disabled={disabled}
           className={cn(
             'w-full justify-between font-normal',

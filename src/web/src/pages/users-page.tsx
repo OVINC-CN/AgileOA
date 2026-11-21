@@ -73,7 +73,7 @@ function UserAction({
       }}
       footer={
         <>
-          <Button variant="secondary" disabled={mutation.isPending} onClick={onClose}>
+          <Button variant="outline" disabled={mutation.isPending} onClick={onClose}>
             取消
           </Button>
           {blocked ? (
@@ -138,7 +138,11 @@ export function UsersPage() {
     setFilters(next);
     await client.query({ ...userListOptions(next, 1, pageSize), staleTime: 0 });
   };
-  const { draft, setDraft, changeFilters } = useFilterForm(defaultFilters, applyFilters);
+  const { draft, setDraft, changeFilters, hasUnappliedChanges } = useFilterForm(
+    defaultFilters,
+    applyFilters,
+    filters,
+  );
   const done = (message: string) => {
     setEditor(null);
     setAction(null);
@@ -153,10 +157,6 @@ export function UsersPage() {
   return (
     <section className="space-y-6" aria-labelledby="users-title">
       <ManagementPageHeader id="users-title" title="用户管理">
-        <RefreshButton
-          label="刷新用户数据"
-          onRefresh={() => client.invalidateQueries({ queryKey: ['management', 'users'] })}
-        />
         <Button
           onClick={() => {
             setEditor({ user: null });
@@ -189,6 +189,7 @@ export function UsersPage() {
         </div>
       ) : null}
       <FilterPanel
+        hasUnappliedChanges={hasUnappliedChanges}
         onSubmit={(event) => {
           event.preventDefault();
           void searchAction.run('search', () => applyFilters(draft));
@@ -250,6 +251,12 @@ export function UsersPage() {
       <Card className="gap-0 overflow-hidden border-border py-0">
         {list.error ? <ErrorMessage>{list.error.message}</ErrorMessage> : null}
         <UserTable
+          refreshAction={
+            <RefreshButton
+              label="刷新用户数据"
+              onRefresh={() => client.invalidateQueries({ queryKey: ['management', 'users'] })}
+            />
+          }
           data={list.data?.items ?? emptyRows}
           total={list.data?.total ?? 0}
           page={page}

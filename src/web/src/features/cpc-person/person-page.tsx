@@ -18,6 +18,7 @@ import { useSearchParams } from 'react-router';
 import { ErrorMessage } from '@/components/error-message';
 import { ManagementTable } from '@/components/management-table';
 import { TableActionButton } from '@/components/table-action-button';
+import { TableActionsMenu } from '@/components/table-actions-menu';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Drawer } from '@/components/ui/drawer';
@@ -129,7 +130,11 @@ function PersonWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
         : []),
     ]);
   };
-  const { draft, setDraft, changeFilters } = useFilterForm(defaultFilters, apply);
+  const { draft, setDraft, changeFilters, hasUnappliedChanges } = useFilterForm(
+    defaultFilters,
+    apply,
+    filters,
+  );
   const renderActions = (person: Person) => (
     <div className="flex items-center gap-2">
       {can('detail') ||
@@ -180,14 +185,19 @@ function PersonWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
         </TableActionButton>
       ) : null}
       {can('delete') && person.can_delete && person.timeline_status !== 'transferring' ? (
-        <TableActionButton
-          onClick={() => {
-            setDeleting(person);
-          }}
-        >
-          <Trash2 aria-hidden="true" />
-          删除
-        </TableActionButton>
+        <TableActionsMenu
+          label={formatIdentity(person.name, person.student_no)}
+          actions={[
+            {
+              label: '删除人员',
+              icon: Trash2,
+              destructive: true,
+              onSelect: () => {
+                setDeleting(person);
+              },
+            },
+          ]}
+        />
       ) : null}
     </div>
   );
@@ -265,10 +275,36 @@ function PersonWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
       cell: ({ row }) => renderActions(row.original),
     },
   ];
+  const refreshButton = (
+    <Button
+      type="button"
+      size="sm"
+      variant="ghost"
+      loading={
+        refresh.pending ||
+        (isTimeline
+          ? timelineView.loading
+          : (canList && query.isPending) || (can('statistics') && statistics.isPending))
+      }
+      onClick={() => {
+        void refresh.run('refresh', async () => {
+          await refreshWorkspace();
+          if (canList || can('statistics')) {
+            await client.invalidateQueries({ queryKey: personKey(workspaceID) });
+            if (canList) await fetchPage(pagination.page, pagination.pageSize);
+          }
+        });
+      }}
+    >
+      <RefreshCw aria-hidden="true" />
+      刷新
+    </Button>
+  );
   const filterPanel = (
     <PersonFilterPanel
       workspaceID={workspaceID}
       draft={draft}
+      hasUnappliedChanges={hasUnappliedChanges}
       setDraft={setDraft}
       changeFilters={changeFilters}
       onApply={apply}
@@ -371,27 +407,7 @@ function PersonWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
               新增人员
             </Button>
           ) : null}
-          <Button
-            variant="outline"
-            loading={
-              refresh.pending ||
-              (isTimeline
-                ? timelineView.loading
-                : (canList && query.isPending) || (can('statistics') && statistics.isPending))
-            }
-            onClick={() => {
-              void refresh.run('refresh', async () => {
-                await refreshWorkspace();
-                if (canList || can('statistics')) {
-                  await client.invalidateQueries({ queryKey: personKey(workspaceID) });
-                  if (canList) await fetchPage(pagination.page, pagination.pageSize);
-                }
-              });
-            }}
-          >
-            <RefreshCw aria-hidden="true" />
-            刷新
-          </Button>
+          {!canList ? refreshButton : null}
         </div>
       </header>
       <div
@@ -402,6 +418,7 @@ function PersonWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
       >
         {isTimeline && canList ? (
           <PersonTimelineView
+            refreshAction={refreshButton}
             view={timelineView}
             filters={filterPanel}
             workspaceID={workspaceID}
@@ -419,7 +436,11 @@ function PersonWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
                 {filterPanel}
                 <Card className="gap-0 overflow-hidden py-0">
                   <ManagementTable
+                    refreshAction={refreshButton}
+                    title="人员列表"
                     tableID="cpc-people"
+                    rowID={(person) => String(person.id)}
+                    pinnedColumn="student_no"
                     columns={columns}
                     data={peopleData?.items ?? []}
                     total={peopleData?.total ?? 0}
@@ -521,7 +542,7 @@ function PersonWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
           footer={
             <>
               <Button
-                variant="secondary"
+                variant="outline"
                 disabled={remove.pending}
                 onClick={() => {
                   setDeleting(null);
