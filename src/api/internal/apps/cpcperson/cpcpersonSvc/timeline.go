@@ -362,6 +362,7 @@ func timelineData(
 	result := cpcpersonModels.TimelineData{
 		PersonID:       person.ID,
 		PersonName:     person.Name,
+		StudentNo:      person.StudentNo,
 		PersonRevision: person.Revision,
 		TemplateID:     person.TimelineTemplateID,
 		CanUpdate:      person.CanUpdate, Nodes: []cpcpersonModels.TimelineNodeInfo{},

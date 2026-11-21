@@ -83,12 +83,10 @@ export function PersonTimelineDrawer({
     cancelTransfer.pending;
   const denied = query.error instanceof ApiError && [401, 403, 404].includes(query.error.status);
   const data = denied ? undefined : query.data;
-  const personName = (data?.person_name ?? person.name).trim();
-  const personLabel = personName
-    ? person.student_no
-      ? formatIdentity(personName, person.student_no)
-      : `${personName} (${String(person.id)})`
-    : undefined;
+  const personName = data?.person_name ?? person.name;
+  const studentNo = data?.student_no ?? person.student_no;
+  const personLabel =
+    personName.trim() || studentNo.trim() ? formatIdentity(personName, studentNo) : undefined;
   const canEdit = canUpdate && data?.can_update && data.status !== 'transferring';
   const isVisible = (node: PersonTimelineNode) =>
     (!nodeStatus || node.status === nodeStatus) &&

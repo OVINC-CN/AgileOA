@@ -43,6 +43,7 @@ const personNodeSchema = nodeSchema.extend({
 export const timelineSchema = z.object({
   person_id: z.number().int().positive(),
   person_name: z.string().optional(),
+  student_no: z.string().optional(),
   person_revision: z.number().int().positive(),
   template_id: z.number().int().positive().nullable(),
   template_name: z.string(),

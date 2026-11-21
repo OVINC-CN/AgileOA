@@ -170,6 +170,7 @@ func buildTimelineTransfer(
 			Timeline: cpcpersonModels.TimelineData{
 				PersonID:         person.ID,
 				PersonName:       person.Name,
+				StudentNo:        person.StudentNo,
 				PersonRevision:   person.Revision + 1,
 				TemplateID:       &target.ID,
 				TemplateName:     target.Name,

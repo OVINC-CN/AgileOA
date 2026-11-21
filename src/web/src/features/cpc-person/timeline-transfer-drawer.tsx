@@ -20,6 +20,7 @@ import { timelineValueLabel } from '@/features/cpc-person/timeline-values';
 import { BaselineNodeBadge } from '@/features/cpc-timeline/baseline-node-badge';
 import { TimelineNodeGroups } from '@/features/cpc-timeline/node-groups';
 import { useApiAction } from '@/lib/api-action';
+import { formatIdentity } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 export type TimelineTransferState =
@@ -50,10 +51,15 @@ export function TimelineTransferDrawer({
   const busy = prepare.pending || confirm.pending;
   const reviewing = transfer.mode === 'review';
   const choices = transfer.mode === 'request' ? transfer.options : undefined;
+  const previewPerson = preview?.timeline;
+  const description =
+    previewPerson?.person_name && previewPerson.student_no
+      ? formatIdentity(previewPerson.person_name, previewPerson.student_no)
+      : personLabel;
   return (
     <Drawer
       title={reviewing ? '审核时间线转移' : '转移人员时间线'}
-      description={personLabel}
+      description={description}
       truncateDescription
       onClose={onClose}
       busy={busy}

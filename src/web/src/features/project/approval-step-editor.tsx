@@ -219,8 +219,11 @@ function ApproverSelector({
   for (const option of step.reviewer_options) {
     if (!options.some((item) => item.value === option.value)) options.push(option);
   }
+  const fallbackLabel = (value: string) => (step.kind === 'student' ? '未知学生' : value);
   for (const value of values) {
-    if (!options.some((item) => item.value === value)) options.push({ value, label: value });
+    if (!options.some((item) => item.value === value)) {
+      options.push({ value, label: fallbackLabel(value) });
+    }
   }
   const label = approverKinds.find((kind) => kind.value === step.kind)?.label ?? '处理人';
   return (
@@ -242,18 +245,17 @@ function ApproverSelector({
             showMessage(`每级最多选择 ${String(getConfig().projectMaxApprovalTargets)} 个处理人`);
             return;
           }
+          const reviewerOptions = selected.map((value) => ({
+            value,
+            label: options.find((item) => item.value === value)?.label ?? fallbackLabel(value),
+          }));
           onChange({
             ...step,
             class_positions: step.kind === 'class_position' ? selected : [],
             student_ids: step.kind === 'student' ? selected.map(Number) : [],
             user_ids: step.kind === 'user' ? selected.map(Number) : [],
-            reviewer_label: selected
-              .map((value) => options.find((item) => item.value === value)?.label ?? value)
-              .join('、'),
-            reviewer_options: selected.map((value) => ({
-              value,
-              label: options.find((item) => item.value === value)?.label ?? value,
-            })),
+            reviewer_label: reviewerOptions.map((option) => option.label).join('、'),
+            reviewer_options: reviewerOptions,
           });
         }}
       />

@@ -17166,6 +17166,11 @@
                     "type": "string",
                     "example": "abnormal"
                 },
+                "student_no": {
+                    "description": "StudentNo 是所属人员关联学生的学号。",
+                    "type": "string",
+                    "example": "S20260001"
+                },
                 "template_id": {
                     "description": "TemplateID 是已绑定模板编号，未绑定时为 null。",
                     "type": "integer",

@@ -106,7 +106,11 @@ export function ParticipationEditor({
             students={false}
             canQuery={actions.includes('project.list')}
             value={values.project_id}
-            fallback={record ? `${String(record.year)} · ${record.project_name}` : ''}
+            fallback={
+              values.project_id === record?.project_id
+                ? `${String(record.year)} · ${record.project_name}`
+                : ''
+            }
             onChange={(id) => {
               if (id !== values.project_id) {
                 setItems((current) => current.map((item) => ({ ...item, name: '' })));
@@ -119,7 +123,7 @@ export function ParticipationEditor({
             students
             canQuery={actions.includes('project.participation.list')}
             value={values.student_id}
-            fallback={studentLabel}
+            fallback={values.student_id === record?.student_id ? studentLabel : ''}
             onChange={(id) => {
               setValues((current) => ({ ...current, student_id: id }));
             }}
@@ -297,6 +301,7 @@ function RecordSelector({
   const client = useQueryClient();
   const [keyword, setKeyword] = useState('');
   const [search, setSearch] = useState('');
+  const [selected, setSelected] = useState<{ value: string; label: string } | undefined>();
   const reload = useApiAction();
   const query = useQuery({ ...projectOptions(workspaceID, students, search), enabled: canQuery });
   const applySearch = async (next: string) => {
@@ -308,8 +313,15 @@ function RecordSelector({
     value: String(item.value),
     label: item.label,
   }));
-  if (value && !options.some((item) => item.value === String(value)))
-    options.push({ value: String(value), label: fallback || `${name} #${String(value)}` });
+  const selectedValue = value ? String(value) : '';
+  if (selectedValue && !options.some((item) => item.value === selectedValue)) {
+    options.push({
+      value: selectedValue,
+      label:
+        (selected?.value === selectedValue ? selected.label : fallback) ||
+        (students ? '未知学生' : `${name} #${selectedValue}`),
+    });
+  }
   return (
     <div className="space-y-2">
       <Label htmlFor={`participation-${students ? 'student' : 'project'}`}>{name}</Label>
@@ -320,8 +332,9 @@ function RecordSelector({
             label={name}
             className="w-full"
             options={options}
-            value={value ? String(value) : ''}
+            value={selectedValue}
             onValueChange={(id) => {
+              setSelected(options.find((item) => item.value === id));
               onChange(Number(id));
             }}
             loading={query.isFetching}
@@ -376,7 +389,9 @@ function RecordSelector({
           }}
         />
       )}
-      {fallback ? <p className="text-xs wrap-anywhere text-muted-foreground">{fallback}</p> : null}
+      {!canQuery && fallback ? (
+        <p className="text-xs wrap-anywhere text-muted-foreground">{fallback}</p>
+      ) : null}
     </div>
   );
 }
