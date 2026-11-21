@@ -9,7 +9,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-it('右上角显示关闭图标，底部默认显示关闭文字，忙碌时均禁用', () => {
+it('右上角显示无边框关闭图标，底部默认显示关闭文字，忙碌时均禁用', () => {
   const onClose = vi.fn();
   const view = render(
     <Drawer title="详情" onClose={onClose} busy>
@@ -21,6 +21,8 @@ it('右上角显示关闭图标，底部默认显示关闭文字，忙碌时均�
   expect(close.closest('[data-slot="drawer-footer"]')).toBeInTheDocument();
   expect(headerClose.textContent).toBe('');
   expect(headerClose.querySelector('svg')).toBeVisible();
+  expect(headerClose).toHaveClass('border-0');
+  expect(close).toHaveClass('border');
   expect(close.querySelector('svg')).toBeNull();
   expect(headerClose).toBeDisabled();
   expect(close).toBeDisabled();

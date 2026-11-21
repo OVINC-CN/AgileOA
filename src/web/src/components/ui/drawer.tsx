@@ -148,6 +148,7 @@ export function Drawer({
             type="button"
             variant="cancel"
             size="icon-sm"
+            className="border-0"
             aria-label={closeLabel}
             disabled={busy}
           >
