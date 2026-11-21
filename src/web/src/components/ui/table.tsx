@@ -6,7 +6,11 @@ import { useLoadingDelay } from '@/lib/loading';
 import { cn } from '@/lib/utils';
 
 /* eslint-disable jsx-a11y/no-noninteractive-tabindex -- 滚动容器提供键盘焦点以支持横向滚动。 */
-function Table({ className, ...props }: React.ComponentProps<'table'>) {
+function Table({
+  className,
+  pinFirstColumn = false,
+  ...props
+}: React.ComponentProps<'table'> & { pinFirstColumn?: boolean }) {
   const busy = useLoadingDelay(props['aria-busy'] === true || props['aria-busy'] === 'true');
   return (
     <div
@@ -18,6 +22,7 @@ function Table({ className, ...props }: React.ComponentProps<'table'>) {
     >
       <table
         data-slot="table"
+        data-pin-first-column={pinFirstColumn || undefined}
         className={cn(
           'w-max min-w-full caption-bottom text-sm [&_td_*]:whitespace-nowrap [&_th_*]:whitespace-nowrap',
           className,

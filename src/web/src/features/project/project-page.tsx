@@ -9,6 +9,7 @@ import { FilterField, FilterPanel } from '@/components/filter-panel';
 import { ManagementTable } from '@/components/management-table';
 import { SearchResetButton } from '@/components/search-reset-button';
 import { TableActionButton } from '@/components/table-action-button';
+import { TableActionsMenu } from '@/components/table-actions-menu';
 import { TableTimestamp } from '@/components/table-timestamp';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -111,9 +112,18 @@ function ProjectWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: W
     placeholderData: keepPreviousData,
   });
   const enums = denied(filterOptions.error) ? undefined : filterOptions.data;
+  const openParticipationDetail = async (id: number, key: string) => {
+    const result = await loadDetail.run(key, () =>
+      client.query({ ...participationDetailOptions(workspaceID, id), staleTime: 0 }),
+    );
+    if (result.ok) setParticipation({ record: result.data, readOnly: true });
+  };
   const columns: ColumnDef<Project>[] = [
-    { accessorKey: 'name', header: '项目' },
-    { accessorKey: 'year', header: '归属年份' },
+    {
+      id: 'name',
+      header: '项目',
+      accessorFn: (project) => `${String(project.year)} · ${project.name}`,
+    },
     {
       accessorKey: 'allow_self_apply',
       header: '自行申报',
@@ -165,24 +175,29 @@ function ProjectWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: W
             </TableActionButton>
           ) : null}
           {can('project.delete') ? (
-            <TableActionButton
-              onClick={() => {
-                setDeleting({ record: row.original, participation: false });
-              }}
-            >
-              <Trash2 aria-hidden="true" />
-              删除
-            </TableActionButton>
+            <TableActionsMenu
+              label={`${String(row.original.year)} · ${row.original.name}`}
+              actions={[
+                {
+                  label: '删除',
+                  icon: Trash2,
+                  destructive: true,
+                  onSelect: () => {
+                    setDeleting({ record: row.original, participation: false });
+                  },
+                },
+              ]}
+            />
           ) : null}
         </div>
       ),
     },
   ];
   const participationColumns: ColumnDef<ParticipationSummary>[] = [
+    { accessorKey: 'student_name', header: '姓名' },
+    { accessorKey: 'student_no', header: '学号' },
     { accessorKey: 'project_name', header: '项目' },
     { accessorKey: 'year', header: '归属年份' },
-    { accessorKey: 'student_no', header: '学号' },
-    { accessorKey: 'student_name', header: '姓名' },
     { accessorKey: 'education_level', header: '学历' },
     { accessorKey: 'major', header: '专业' },
     { accessorKey: 'grade', header: '年级' },
@@ -202,15 +217,7 @@ function ProjectWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: W
           <TableActionButton
             loading={loadDetail.isPending(`view:${String(row.original.id)}`)}
             onClick={() => {
-              void (async () => {
-                const result = await loadDetail.run(`view:${String(row.original.id)}`, () =>
-                  client.query({
-                    ...participationDetailOptions(workspaceID, row.original.id),
-                    staleTime: 0,
-                  }),
-                );
-                if (result.ok) setParticipation({ record: result.data, readOnly: true });
-              })();
+              void openParticipationDetail(row.original.id, `view:${String(row.original.id)}`);
             }}
           >
             <Eye aria-hidden="true" />
@@ -236,14 +243,23 @@ function ProjectWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: W
             </TableActionButton>
           ) : null}
           {can('project.participation.delete') ? (
-            <TableActionButton
-              onClick={() => {
-                setDeleting({ record: row.original, participation: true });
-              }}
-            >
-              <Trash2 aria-hidden="true" />
-              删除
-            </TableActionButton>
+            <TableActionsMenu
+              label={[
+                formatIdentity(row.original.student_name, row.original.student_no),
+                String(row.original.year),
+                row.original.project_name,
+              ].join(' · ')}
+              actions={[
+                {
+                  label: '删除',
+                  icon: Trash2,
+                  destructive: true,
+                  onSelect: () => {
+                    setDeleting({ record: row.original, participation: true });
+                  },
+                },
+              ]}
+            />
           ) : null}
         </div>
       ),
@@ -586,6 +602,19 @@ function ProjectWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: W
               <ManagementTable
                 refreshAction={refreshButton}
                 tableID="project-participations"
+                pinnedColumn="student_name"
+                primaryColumn={{
+                  id: 'student_name',
+                  getAction: ({ id }) => {
+                    const key = `name:${String(id)}`;
+                    return {
+                      loading: loadDetail.isPending(key),
+                      onClick: () => {
+                        void openParticipationDetail(id, key);
+                      },
+                    };
+                  },
+                }}
                 columns={participationColumns}
                 data={participations?.items ?? []}
                 total={participations?.total ?? 0}
@@ -606,6 +635,15 @@ function ProjectWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: W
               <ManagementTable
                 refreshAction={refreshButton}
                 tableID="projects"
+                pinnedColumn="name"
+                primaryColumn={{
+                  id: 'name',
+                  getAction: (project) => ({
+                    onClick: () => {
+                      setDetail(project);
+                    },
+                  }),
+                }}
                 columns={columns}
                 data={projects?.items ?? []}
                 total={projects?.total ?? 0}

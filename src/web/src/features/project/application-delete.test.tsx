@@ -41,6 +41,12 @@ const list = (items = [record], total = items.length, page = 1) => ({
   page,
   page_size: 5,
 });
+const moreActions = /^更多操作 /u;
+
+async function selectDelete(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(await screen.findByRole('button', { name: moreActions }));
+  await user.click(screen.getByRole('menuitem', { name: '删除' }));
+}
 
 function renderApplications(actions = ['project.application.list', 'project.application.delete']) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -91,7 +97,7 @@ it('查看权限和当前节点资格不自动提供删除填报入口', async (
   );
   renderApplications(['project.application.list']);
   await screen.findByRole('button', { name: '处理' });
-  expect(screen.queryByRole('button', { name: '删除' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: moreActions })).not.toBeInTheDocument();
 });
 
 it.each(['pending', 'rejected', 'approved'] as const)(
@@ -107,7 +113,9 @@ it.each(['pending', 'rejected', 'approved'] as const)(
     );
     renderApplications();
     await screen.findByRole('button', { name: '详情' });
-    expect(screen.getByRole('button', { name: '删除' })).toBeEnabled();
+    expect(screen.queryByRole('button', { name: '删除' })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: moreActions }));
+    expect(screen.getByRole('menuitem', { name: '删除' })).toBeVisible();
   },
 );
 
@@ -133,7 +141,7 @@ it.each(['mine', 'student-reviews'] as const)('学生 %s 不提供删除填报�
     </QueryClientProvider>,
   );
   await screen.findByRole('button', { name: '详情' });
-  expect(screen.queryByRole('button', { name: '删除' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: moreActions })).not.toBeInTheDocument();
 });
 
 it('删除须确认，取消不请求；提交携带版本与 CSRF，加载期间防重复并更新列表和详情缓存', async () => {
@@ -159,14 +167,14 @@ it('删除须确认，取消不请求；提交携带版本与 CSRF，加载期�
   );
   const { client, detailKey } = renderApplications();
   const user = userEvent.setup();
-  await user.click(await screen.findByRole('button', { name: '删除' }));
+  await selectDelete(user);
   let drawer = screen.getByRole('dialog', { name: '删除填报' });
   expect(drawer).toHaveTextContent('优秀学生 · 2026 · 虚构学生(0007)');
   expect(drawer).toHaveTextContent('审批流程、签署记录、流转历史和附件');
   await user.click(within(drawer).getByRole('button', { name: '取消' }));
   expect(requests.filter(({ options }) => options.method === 'DELETE')).toHaveLength(0);
 
-  await user.click(screen.getByRole('button', { name: '删除' }));
+  await selectDelete(user);
   drawer = screen.getByRole('dialog', { name: '删除填报' });
   const confirm = within(drawer).getByRole('button', { name: '确认删除' });
   await user.dblClick(confirm);
@@ -213,7 +221,7 @@ it('版本冲突保留记录和确认抽屉，通过顶部消息提示并允许�
   );
   renderApplications();
   const user = userEvent.setup();
-  await user.click(await screen.findByRole('button', { name: '删除' }));
+  await selectDelete(user);
   const drawer = screen.getByRole('dialog', { name: '删除填报' });
   const confirm = within(drawer).getByRole('button', { name: '确认删除' });
   await user.click(confirm);
@@ -224,7 +232,7 @@ it('版本冲突保留记录和确认抽屉，通过顶部消息提示并允许�
     expect(confirm).not.toHaveAttribute('aria-busy', 'true');
   });
   await user.click(within(drawer).getByRole('button', { name: '取消' }));
-  expect(screen.getByRole('button', { name: '删除' })).toBeVisible();
+  expect(screen.getByRole('button', { name: moreActions })).toBeVisible();
 });
 
 it('删除末页唯一记录后回到上一页并保留已提交筛选', async () => {
@@ -254,13 +262,13 @@ it('删除末页唯一记录后回到上一页并保留已提交筛选', async (
   await user.click(screen.getByRole('button', { name: '搜索' }));
   await user.click(screen.getByRole('button', { name: '下一页' }));
   await screen.findByText('第 2 / 2 页');
-  await user.click(screen.getByRole('button', { name: '删除' }));
+  await selectDelete(user);
   await user.click(screen.getByRole('button', { name: '确认删除' }));
   await screen.findByText('第 1 / 1 页');
   await waitFor(() => {
     expect(screen.queryByRole('dialog', { name: '删除填报' })).not.toBeInTheDocument();
   });
-  expect(screen.getAllByRole('button', { name: '删除' })).toHaveLength(5);
+  expect(screen.getAllByRole('button', { name: moreActions })).toHaveLength(5);
   expect(requests.at(-1)?.searchParams.get('page')).toBe('1');
   expect(requests.at(-1)?.searchParams.get('student')).toBe('虚构学生');
   expect(requests.at(-1)?.searchParams.getAll('status')).toEqual(['pending_mine']);

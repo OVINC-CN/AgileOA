@@ -10,6 +10,7 @@ import { FilterField, FilterPanel } from '@/components/filter-panel';
 import { ManagementTable } from '@/components/management-table';
 import { SearchResetButton } from '@/components/search-reset-button';
 import { TableActionButton } from '@/components/table-action-button';
+import { TableActionsMenu } from '@/components/table-actions-menu';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Drawer } from '@/components/ui/drawer';
@@ -58,6 +59,8 @@ export function ApplicationList({
   canExport?: boolean;
   canDelete?: boolean;
 }) {
+  const isMine = scope === 'mine';
+  const primaryColumnID = isMine ? 'project_name' : 'student_name';
   const [params, setParams] = useSearchParams();
   const applicationID = params.get('application_id');
   const [filters, setFilters] = useState(() => defaultApplicationFilters(scope));
@@ -103,12 +106,30 @@ export function ApplicationList({
     applyFilters,
     filters,
   );
-  const columns: ColumnDef<ApplicationSummary>[] = [
-    { accessorKey: 'id', header: '申报编号' },
-    { accessorKey: 'project_name', header: '项目' },
-    { accessorKey: 'year', header: '归属年份' },
-    { accessorKey: 'student_no', header: '学号' },
+  const openDetail = (id: number, key: string) => {
+    void loadDetail.run(key, async () => {
+      await client.query({ ...applicationDetailOptions(workspaceID, scope, id), staleTime: 0 });
+      setCreating(false);
+      setParams((current) => {
+        current.set('application_id', String(id));
+        return current;
+      });
+    });
+  };
+  const studentColumns: ColumnDef<ApplicationSummary>[] = [
     { accessorKey: 'student_name', header: '姓名' },
+    { accessorKey: 'student_no', header: '学号' },
+  ];
+  const projectColumn: ColumnDef<ApplicationSummary> = {
+    id: 'project_name',
+    header: '项目',
+    accessorFn: ({ year, project_name }) =>
+      isMine ? `${String(year)} · ${project_name}` : project_name,
+  };
+  const columns: ColumnDef<ApplicationSummary>[] = [
+    ...(isMine
+      ? [projectColumn, ...studentColumns]
+      : [...studentColumns, projectColumn, { accessorKey: 'year', header: '归属年份' }]),
     { accessorKey: 'class_name', header: '班级' },
     {
       accessorKey: 'status',
@@ -129,32 +150,31 @@ export function ApplicationList({
               disabled={loadDetail.pending}
               loading={loadDetail.isPending(String(record.id))}
               onClick={() => {
-                void loadDetail.run(String(record.id), async () => {
-                  await client.query({
-                    ...applicationDetailOptions(workspaceID, scope, record.id),
-                    staleTime: 0,
-                  });
-                  setCreating(false);
-                  setParams((current) => {
-                    current.set('application_id', String(record.id));
-                    return current;
-                  });
-                });
+                openDetail(record.id, String(record.id));
               }}
             >
               {editable ? <Pencil aria-hidden="true" /> : <Eye aria-hidden="true" />}
               {editable ? '处理' : '详情'}
             </TableActionButton>
             {scope === 'manage' && canDelete ? (
-              <TableActionButton
+              <TableActionsMenu
+                label={[
+                  formatIdentity(record.student_name, record.student_no),
+                  String(record.year),
+                  record.project_name,
+                ].join(' · ')}
                 disabled={remove.pending || denied}
-                onClick={() => {
-                  setDeleting(record);
-                }}
-              >
-                <Trash2 aria-hidden="true" />
-                删除
-              </TableActionButton>
+                actions={[
+                  {
+                    label: '删除',
+                    icon: Trash2,
+                    destructive: true,
+                    onSelect: () => {
+                      setDeleting(record);
+                    },
+                  },
+                ]}
+              />
             ) : null}
           </div>
         );
@@ -203,7 +223,7 @@ export function ApplicationList({
               }}
             />
           ) : null}
-          {scope === 'mine' ? (
+          {isMine ? (
             <Button
               onClick={() => {
                 closeDetail();
@@ -282,6 +302,20 @@ export function ApplicationList({
           <ManagementTable
             refreshAction={refreshButton}
             tableID={`project-applications-${scope}`}
+            pinnedColumn={primaryColumnID}
+            primaryColumn={{
+              id: primaryColumnID,
+              getAction: ({ id }) => {
+                const key = `primary:${String(id)}`;
+                return {
+                  disabled: loadDetail.pending,
+                  loading: loadDetail.isPending(key),
+                  onClick: () => {
+                    openDetail(id, key);
+                  },
+                };
+              },
+            }}
             columns={columns}
             data={data?.items ?? []}
             total={data?.total ?? 0}

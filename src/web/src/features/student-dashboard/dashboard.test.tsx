@@ -144,7 +144,9 @@ it('导航子菜单默认展示专业表并支持切换，人数按班级和专�
     vi.fn((path: string) => Promise.resolve(respond(dashboardData(path)))),
   );
   renderDashboard(['student.dashboard.list']);
-  const table = within(await screen.findByRole('table', { name: '学生专业表' }));
+  const summaryTable = await screen.findByRole('table', { name: '学生专业表' });
+  expect(summaryTable).toHaveAttribute('data-pin-first-column');
+  const table = within(summaryTable);
   await table.findByRole('rowheader', { name: '一班' });
   expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
   const tabs = within(screen.getByRole('group', { name: '数据仪表子菜单' }));
@@ -287,7 +289,9 @@ it('链接直达住宿表，表头多选立即筛选，导出沿用四项条件�
   );
   const user = userEvent.setup();
   expect(screen.getByRole('link', { name: '住宿信息表', current: 'page' })).toBeVisible();
-  let table = within(screen.getByRole('table', { name: '住宿信息表' }));
+  const accommodationTable = screen.getByRole('table', { name: '住宿信息表' });
+  expect(accommodationTable).toHaveAttribute('data-pin-first-column');
+  let table = within(accommodationTable);
   expect(screen.queryByLabelText('已应用筛选')).not.toBeInTheDocument();
   await table.findByRole('cell', { name: '0102' });
   expect(table.getByLabelText('住宿类型共有2个唯一选项')).toHaveTextContent('（2）');

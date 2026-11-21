@@ -74,8 +74,6 @@ const studentProfile = {
   major: '虚构专业',
   class_name: '2026级一班',
   class_position: '',
-  admission_type: '非定向',
-  arrival_month: '2026-09',
 } satisfies StudentProfile;
 const password = 'Fictional-password-2026';
 const second = {
@@ -585,21 +583,12 @@ describe('登录与系统管理', () => {
     const profile = screen.getByRole('region', { name: '个人信息' });
     expect(within(profile).queryByRole('button', { expanded: true })).not.toBeInTheDocument();
     expect(within(profile).queryByRole('button', { expanded: false })).not.toBeInTheDocument();
-    expect(within(profile).getAllByRole('term')).toHaveLength(10);
-    for (const label of [
-      '学号',
-      '姓名',
-      '年级',
-      '状态',
-      '学历',
-      '专业',
-      '班级',
-      '班内任职',
-      '录取类型',
-      '来校时间',
-    ]) {
+    expect(within(profile).getAllByRole('term')).toHaveLength(8);
+    for (const label of ['学号', '姓名', '年级', '状态', '学历', '专业', '班级', '班内任职']) {
       expect(screen.getByText(label, { selector: 'dt' })).toBeInTheDocument();
     }
+    expect(within(profile).queryByText('录取类型')).not.toBeInTheDocument();
+    expect(within(profile).queryByText('来校时间')).not.toBeInTheDocument();
     expect(screen.getByText(studentProfile.student_no, { selector: 'dd' })).toBeVisible();
     expect(within(profile).getByText(studentProfile.status)).toBeVisible();
     expect(screen.getByText('虚构专业', { selector: 'dd' })).toBeVisible();

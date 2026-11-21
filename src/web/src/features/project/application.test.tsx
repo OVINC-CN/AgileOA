@@ -467,12 +467,58 @@ it('组织节点审批人直接进入填报管理，刷新收进表格，筛选�
   expect(requests.every((path) => path.includes('/project-applications'))).toBe(true);
 });
 
-it('学生两个子 Tab 使用相同页面布局，只有我的申报提供新建入口', async () => {
-  stubApplicationFetch(
-    vi.fn((path: string) =>
-      Promise.resolve(respond(path.includes('/filter-options') ? filters : list)),
-    ),
+it('填报管理的姓名和学号位于前两列，点击姓名打开对应申报详情', async () => {
+  const record = { ...rejectedApplication, can_edit: false, can_approve: false };
+  const detailPath = `/v1/workspaces/${workspaceID}/project-applications/${String(record.id)}`;
+  const request = vi.fn((path: string) => {
+    if (path === detailPath) return respond(record);
+    if (path.includes('/filter-options')) return respond(filters);
+    return respond({ ...list, items: [record], total: 1 });
+  });
+  stubApplicationFetch(request);
+  const url = `/stu/projects?workspace=${workspaceID}&tab=applications`;
+  render(
+    <QueryClientProvider client={new QueryClient()}>
+      <MemoryRouter initialEntries={[url]}>
+        <ProjectPage
+          workspaceID={workspaceID}
+          workspaceName="虚构空间"
+          actions={['project.application.list']}
+          refresh={() => Promise.resolve()}
+        />
+        <ApplicationLocation />
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
+  const table = within(screen.getByRole('table'));
+  const name = await table.findByRole('button', { name: record.student_name });
+  const [nameHeader, numberHeader] = table.getAllByRole('columnheader');
+  expect(nameHeader).toHaveTextContent('姓名');
+  expect(nameHeader).toHaveClass('table-pinned', 'left-0');
+  expect(numberHeader).toHaveTextContent('学号');
+  expect(name.closest('td')).toHaveClass('table-pinned', 'left-0');
+  expect(table.queryByRole('columnheader', { name: '申报编号' })).not.toBeInTheDocument();
+  expect(table.getByRole('button', { name: '详情' })).toBeEnabled();
+  await userEvent.click(name);
+  expect(await screen.findByRole('dialog', { name: '申报详情' })).toHaveTextContent(
+    record.statement,
+  );
+  expect(request.mock.calls.some(([path]) => path === detailPath)).toBe(true);
+  expect(screen.getByLabelText('申报地址')).toHaveTextContent(
+    `${url}&application_id=${String(record.id)}`,
+  );
+});
+
+it('我的申报和我的审核通过各自首列打开详情，只有我的申报提供新建入口', async () => {
+  const record = { ...rejectedApplication, can_edit: false, can_approve: false };
+  const mineDetail = `/v1/workspaces/${workspaceID}/student-service/project-applications/${String(record.id)}`;
+  const reviewDetail = `/v1/workspaces/${workspaceID}/student-service/project-reviews/${String(record.id)}`;
+  const request = vi.fn((path: string) => {
+    if (path === mineDetail || path === reviewDetail) return respond(record);
+    if (path.includes('/filter-options')) return respond(filters);
+    return respond({ ...list, items: [record], total: 1 });
+  });
+  stubApplicationFetch(request);
   const router = createMemoryRouter(
     [
       {
@@ -491,7 +537,8 @@ it('学生两个子 Tab 使用相同页面布局，只有我的申报提供新�
       <RouterProvider router={router} />
     </QueryClientProvider>,
   );
-  await screen.findByText('暂无符合条件的申报单');
+  const mineTable = within(screen.getByRole('table'));
+  const project = await mineTable.findByRole('button', { name: '2026 · 优秀学生' });
   expect(screen.getByRole('button', { name: '新建申报' })).toBeVisible();
   expect(screen.getByPlaceholderText('学号或姓名')).toBeVisible();
   const header = screen.getByRole('navigation', { name: '面包屑' }).closest('header');
@@ -501,13 +548,42 @@ it('学生两个子 Tab 使用相同页面布局，只有我的申报提供新�
   if (!tableCard) throw new Error('页面缺少表格操作区');
   expect(within(tableCard).getByRole('button', { name: '刷新' })).toBeVisible();
   expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
-  await userEvent.click(screen.getByRole('link', { name: '我的审核' }));
+  const [firstHeader] = mineTable.getAllByRole('columnheader');
+  expect(firstHeader).toHaveTextContent('项目');
+  expect(firstHeader).toHaveClass('table-pinned', 'left-0');
+  expect(project.closest('td')).toHaveClass('table-pinned', 'left-0');
+  expect(mineTable.queryByRole('columnheader', { name: '申报编号' })).not.toBeInTheDocument();
+  expect(mineTable.queryByRole('columnheader', { name: '归属年份' })).not.toBeInTheDocument();
+  expect(screen.getByRole('combobox', { name: '归属年份' })).toBeVisible();
+
+  const user = userEvent.setup();
+  await user.click(project);
+  const mine = within(await screen.findByRole('dialog', { name: '申报详情' }));
+  expect(mine.getByText(record.statement)).toBeVisible();
+  expect(request.mock.calls.some(([path]) => path === mineDetail)).toBe(true);
+  await user.click(mine.getByRole('button', { name: '关闭抽屉' }));
+
+  await user.click(screen.getByRole('link', { name: '我的审核' }));
   expect(screen.queryByRole('button', { name: '新建申报' })).not.toBeInTheDocument();
   expect(screen.getByRole('navigation', { name: '面包屑' })).toHaveTextContent(
     '学生服务/评奖评优/我的审核',
   );
   expect(new URLSearchParams(router.state.location.search).get('tab')).toBe('reviews');
   expect(screen.getByRole('combobox', { name: '审批状态' })).toHaveTextContent('待我审批');
+  const reviewTable = within(screen.getByRole('table'));
+  const headers = reviewTable.getAllByRole('columnheader').map((cell) => cell.textContent);
+  expect(headers.slice(0, 4)).toEqual(['姓名', '学号', '项目', '归属年份']);
+  expect(headers).not.toContain('申报编号');
+  expect(reviewTable.getByRole('columnheader', { name: '姓名' })).toHaveClass(
+    'table-pinned',
+    'left-0',
+  );
+  const studentName = await reviewTable.findByRole('button', { name: record.student_name });
+  expect(studentName.closest('td')).toHaveClass('table-pinned', 'left-0');
+  await user.click(studentName);
+  const review = within(await screen.findByRole('dialog', { name: '申报详情' }));
+  expect(review.getByText(record.statement)).toBeVisible();
+  expect(request.mock.calls.some(([path]) => path === reviewDetail)).toBe(true);
 });
 
 it('驳回详情仅保留重新申报入口，进入编辑不请求接口且切换 Tab 保留草稿', async () => {

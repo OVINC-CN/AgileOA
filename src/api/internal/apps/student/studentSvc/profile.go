@@ -58,8 +58,6 @@ func Profile(ctx context.Context, workspaceID string) (studentModels.ProfileData
 			"s.major",
 			"s.class_name",
 			"s.class_position",
-			"s.admission_type",
-			"s.arrival_month",
 			"s.email",
 		).Where("s.id = ?", student.StudentID).Take(&record).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -85,8 +83,6 @@ func Profile(ctx context.Context, workspaceID string) (studentModels.ProfileData
 			Major:          record.Major,
 			ClassName:      record.ClassName,
 			ClassPosition:  record.ClassPosition,
-			AdmissionType:  record.AdmissionType,
-			ArrivalMonth:   record.ArrivalMonth,
 		}
 
 		// 仅记录读取对象和数量，审计提交前不返回学籍信息。

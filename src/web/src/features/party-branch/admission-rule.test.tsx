@@ -222,11 +222,22 @@ describe('党支部准入规则', () => {
           />
         </QueryClientProvider>,
       );
-      const detail = await screen.findByRole('button', { name: '详情' });
+      const table = within(screen.getByRole('table'));
+      const name = await table.findByRole('button', { name: branch.short_name });
+      const headers = table.getAllByRole('columnheader');
+      expect(headers.slice(0, 4).map((header) => header.textContent)).toEqual([
+        '党支部简称',
+        '党支部全称',
+        '优先级',
+        '管理员',
+      ]);
+      expect(headers[0]).toHaveClass('table-pinned', 'left-0');
+      expect(name.closest('td')).toHaveClass('table-pinned', 'left-0');
       expect(paths.some((path) => path.endsWith('/admission-rule'))).toBe(false);
       expect(screen.queryByRole('button', { name: '准入规则' })).not.toBeInTheDocument();
       expect(screen.queryByRole('button', { name: '编辑' })).not.toBeInTheDocument();
-      await userEvent.click(detail);
+      expect(table.queryByRole('button', { name: /^更多操作 /u })).not.toBeInTheDocument();
+      await userEvent.click(name);
       expect(await screen.findByRole('dialog', { name: '党支部详情' })).toBeVisible();
       const preview = within(screen.getByRole('region', { name: '规则预览' }));
       if (rule) {

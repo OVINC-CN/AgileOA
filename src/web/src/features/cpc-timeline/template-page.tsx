@@ -8,6 +8,7 @@ import { FilterField, FilterPanel } from '@/components/filter-panel';
 import { ManagementTable } from '@/components/management-table';
 import { SearchResetButton } from '@/components/search-reset-button';
 import { TableActionButton } from '@/components/table-action-button';
+import { TableActionsMenu } from '@/components/table-actions-menu';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Drawer } from '@/components/ui/drawer';
@@ -68,13 +69,13 @@ export function TimelinePage({
     pagination.setPage(1);
     await fetchPage(1, pagination.pageSize, next);
   };
-  const open = (record: TimelineSummary, edit: boolean) => {
-    void load.run(`${edit ? 'edit' : 'detail'}:${String(record.id)}`, async () => {
+  const open = (record: TimelineSummary, action: 'name' | 'detail' | 'edit') => {
+    void load.run(`${action}:${String(record.id)}`, async () => {
       const result = await client.query({
         ...timelineDetailOptions(workspaceID, record.id),
         staleTime: 0,
       });
-      if (edit) setEditor(result);
+      if (action === 'edit') setEditor(result);
       else setDetail(result);
     });
   };
@@ -101,7 +102,7 @@ export function TimelinePage({
               disabled={load.pending}
               loading={load.isPending(`detail:${String(row.original.id)}`)}
               onClick={() => {
-                open(row.original, false);
+                open(row.original, 'detail');
               }}
             >
               <Eye aria-hidden="true" />
@@ -113,40 +114,49 @@ export function TimelinePage({
               disabled={load.pending}
               loading={load.isPending(`edit:${String(row.original.id)}`)}
               onClick={() => {
-                open(row.original, true);
+                open(row.original, 'edit');
               }}
             >
               <Pencil aria-hidden="true" />
               编辑
             </TableActionButton>
           ) : null}
-          {can('create') ? (
-            <TableActionButton
-              disabled={clone.pending}
-              loading={clone.isPending(String(row.original.id))}
-              onClick={() => {
-                void clone.run(String(row.original.id), async () => {
-                  await cloneTimeline(workspaceID, row.original);
-                  pagination.setPage(1);
-                  await client.invalidateQueries({ queryKey: timelineKey(workspaceID) });
-                  await fetchPage(1, pagination.pageSize);
-                });
-              }}
-            >
-              <Copy aria-hidden="true" />
-              克隆
-            </TableActionButton>
-          ) : null}
-          {can('delete') ? (
-            <TableActionButton
-              onClick={() => {
-                setDeleting(row.original);
-              }}
-            >
-              <Trash2 aria-hidden="true" />
-              删除
-            </TableActionButton>
-          ) : null}
+          <TableActionsMenu
+            label={row.original.name}
+            disabled={clone.pending && !can('delete')}
+            loading={clone.isPending(String(row.original.id))}
+            actions={[
+              ...(can('create')
+                ? [
+                    {
+                      label: '克隆',
+                      icon: Copy,
+                      disabled: clone.pending,
+                      onSelect: () => {
+                        void clone.run(String(row.original.id), async () => {
+                          await cloneTimeline(workspaceID, row.original);
+                          pagination.setPage(1);
+                          await client.invalidateQueries({ queryKey: timelineKey(workspaceID) });
+                          await fetchPage(1, pagination.pageSize);
+                        });
+                      },
+                    },
+                  ]
+                : []),
+              ...(can('delete')
+                ? [
+                    {
+                      label: '删除',
+                      icon: Trash2,
+                      destructive: true,
+                      onSelect: () => {
+                        setDeleting(row.original);
+                      },
+                    },
+                  ]
+                : []),
+            ]}
+          />
         </div>
       ),
     },
@@ -256,6 +266,20 @@ export function TimelinePage({
           <ManagementTable
             refreshAction={refreshButton}
             tableID="cpc-timeline-templates"
+            pinnedColumn="name"
+            primaryColumn={{
+              id: 'name',
+              getAction: (record) =>
+                can('detail')
+                  ? {
+                      disabled: load.pending,
+                      loading: load.isPending(`name:${String(record.id)}`),
+                      onClick: () => {
+                        open(record, 'name');
+                      },
+                    }
+                  : undefined,
+            }}
             columns={columns}
             data={data?.items ?? []}
             total={data?.total ?? 0}

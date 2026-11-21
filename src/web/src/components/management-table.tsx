@@ -1,9 +1,11 @@
 import { type ColumnDef, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { Inbox } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { Link, type To } from 'react-router';
 
 import { ManagementPagination } from '@/components/management-pagination';
 import { TableColumnSettings } from '@/components/table-column-settings';
+import { Button } from '@/components/ui/button';
 import { LoadingIcon } from '@/components/ui/loading-icon';
 import {
   Table,
@@ -13,11 +15,15 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Tooltip } from '@/components/ui/tooltip';
 import { useApiAction } from '@/lib/api-action';
 import { formatValue } from '@/lib/format';
 import { useLoadingDelay } from '@/lib/loading';
 import { type TableColumn, useTableColumns } from '@/lib/table-columns';
 import { cn } from '@/lib/utils';
+
+type PrimaryColumnAction =
+  { to: To; ariaLabel?: string } | { onClick: () => void; loading?: boolean; disabled?: boolean };
 
 interface Props<T> {
   tableID: string;
@@ -35,6 +41,8 @@ interface Props<T> {
   title?: string;
   rowID?: (record: T) => string;
   pinnedColumn?: string;
+  primaryColumn?:
+    { id: string; getAction: (record: T) => PrimaryColumnAction | undefined } | undefined;
 }
 
 function columnOptions<T>(columns: ColumnDef<T>[]): TableColumn[] {
@@ -45,6 +53,54 @@ function columnOptions<T>(columns: ColumnDef<T>[]): TableColumn[] {
     const id = column.id ?? accessor?.replaceAll('.', '_') ?? header;
     return id ? [{ id, label: header ?? id }] : [];
   });
+}
+
+const primaryColumnWidth = 'max-w-[min(8rem,33vw)] sm:max-w-64';
+
+function PrimaryColumnCell({
+  label,
+  action,
+}: {
+  label: string;
+  action: PrimaryColumnAction | undefined;
+}) {
+  const text = (
+    <span data-tooltip-overflow className="min-w-0 truncate group-aria-busy:opacity-35">
+      {label}
+    </span>
+  );
+  const buttonClass = cn(primaryColumnWidth, 'px-0');
+
+  return (
+    <Tooltip content={label} onlyOverflow>
+      {action === undefined ? (
+        <span className={cn(primaryColumnWidth, 'block truncate')}>{label}</span>
+      ) : 'to' in action ? (
+        <Button asChild variant="link" size="sm" className={buttonClass}>
+          <Link to={action.to} aria-label={action.ariaLabel} aria-haspopup="dialog">
+            {text}
+          </Link>
+        </Button>
+      ) : (
+        <Button
+          type="button"
+          variant="link"
+          size="sm"
+          aria-haspopup="dialog"
+          className={cn(
+            buttonClass,
+            'group relative aria-busy:disabled:opacity-100',
+            '[&>svg]:absolute [&>svg]:inset-0 [&>svg]:m-auto',
+          )}
+          loading={action.loading ?? false}
+          disabled={action.disabled}
+          onClick={action.onClick}
+        >
+          {text}
+        </Button>
+      )}
+    </Tooltip>
+  );
 }
 
 export function ManagementTable<T>({
@@ -63,6 +119,7 @@ export function ManagementTable<T>({
   title,
   rowID,
   pinnedColumn,
+  primaryColumn,
 }: Props<T>) {
   const settings = useTableColumns(tableID, columnOptions(columns));
   const table = useReactTable({
@@ -130,7 +187,14 @@ export function ManagementTable<T>({
                         'table-pinned-end right-0',
                     )}
                   >
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    {primaryColumn?.id === cell.column.id ? (
+                      <PrimaryColumnCell
+                        label={formatValue(cell.getValue<string | number | boolean | null>())}
+                        action={primaryColumn.getAction(row.original)}
+                      />
+                    ) : (
+                      flexRender(cell.column.columnDef.cell, cell.getContext())
+                    )}
                   </TableCell>
                 ))}
               </TableRow>

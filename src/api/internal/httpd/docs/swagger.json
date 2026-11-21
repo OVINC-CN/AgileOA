@@ -11358,7 +11358,7 @@
         },
         "/v1/workspaces/{workspace_id}/student-service": {
             "get": {
-                "description": "仅在籍学生会话可读取本人在启用空间中的学生编号及学籍字段：学号、姓名、年级、状态、学历、专业、班级、班内任职、录取类型和来校时间。学生编号仅从可信登录身份提取，不接受客户端指定，无需额外配置 action 授权。审计提交后返回。",
+                "description": "仅在籍学生会话可读取本人在启用空间中的学生编号及学籍字段：学号、姓名、年级、状态、学历、专业、班级及班内任职。学生编号仅从可信登录身份提取，不接受客户端指定，无需额外配置 action 授权。审计提交后返回。",
                 "produces": [
                     "application/json"
                 ],
@@ -23765,16 +23765,6 @@
         "studentModels.ProfileData": {
             "type": "object",
             "properties": {
-                "admission_type": {
-                    "description": "AdmissionType 是录取类型，最多 32 个字符。",
-                    "type": "string",
-                    "example": "非定向"
-                },
-                "arrival_month": {
-                    "description": "ArrivalMonth 是来校年月，格式为 YYYY-MM，年份为 1900 至 9999，未填写时为空。",
-                    "type": "string",
-                    "example": "2026-09"
-                },
                 "class_name": {
                     "description": "ClassName 是班级，最多 64 个字符。",
                     "type": "string",

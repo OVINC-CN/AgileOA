@@ -18,6 +18,7 @@ import { FilterField, FilterPanel } from '@/components/filter-panel';
 import { ManagementTable } from '@/components/management-table';
 import { SearchResetButton } from '@/components/search-reset-button';
 import { TableActionButton } from '@/components/table-action-button';
+import { TableActionsMenu } from '@/components/table-actions-menu';
 import { Button } from '@/components/ui/button';
 import { ButtonGroup } from '@/components/ui/button-group';
 import { Card } from '@/components/ui/card';
@@ -67,6 +68,7 @@ function GraduationWorkspace({
 }: WorkspaceContext) {
   const canList = actions.includes('graduation.list');
   const canStatistics = actions.includes('graduation.statistics');
+  const canUpdate = actions.includes('graduation.update');
   const [filters, setFilters] = useState<GraduationFilters>(emptyFilters);
   const [dimension, setDimension] = useState<Dimension>('major');
   const [editing, setEditing] = useState<Graduation | null>(null);
@@ -129,8 +131,8 @@ function GraduationWorkspace({
     filters,
   );
   const columns: ColumnDef<Graduation>[] = [
-    { accessorKey: 'student_no', header: '学号' },
     { accessorKey: 'student_name', header: '姓名' },
+    { accessorKey: 'student_no', header: '学号' },
     { accessorKey: 'education_level', header: '学历' },
     { accessorKey: 'major', header: '专业' },
     { accessorKey: 'grade', header: '年级' },
@@ -155,7 +157,7 @@ function GraduationWorkspace({
       header: '操作',
       cell: ({ row }) => (
         <div className="flex items-center gap-1">
-          {actions.includes('graduation.update') ? (
+          {canUpdate ? (
             <TableActionButton
               onClick={() => {
                 setEditing(row.original);
@@ -167,14 +169,19 @@ function GraduationWorkspace({
           ) : null}
           {actions.includes('graduation.delete') &&
           (row.original.type || row.original.destination) ? (
-            <TableActionButton
-              onClick={() => {
-                setClearing(row.original);
-              }}
-            >
-              <Trash2 aria-hidden="true" />
-              清除
-            </TableActionButton>
+            <TableActionsMenu
+              label={formatIdentity(row.original.student_name, row.original.student_no)}
+              actions={[
+                {
+                  label: '清除',
+                  icon: Trash2,
+                  destructive: true,
+                  onSelect: () => {
+                    setClearing(row.original);
+                  },
+                },
+              ]}
+            />
           ) : null}
         </div>
       ),
@@ -421,6 +428,18 @@ function GraduationWorkspace({
           <ManagementTable
             refreshAction={refreshButton}
             tableID="graduations"
+            pinnedColumn="student_name"
+            primaryColumn={{
+              id: 'student_name',
+              getAction: (record) =>
+                canUpdate
+                  ? {
+                      onClick: () => {
+                        setEditing(record);
+                      },
+                    }
+                  : undefined,
+            }}
             columns={columns}
             data={data?.items ?? []}
             total={data?.total ?? 0}

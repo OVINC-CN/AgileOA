@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -35,6 +35,59 @@ afterEach(() => {
 });
 
 describe('毕业去向', () => {
+  it.each([
+    { type: '', title: '绑定毕业去向' },
+    { type: savedType, title: '编辑毕业去向' },
+  ])('固定姓名首列，点击打开$title，已绑定时通过更多操作清除', async ({ type, title }) => {
+    const fetch = vi.fn((path: string) =>
+      Promise.resolve(
+        respond(
+          path.includes('/filter-options')
+            ? { education_levels: [], majors: [], grades: [], graduation_years: [], types: [] }
+            : {
+                items: [{ ...record, type, type_label: type ? '签约就业' : '' }],
+                total: 1,
+                page: 1,
+                page_size: 5,
+              },
+        ),
+      ),
+    );
+    vi.stubGlobal('fetch', fetch);
+    render(
+      <QueryClientProvider client={client()}>
+        <GraduationPage
+          workspaceID={first}
+          workspaceName="虚构空间"
+          actions={['graduation.list', 'graduation.update', 'graduation.delete']}
+          refresh={() => Promise.resolve()}
+        />
+      </QueryClientProvider>,
+    );
+    const table = within(screen.getByRole('table'));
+    const name = await table.findByRole('button', { name: record.student_name });
+    const [nameHeader, numberHeader] = table.getAllByRole('columnheader');
+    expect(nameHeader).toHaveTextContent('姓名');
+    expect(nameHeader).toHaveClass('table-pinned', 'left-0');
+    expect(numberHeader).toHaveTextContent('学号');
+    expect(name.closest('td')).toHaveClass('table-pinned', 'left-0');
+    const user = userEvent.setup();
+    await user.click(name);
+    const editor = within(screen.getByRole('dialog', { name: title }));
+    await user.click(editor.getByRole('button', { name: '取消' }));
+    expect(table.queryByRole('button', { name: '清除' })).not.toBeInTheDocument();
+    const more = { name: `更多操作 ${record.student_name}(${record.student_no})` };
+    if (type) {
+      await user.click(table.getByRole('button', more));
+      await user.click(screen.getByRole('menuitem', { name: '清除' }));
+      expect(screen.getByRole('dialog', { name: '清除毕业去向' })).toHaveTextContent(
+        record.student_name,
+      );
+    } else {
+      expect(table.queryByRole('button', more)).not.toBeInTheDocument();
+    }
+  });
+
   it('按已填写的毕业年份堆叠各维度人数，缺失组合补零但不生成就业率', () => {
     const series = buildGraduationSeries([
       {

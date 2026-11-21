@@ -18,6 +18,7 @@ import { ErrorMessage } from '@/components/error-message';
 import { FilterField, FilterPanel } from '@/components/filter-panel';
 import { SearchResetButton } from '@/components/search-reset-button';
 import { TableActionButton } from '@/components/table-action-button';
+import { TableActionsMenu } from '@/components/table-actions-menu';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Drawer } from '@/components/ui/drawer';
@@ -433,16 +434,21 @@ function MonthlyWorkWorkspace({
                             </TableActionButton>
                           ) : null}
                           {canChangeWork(record, 'delete') ? (
-                            <TableActionButton
+                            <TableActionsMenu
+                              label={record.work_item}
                               loading={remove.isPending(String(record.id))}
                               disabled={remove.pending}
-                              onClick={() => {
-                                setDeleting(record);
-                              }}
-                            >
-                              <Trash2 aria-hidden="true" />
-                              删除
-                            </TableActionButton>
+                              actions={[
+                                {
+                                  label: '删除',
+                                  icon: Trash2,
+                                  destructive: true,
+                                  onSelect: () => {
+                                    setDeleting(record);
+                                  },
+                                },
+                              ]}
+                            />
                           ) : null}
                         </div>
                       ) : null}

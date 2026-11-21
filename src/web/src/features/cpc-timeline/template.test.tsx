@@ -149,6 +149,8 @@ it('模板详情直接展示基准标记和附件列表，附件保持只读', a
         actions={[
           'cpc.timeline_template.list',
           'cpc.timeline_template.detail',
+          'cpc.timeline_template.create',
+          'cpc.timeline_template.delete',
           'cpc.timeline_template.attachment.read',
           'cpc.timeline_template.attachment.upload',
           'cpc.timeline_template.attachment.delete',
@@ -156,7 +158,13 @@ it('模板详情直接展示基准标记和附件列表，附件保持只读', a
       />
     </QueryClientProvider>,
   );
-  await userEvent.click(await screen.findByRole('button', { name: '详情' }));
+  const table = within(screen.getByRole('table'));
+  const name = await table.findByRole('button', { name: record.name });
+  const [firstHeader] = table.getAllByRole('columnheader');
+  expect(firstHeader).toHaveTextContent('模板名称');
+  expect(firstHeader).toHaveClass('table-pinned', 'left-0');
+  expect(name.closest('td')).toHaveClass('table-pinned', 'left-0');
+  await userEvent.click(name);
   const detail = within(await screen.findByRole('dialog', { name: '时间线模板详情' }));
   expect(detail.getByRole('list', { name: '时间线预览' })).toBeVisible();
   expect(detail.getByText('基准节点')).toBeVisible();
@@ -170,6 +178,15 @@ it('模板详情直接展示基准标记和附件列表，附件保持只读', a
   expect(detail.queryByRole('table')).not.toBeInTheDocument();
   expect(detail.getByRole('heading', { level: 2, name: '申请阶段' })).toBeVisible();
   expect(detail.getByRole('heading', { name: '提交申请' })).toBeVisible();
+  await userEvent.click(detail.getByRole('button', { name: '关闭抽屉' }));
+  expect(table.queryByRole('button', { name: '克隆' })).not.toBeInTheDocument();
+  expect(table.queryByRole('button', { name: '删除' })).not.toBeInTheDocument();
+  await userEvent.click(table.getByRole('button', { name: `更多操作 ${record.name}` }));
+  expect(screen.getAllByRole('menuitem').map((item) => item.textContent)).toEqual(['克隆', '删除']);
+  await userEvent.click(screen.getByRole('menuitem', { name: '删除' }));
+  expect(screen.getByRole('dialog', { name: '删除时间线模板' })).toHaveAccessibleDescription(
+    `确认删除“${record.name}”？`,
+  );
 });
 
 afterEach(() => {
@@ -332,11 +349,16 @@ it('仅有列表和新建权限即可直接克隆，保留原列表并等待刷�
     return Promise.resolve(cloneResponse({ items, total: items.length, page: 1, page_size: 5 }));
   });
   renderClonePage(fetch);
-  const button = await screen.findByRole('button', { name: '克隆' });
+  const more = { name: `更多操作 ${record.name}` };
   expect(screen.queryByRole('button', { name: '详情' })).not.toBeInTheDocument();
-  await userEvent.click(button);
+  expect(screen.queryByRole('button', { name: record.name })).not.toBeInTheDocument();
+  await userEvent.click(await screen.findByRole('button', more));
+  expect(screen.queryByRole('menuitem', { name: '删除' })).not.toBeInTheDocument();
+  await userEvent.click(screen.getByRole('menuitem', { name: '克隆' }));
   await waitFor(() => {
-    expect(screen.getByRole('button', { name: '克隆' })).toBeDisabled();
+    const button = screen.getByRole('button', more);
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute('aria-busy', 'true');
   });
   expect(screen.getByText(record.name)).toBeVisible();
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -350,7 +372,7 @@ it('仅有列表和新建权限即可直接克隆，保留原列表并等待刷�
   await waitFor(() => {
     expect(
       screen
-        .getAllByRole('button', { name: '克隆' })
+        .getAllByRole('button', { name: /^更多操作 /u })
         .every((item) => !item.hasAttribute('disabled')),
     ).toBe(true);
   });
@@ -370,11 +392,12 @@ it('克隆重名时显示服务端错误，不重试其他副本名称或修改�
     ),
   );
   renderClonePage(fetch);
-  const button = await screen.findByRole('button', { name: '克隆' });
-  await userEvent.click(button);
+  const more = { name: `更多操作 ${record.name}` };
+  await userEvent.click(await screen.findByRole('button', more));
+  await userEvent.click(screen.getByRole('menuitem', { name: '克隆' }));
   expect(await screen.findByRole('alert')).toHaveTextContent('当前空间已存在同名时间线模板');
   await waitFor(() => {
-    expect(screen.getByRole('button', { name: '克隆' })).toBeEnabled();
+    expect(screen.getByRole('button', more)).toBeEnabled();
   });
   expect(screen.getByText(record.name)).toBeVisible();
   expect(screen.queryByText(`${record.name} (副本)`)).not.toBeInTheDocument();

@@ -133,27 +133,14 @@ export function StudentPage({
     applyFilters,
     filters,
   );
+  const studentDetailLocation = (id: number) => {
+    const next = new URLSearchParams(params);
+    next.set(studentDetailParam, String(id));
+    return { search: next.toString(), hash: location.hash };
+  };
   const columns: ColumnDef<Student>[] = [
+    { accessorKey: 'name', header: '姓名' },
     { accessorKey: 'student_no', header: '学号' },
-    {
-      accessorKey: 'name',
-      header: '姓名',
-      cell: ({ row }) => {
-        const student = row.original;
-        if (!can('student.detail')) return formatValue(student.name);
-        const next = new URLSearchParams(params);
-        next.set(studentDetailParam, String(student.id));
-        return (
-          <Link
-            to={{ search: next.toString(), hash: location.hash }}
-            aria-label={`查看 ${formatIdentity(student.name, student.student_no)} 的详情`}
-            className="rounded-sm font-medium text-accent-foreground underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring/30"
-          >
-            {student.name}
-          </Link>
-        );
-      },
-    },
     { accessorKey: 'grade', header: '年级' },
     { accessorKey: 'status', header: '状态' },
     { accessorKey: 'advisor', header: '导师' },
@@ -178,13 +165,11 @@ export function StudentPage({
       header: '操作',
       cell: ({ row: entry }) => {
         const student = entry.original;
-        const detailParams = new URLSearchParams(params);
-        detailParams.set(studentDetailParam, String(student.id));
         return (
           <div className="flex items-center gap-1">
             {can('student.detail') ? (
               <TableActionButton asChild>
-                <Link to={{ search: detailParams.toString(), hash: location.hash }}>
+                <Link to={studentDetailLocation(student.id)}>
                   <Eye aria-hidden="true" />
                   详情
                 </Link>
@@ -205,7 +190,7 @@ export function StudentPage({
                 label={formatIdentity(student.name, student.student_no)}
                 actions={[
                   {
-                    label: '删除学生',
+                    label: '删除',
                     icon: Trash2,
                     destructive: true,
                     onSelect: () => {
@@ -500,7 +485,17 @@ export function StudentPage({
             title="学生列表"
             tableID="students"
             rowID={(student) => String(student.id)}
-            pinnedColumn="student_no"
+            pinnedColumn="name"
+            primaryColumn={{
+              id: 'name',
+              getAction: (student) =>
+                can('student.detail')
+                  ? {
+                      to: studentDetailLocation(student.id),
+                      ariaLabel: `查看 ${formatIdentity(student.name, student.student_no)} 的详情`,
+                    }
+                  : undefined,
+            }}
             columns={columns}
             data={data?.items ?? empty}
             total={data?.total ?? 0}

@@ -553,7 +553,7 @@ func parseQuery(c echo.Context) (studentModels.ListQuery, error) {
 
 // Profile 返回当前学生在绑定空间内的学籍信息。
 // @Summary 查看我的个人信息
-// @Description 仅在籍学生会话可读取本人在启用空间中的学生编号及学籍字段：学号、姓名、年级、状态、学历、专业、班级、班内任职、录取类型和来校时间。学生编号仅从可信登录身份提取，不接受客户端指定，无需额外配置 action 授权。审计提交后返回。
+// @Description 仅在籍学生会话可读取本人在启用空间中的学生编号及学籍字段：学号、姓名、年级、状态、学历、专业、班级及班内任职。学生编号仅从可信登录身份提取，不接受客户端指定，无需额外配置 action 授权。审计提交后返回。
 // @Tags 学生服务
 // @Produce json
 // @Param workspace_id path string true "学生会话绑定的工作空间编号"

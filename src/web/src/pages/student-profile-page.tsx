@@ -7,7 +7,11 @@ import { RefreshButton } from '@/components/refresh-button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { fieldLabel, studentFields, studentSections } from '@/features/student/fields';
-import { type StudentProfile, studentProfileOptions } from '@/features/student-service/api';
+import {
+  type StudentProfile,
+  studentProfileOptions,
+  studentProfileSchema,
+} from '@/features/student-service/api';
 import { useCurrentUser } from '@/features/user/api';
 import { studentServiceURL } from '@/features/user/navigation';
 import { ApiError } from '@/lib/api';
@@ -17,8 +21,15 @@ import { cn } from '@/lib/utils';
 const profileDetailFields = studentSections.basic
   .filter((section) => section.id === 'academic')
   .flatMap((section) => section.fields)
-  .flatMap((key) => studentFields.filter((field) => field.key === key))
-  .filter((field) => !['name', 'student_no', 'status'].includes(field.key));
+  .filter(
+    (key): key is keyof StudentProfile =>
+      Object.hasOwn(studentProfileSchema.shape, key) &&
+      !['name', 'student_no', 'status'].includes(key),
+  )
+  .flatMap((key) => {
+    const field = studentFields.find((item) => item.key === key);
+    return field ? [{ key, field }] : [];
+  });
 
 export function StudentProfilePage() {
   const { data: user } = useCurrentUser();
@@ -93,12 +104,12 @@ export function StudentProfilePage() {
             </dl>
           </div>
           <dl className="grid gap-x-8 gap-y-4 px-5 py-4 sm:grid-cols-2 sm:px-6 xl:grid-cols-4">
-            {profileDetailFields.map((field) => {
-              const value = String(student[field.key as keyof StudentProfile]);
+            {profileDetailFields.map(({ key, field }) => {
+              const value = String(student[key]);
               return (
                 <div
-                  key={field.key}
-                  className={cn('min-w-0 space-y-1', field.key === 'major' && 'sm:col-span-2')}
+                  key={key}
+                  className={cn('min-w-0 space-y-1', key === 'major' && 'sm:col-span-2')}
                 >
                   <dt className="text-xs text-muted-foreground">{field.label}</dt>
                   <DetailValue

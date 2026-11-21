@@ -365,6 +365,50 @@ describe('党建人员', () => {
     });
   });
 
+  it('人员视图将姓名固定在首列，点击姓名打开对应的党建人员详情', async () => {
+    const detailPath = `/v1/workspaces/${first}/cpc-people/${String(person.id)}`;
+    const fetch = vi.fn((path: string) => {
+      if (path === detailPath) return Promise.resolve(respond(person));
+      if (path.includes('/options?')) return Promise.resolve(respond([]));
+      return Promise.resolve(
+        respond({
+          items: [person],
+          total: 1,
+          page: 1,
+          page_size: 5,
+          can_create: false,
+          can_import: false,
+          can_export: false,
+        }),
+      );
+    });
+    vi.stubGlobal('fetch', fetch);
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter>
+          <PersonPage
+            workspaceID={first}
+            workspaceName="虚构空间"
+            actions={['cpc.person.list', 'cpc.person.detail']}
+            refresh={() => Promise.resolve()}
+          />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    const table = within(screen.getByRole('table', { name: '人员列表' }));
+    const name = await table.findByRole('button', { name: person.name });
+    const [nameHeader, numberHeader] = table.getAllByRole('columnheader');
+    expect(nameHeader).toHaveTextContent('姓名');
+    expect(nameHeader).toHaveClass('table-pinned', 'left-0');
+    expect(numberHeader).toHaveTextContent('学号');
+    expect(numberHeader).not.toHaveClass('table-pinned');
+    expect(name.closest('td')).toHaveClass('table-pinned', 'left-0');
+    await userEvent.click(name);
+    const drawer = await screen.findByRole('dialog', { name: '党建人员详情' });
+    expect(drawer).toHaveAccessibleDescription(`${person.name}(${person.student_no})`);
+    expect(fetch.mock.calls.filter(([path]) => path === detailPath)).toHaveLength(1);
+  });
+
   it('人员状态替换学生状态筛选，默认在编，清空与重置同步影响名单和统计', async () => {
     const calls: URL[] = [];
     vi.stubGlobal(
@@ -404,6 +448,7 @@ describe('党建人员', () => {
       </QueryClientProvider>,
     );
     await screen.findByText(person.name);
+    expect(screen.queryByRole('button', { name: person.name })).not.toBeInTheDocument();
     const latest = (path: string) =>
       calls.findLast((url) => url.pathname.endsWith(path))?.searchParams;
     expect(latest('/cpc-people')?.getAll('status')).toEqual(['在编']);
@@ -672,8 +717,8 @@ describe('党建人员', () => {
     const row = screen.getByText(person.name).closest('tr');
     if (!row) throw new Error('缺少节点人员行');
     expect(screen.getAllByRole('columnheader').map((header) => header.textContent)).toEqual([
-      '学号',
       '姓名',
+      '学号',
       '节点状态',
       '发生时间',
       '节点分数',
@@ -683,11 +728,21 @@ describe('党建人员', () => {
       '更新时间',
       '操作',
     ]);
+    const cells = within(row).getAllByRole('cell');
+    const name = within(row).getByRole('button', { name: person.name });
+    expect(name.closest('td')).toBe(cells[0]);
+    expect(cells[0]).toHaveClass('table-pinned', 'left-0');
+    expect(screen.getByRole('columnheader', { name: '姓名' })).toHaveClass(
+      'table-pinned',
+      'left-0',
+    );
+    const actionCell = cells.at(-1);
+    if (!actionCell) throw new Error('缺少操作列');
     expect(
-      within(row)
+      within(actionCell)
         .getAllByRole('button')
         .map((button) => button.textContent),
-    ).toEqual(['时间线', '节点详情', '节点编辑']);
+    ).toEqual(['详情', '编辑', '时间线']);
     expect(within(row).getByText('0', { exact: true })).toBeVisible();
     expect(within(row).getByText('否', { exact: true })).toBeVisible();
     expect(within(row).getByText('-', { exact: true })).toBeVisible();
@@ -719,15 +774,15 @@ describe('党建人员', () => {
     });
     await userEvent.click(statusFilter);
 
-    // 节点详情读取详情入口，节点编辑读取编辑入口并直接打开所选节点。
-    await userEvent.click(within(row).getByRole('button', { name: '节点详情' }));
+    // 点击姓名读取当前节点详情，编辑读取独立的编辑入口。
+    await userEvent.click(within(row).getByRole('button', { name: person.name }));
     const details = await screen.findByRole('dialog', { name: '时间线节点详情' });
     expect(within(details).getByText('0', { exact: true })).toBeVisible();
     expect(within(details).getByText('否', { exact: true })).toBeVisible();
     expect(within(details).queryByText('后续节点')).not.toBeInTheDocument();
     expect(calls.some((url) => url.pathname.endsWith('/1/timeline'))).toBe(true);
     await userEvent.click(within(details).getByRole('button', { name: '关闭抽屉' }));
-    await userEvent.click(screen.getByRole('button', { name: '节点编辑' }));
+    await userEvent.click(within(actionCell).getByRole('button', { name: '编辑' }));
     const editor = await screen.findByRole('dialog', { name: '编辑时间线节点' });
     expect(within(editor).getByLabelText('节点分数')).toHaveValue(0);
     expect(within(editor).queryByLabelText('复核日期 *')).not.toBeInTheDocument();
