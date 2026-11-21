@@ -5,7 +5,6 @@ import { Link, NavLink, Outlet, useLocation } from 'react-router';
 
 import { MobileNavigation } from '@/components/mobile-navigation';
 import { NavigationMotion } from '@/components/navigation-motion';
-import { Separator } from '@/components/ui/separator';
 import { Tooltip } from '@/components/ui/tooltip';
 import { systemNavigation } from '@/features/management/navigation';
 import { getStudentServiceNavigation } from '@/features/student-service/navigation';
@@ -23,7 +22,9 @@ import {
 } from '@/features/workspace/navigation';
 import { WorkspaceSwitcher } from '@/features/workspace/workspace-switcher';
 import { getConfig } from '@/lib/config';
-import { cn } from '@/lib/utils';
+
+const headerNavigationItemClass =
+  'inline-flex h-9 items-center gap-2 rounded-lg px-3 text-sm font-normal whitespace-nowrap text-foreground-secondary transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring aria-[current=page]:font-medium aria-[current=page]:text-accent-foreground aria-[current=page]:hover:bg-accent motion-reduce:transition-none';
 
 export function AppLayout() {
   const config = getConfig();
@@ -94,118 +95,84 @@ export function AppLayout() {
         跳转到主要内容
       </a>
       <header className="sticky top-0 z-40 border-b border-border-subtle bg-background/85 backdrop-blur-xl">
-        <div
-          className={cn(
-            'mx-auto flex min-h-14 max-w-[1520px] items-center gap-1',
-            'px-4 py-1 lg:px-8',
-          )}
-        >
-          <div className="-ml-3 flex min-w-0 flex-1 items-center gap-1 lg:flex-initial">
+        <div className="mx-auto flex min-h-14 max-w-[1520px] items-center gap-2 px-4 py-2 lg:grid lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:gap-6 lg:px-8">
+          <div className="flex min-w-0 flex-1 items-center gap-2 lg:gap-3">
             <NavLink
               to="/"
               aria-label={`${config.appName} 首页`}
-              className="shrink-0 rounded-lg px-3 py-1.5"
+              className="inline-flex h-9 shrink-0 items-center rounded-lg focus-visible:outline-2 focus-visible:outline-ring"
             >
-              <img src="/agile.svg" alt={config.appName} className="h-[18px] w-auto" />
+              <img src="/agile.svg" alt={config.appName} className="h-4 w-auto lg:h-[18px]" />
             </NavLink>
             {user && !user.password_change_required ? (
-              <>
-                <Separator
-                  orientation="vertical"
-                  className="bg-border/80 data-[orientation=vertical]:h-4"
+              student ? (
+                <span className="flex h-9 max-w-40 min-w-0 items-center gap-2 rounded-lg bg-muted/70 px-2 text-sm text-foreground sm:max-w-56 lg:px-3">
+                  <Building className="size-4 shrink-0" aria-hidden="true" />
+                  <Tooltip content={user.workspace_name} onlyOverflow>
+                    <span className="max-w-[6em] min-w-0 truncate sm:max-w-none">
+                      {user.workspace_name}
+                    </span>
+                  </Tooltip>
+                </span>
+              ) : (
+                <WorkspaceSwitcher
+                  key={user.id}
+                  workspaceName={workspace.data?.workspace.name}
+                  onBusyChange={setSwitching}
+                  disabled={userBusy}
                 />
-                {student ? (
-                  <span className="flex max-w-40 min-w-0 items-center gap-2 px-3 text-sm text-muted-foreground sm:max-w-56">
-                    <Building className="size-4 shrink-0" aria-hidden="true" />
-                    <Tooltip content={user.workspace_name} onlyOverflow>
-                      <span className="max-w-[6em] min-w-0 truncate sm:max-w-none">
-                        {user.workspace_name}
-                      </span>
-                    </Tooltip>
-                  </span>
-                ) : (
-                  <WorkspaceSwitcher
-                    key={user.id}
-                    workspaceName={workspace.data?.workspace.name}
-                    onBusyChange={setSwitching}
-                    disabled={userBusy}
-                  />
-                )}
-              </>
+              )
             ) : null}
             {user && !user.password_change_required && menuItems.length > 0 ? (
-              <>
-                <Separator
-                  orientation="vertical"
-                  className="bg-border/80 data-[orientation=vertical]:h-4 lg:hidden"
-                />
-                <MobileNavigation
-                  key={`${user.identity_type}:${String(user.id)}:${location.key}`}
-                  items={menuItems}
-                  workspaceName={
-                    student
-                      ? user.workspace_name
-                      : (workspace.data?.workspace.name ?? config.appName)
-                  }
-                  disabled={switching || userBusy}
-                />
-              </>
+              <MobileNavigation
+                key={`${user.identity_type}:${String(user.id)}:${location.key}`}
+                items={menuItems}
+                workspaceName={
+                  student ? user.workspace_name : (workspace.data?.workspace.name ?? config.appName)
+                }
+                disabled={switching || userBusy}
+              />
             ) : null}
           </div>
           {student ? (
-            <>
-              <Separator
-                orientation="vertical"
-                className="hidden bg-border/80 data-[orientation=vertical]:h-4 lg:block"
-              />
-              <NavigationMotion
-                as="nav"
-                value="student-service"
-                aria-label="主导航"
-                className="hidden gap-1 lg:flex"
+            <NavigationMotion
+              as="nav"
+              value="student-service"
+              aria-label="主导航"
+              className="hidden shrink-0 items-center gap-1 lg:col-start-2 lg:flex"
+            >
+              <NavLink
+                to={studentServiceURL(user.workspace_id)}
+                aria-current="page"
+                className={headerNavigationItemClass}
               >
-                <NavLink
-                  to={studentServiceURL(user.workspace_id)}
-                  aria-current="page"
-                  className="inline-flex h-9 items-center gap-2 rounded-lg px-3 text-sm font-medium whitespace-nowrap text-accent-foreground hover:bg-accent"
-                >
-                  <GraduationCap className="size-4" aria-hidden="true" />
-                  学生服务
-                </NavLink>
-              </NavigationMotion>
-            </>
+                <GraduationCap className="size-4" aria-hidden="true" />
+                学生服务
+              </NavLink>
+            </NavigationMotion>
           ) : sections.length > 0 ? (
-            <>
-              <Separator
-                orientation="vertical"
-                className="hidden bg-border/80 data-[orientation=vertical]:h-4 lg:block"
-              />
-              <NavigationMotion
-                as="nav"
-                value={section.value}
-                aria-label="主导航"
-                className="hidden gap-1 lg:flex"
-              >
-                {sections.map(({ value, path, label, icon: Icon }) => (
-                  <Link
-                    key={value}
-                    to={workspaceURL(path, workspaceID)}
-                    aria-current={section.value === value ? 'page' : undefined}
-                    className={cn(
-                      'inline-flex h-9 items-center gap-2 rounded-lg px-3 text-sm font-medium whitespace-nowrap',
-                      'transition-colors hover:bg-accent focus-visible:outline-2',
-                      'focus-visible:outline-ring motion-reduce:transition-none',
-                      section.value === value ? 'text-accent-foreground' : 'text-muted-foreground',
-                    )}
-                  >
-                    <Icon className="size-4" aria-hidden="true" />
-                    {label}
-                  </Link>
-                ))}
-              </NavigationMotion>
-            </>
+            <NavigationMotion
+              as="nav"
+              value={section.value}
+              aria-label="主导航"
+              className="hidden shrink-0 items-center gap-1 lg:col-start-2 lg:flex"
+            >
+              {sections.map(({ value, path, label, icon: Icon }) => (
+                <Link
+                  key={value}
+                  to={workspaceURL(path, workspaceID)}
+                  aria-current={section.value === value ? 'page' : undefined}
+                  className={headerNavigationItemClass}
+                >
+                  <Icon className="size-4" aria-hidden="true" />
+                  {label}
+                </Link>
+              ))}
+            </NavigationMotion>
           ) : null}
-          <UserMenu disabled={switching} onBusyChange={setUserBusy} />
+          <div className="flex shrink-0 items-center justify-end lg:col-start-3 lg:min-w-0">
+            <UserMenu disabled={switching} onBusyChange={setUserBusy} />
+          </div>
         </div>
       </header>
       <main

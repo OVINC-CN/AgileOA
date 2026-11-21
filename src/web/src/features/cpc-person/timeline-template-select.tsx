@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useId, useState } from 'react';
 
 import { ErrorMessage } from '@/components/error-message';
@@ -31,7 +31,6 @@ export function TimelineTemplateSelect({
   const [open, setOpen] = useState(false);
   const [keyword, setKeyword] = useState('');
   const [selected, setSelected] = useState<TemplateOption | null>(null);
-  const client = useQueryClient();
   const query = useQuery({
     ...personTimelineTemplateOptions(workspaceID, purpose, keyword),
     enabled: open && !disabled,
@@ -62,15 +61,10 @@ export function TimelineTemplateSelect({
         className="w-full"
         options={options}
         value={value ? String(value) : ''}
-        defaultValue=""
         disabled={disabled || denied}
         loading={query.isFetching}
         onOpenChange={setOpen}
         onSearchChange={setKeyword}
-        onSearchReset={async () => {
-          setKeyword('');
-          await client.query(personTimelineTemplateOptions(workspaceID, purpose, ''));
-        }}
         onValueChange={(id) => {
           const option = options.find((item) => item.value === id) ?? null;
           setSelected(option);

@@ -148,7 +148,10 @@ API 侧先在业务事务中保存任务所需状态和操作审计，由 app �
 查询键加入工作空间、业务对象及适用的学生身份；URL 状态通过
 [navigation-tabs.ts](src/web/src/lib/navigation-tabs.ts) 恢复。
 
-[useFilterForm](src/web/src/lib/filter-form.ts) 保存草稿并通过 `changeFilters` 提交条件，
+[useFilterForm](src/web/src/lib/filter-form.ts) 接收当前已提交条件，保存文本草稿，
+通过 `changeFilters` 仅合并本次选项或日期变化。搜索和重置提交完整条件；
+`hasUnappliedChanges` 交给公共筛选面板提示待搜索内容。学生页面将状态和专业放在常用区，
+展示已应用条件，并为收起的更多筛选提供条件计数。
 [filterParams](src/web/src/lib/filter-params.ts) 生成重复多选参数。
 列表、统计和导出接到同一份已提交条件，条件变化时重置分页。
 按钮 loading 和请求后缓存刷新通过
@@ -193,6 +196,9 @@ COS 和 STS 协议位于 [tencentcos](src/api/internal/apis/tencentcos/)。
 [cdn.go](src/api/internal/storage/cdn.go) 生成签名下载地址，并在 Redis 配置后复用缓存签名。
 前端 [cos-upload.ts](src/web/src/lib/cos-upload.ts) 统一申请、COS 简单直传和完成确认，
 申请响应不可写入查询缓存或浏览器存储。上传失败保留 pending 并占用名额，沿用显式删除。
+[ApplicationDrawer](src/web/src/features/project/application-drawer.tsx) 在有未保存内容时，
+通过确认抽屉说明保存范围，再由公共文件按钮选择文件并立即执行保存、上传；
+内容未修改时直接上传。取消确认或选文件不保存，保存后的上传失败保留已保存内容并明确提示。
 [Vite](src/web/vite.config.ts) 从 COS SDK 发布包的 `index.js` 构建，使用
 [pnpm 配置](src/web/pnpm-workspace.yaml) 固定的 XML 解析器版本。
 头像入口为 [avatar.go](src/api/internal/apps/student/studentSvc/avatar.go)，

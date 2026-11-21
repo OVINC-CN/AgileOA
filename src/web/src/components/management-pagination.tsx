@@ -36,7 +36,6 @@ export function ManagementPagination({
           label="每页条数"
           className="w-28 text-xs text-muted-foreground"
           value={String(pageSize)}
-          defaultValue={String(getConfig().tablePageSize)}
           options={getConfig().tablePageSizeOptions.map((size) => ({
             value: String(size),
             label: `${String(size)} / 页`,

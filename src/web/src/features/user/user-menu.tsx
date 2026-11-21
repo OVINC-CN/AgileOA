@@ -57,7 +57,7 @@ export function UserMenu({
 
   if (!user) {
     return isPending ? null : (
-      <Button asChild variant="outline" className="ml-auto">
+      <Button asChild variant="outline">
         <Link to={authURL('/login', location.pathname + location.search + location.hash)}>
           <LogIn aria-hidden="true" />
           登录
@@ -66,7 +66,7 @@ export function UserMenu({
     );
   }
   return (
-    <div className="ml-auto flex shrink-0 items-center gap-1">
+    <div className="flex shrink-0 items-center gap-1 lg:gap-2">
       {!user.password_change_required ? (
         <NotificationCenter
           key={`${user.identity_type}:${user.workspace_id}:${String(user.id)}`}
@@ -83,9 +83,9 @@ export function UserMenu({
       >
         <DropdownMenu.Trigger asChild>
           <Button
+            type="button"
             variant="ghost"
-            size="sm"
-            className="group max-w-52 px-2 sm:px-3"
+            className="group size-9 max-w-52 gap-2 px-0 font-normal sm:w-auto sm:px-3"
             disabled={disabled}
             aria-label={`当前用户 ${user.display_name}`}
           >
@@ -96,7 +96,7 @@ export function UserMenu({
             <ChevronDown
               aria-hidden="true"
               className={cn(
-                'hidden transition-transform duration-200 group-data-[state=open]:rotate-180',
+                'hidden size-3.5 shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-180',
                 'motion-reduce:transition-none sm:block',
               )}
             />

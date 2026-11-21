@@ -1,17 +1,33 @@
 import { Filter } from 'lucide-react';
 import { type ReactNode, type SubmitEventHandler, useId, useState } from 'react';
 
+import { type AppliedFilter, AppliedFilters } from '@/components/applied-filters';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+
+export type { AppliedFilter } from '@/components/applied-filters';
 
 interface Props {
   children: ReactNode;
   actions: ReactNode;
+  refreshAction?: ReactNode;
   more?: ReactNode;
+  hasUnappliedChanges?: boolean | undefined;
+  appliedFilters?: readonly AppliedFilter[];
+  moreActiveCount?: number;
   onSubmit: SubmitEventHandler<HTMLFormElement>;
 }
 
-export function FilterPanel({ children, actions, more, onSubmit }: Props) {
+export function FilterPanel({
+  children,
+  actions,
+  refreshAction,
+  more,
+  hasUnappliedChanges,
+  appliedFilters,
+  moreActiveCount = 0,
+  onSubmit,
+}: Props) {
   const [expanded, setExpanded] = useState(false);
   const moreID = useId();
   return (
@@ -28,7 +44,13 @@ export function FilterPanel({ children, actions, more, onSubmit }: Props) {
             {more}
           </div>
         ) : null}
-        <div className="flex flex-wrap justify-end gap-2 border-t border-border-subtle pt-4">
+        {appliedFilters ? <AppliedFilters filters={appliedFilters} /> : null}
+        <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border-subtle pt-4">
+          {hasUnappliedChanges ? (
+            <p role="status" aria-label="筛选生效提示" className="mr-auto text-xs text-primary">
+              有未应用条件，按回车或点击搜索
+            </p>
+          ) : null}
           {more ? (
             <Button
               type="button"
@@ -41,8 +63,10 @@ export function FilterPanel({ children, actions, more, onSubmit }: Props) {
             >
               <Filter aria-hidden="true" />
               更多筛选
+              {moreActiveCount > 0 ? `（${String(moreActiveCount)}）` : ''}
             </Button>
           ) : null}
+          {refreshAction}
           {actions}
         </div>
       </form>
@@ -61,7 +85,7 @@ export function FilterField({
 }) {
   const content = (
     <>
-      <span className="text-sm leading-5 text-foreground-secondary">{label}</span>
+      <span className="text-xs leading-4 text-foreground-secondary">{label}</span>
       {children}
     </>
   );

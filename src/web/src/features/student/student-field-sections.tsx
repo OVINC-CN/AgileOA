@@ -7,16 +7,20 @@ export function StudentFieldSections({
   group,
   form = false,
   accommodationDetails,
+  sectionIDs,
   children,
 }: {
   group: StudentField['group'];
   form?: boolean;
   accommodationDetails?: ReactNode;
+  sectionIDs?: readonly string[];
   children: (field: StudentField) => ReactNode;
 }) {
   const id = useId();
   // 编辑时将住宿信息放在基本信息末尾，紧邻后续的校外住宿信息。
-  const sections = [...studentSections[group]];
+  const sections = studentSections[group].filter(
+    (section) => !sectionIDs || sectionIDs.includes(section.id),
+  );
   if (form) {
     sections.sort(
       (first, second) =>

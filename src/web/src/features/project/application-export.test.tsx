@@ -78,6 +78,7 @@ it('导出使用已提交的项目、年份、审批状态筛选，忽略关键�
   renderApplications(['project.application.list', 'project.application.export']);
   await screen.findByText('暂无符合条件的申报单');
   const user = userEvent.setup();
+  await user.type(screen.getByPlaceholderText('学号或姓名'), '未提交关键词');
   await user.click(screen.getByRole('combobox', { name: '项目名称' }));
   await user.click(await screen.findByRole('option', { name: '优秀学生' }));
   await user.keyboard('{Escape}');
@@ -87,7 +88,9 @@ it('导出使用已提交的项目、年份、审批状态筛选，忽略关键�
   await user.click(screen.getByRole('combobox', { name: '审批状态' }));
   await user.click(await screen.findByRole('option', { name: '已驳回' }));
   await user.keyboard('{Escape}');
-  await user.type(screen.getByPlaceholderText('学号或姓名'), '未提交关键词');
+  expect(screen.getByRole('status', { name: '筛选生效提示' })).toHaveTextContent('有未应用条件');
+  const latestList = requests.filter((path) => path.includes('/project-applications?')).at(-1);
+  expect(new URL(latestList ?? '', 'https://example.com').searchParams.has('student')).toBe(false);
   const button = screen.getByRole('button', { name: '导出' });
   await user.click(button);
   await user.click(await screen.findByRole('menuitem', { name: '导出填报明细' }));

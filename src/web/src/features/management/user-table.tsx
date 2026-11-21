@@ -1,6 +1,6 @@
 import type { ColumnDef } from '@tanstack/react-table';
 import { Pencil, Plug, ShieldCheck, Trash2, Unplug } from 'lucide-react';
-import { useMemo } from 'react';
+import { type ReactNode, useMemo } from 'react';
 
 import { ManagementTable } from '@/components/management-table';
 import { TableActionButton } from '@/components/table-action-button';
@@ -14,6 +14,7 @@ export function UserTable({
   page,
   pageSize,
   loading,
+  refreshAction,
   currentID,
   onPage,
   onPageSize,
@@ -27,6 +28,7 @@ export function UserTable({
   page: number;
   pageSize: number;
   loading: boolean;
+  refreshAction?: ReactNode;
   currentID: number;
   onPage: (page: number) => Promise<unknown>;
   onPageSize: (pageSize: number) => Promise<unknown>;
@@ -148,6 +150,7 @@ export function UserTable({
   );
   return (
     <ManagementTable
+      refreshAction={refreshAction}
       tableID="system-users"
       columns={columns}
       data={data}

@@ -395,7 +395,7 @@ describe('评奖评优', () => {
         await user.click(name);
         const search = screen.getByRole('searchbox', { name: '搜索子项名称' });
         await user.type(search, '未提交');
-        await user.click(screen.getByRole('button', { name: '重置子项名称' }));
+        await user.clear(search);
         expect(search).toHaveValue('');
         expect(name).toHaveTextContent('已有子项');
         await user.type(search, '新建子项');

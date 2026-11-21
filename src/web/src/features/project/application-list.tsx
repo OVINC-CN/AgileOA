@@ -98,9 +98,10 @@ export function ApplicationList({
     pagination.setPage(1);
     await fetchPage(1, pagination.pageSize, next);
   };
-  const { draft, setDraft, changeFilters } = useFilterForm(
+  const { draft, setDraft, changeFilters, hasUnappliedChanges } = useFilterForm(
     () => defaultApplicationFilters(scope),
     applyFilters,
+    filters,
   );
   const columns: ColumnDef<ApplicationSummary>[] = [
     { accessorKey: 'id', header: '申报编号' },
@@ -162,6 +163,29 @@ export function ApplicationList({
   ];
   const denied = query.error instanceof ApiError && [401, 403, 404].includes(query.error.status);
   const data = denied ? undefined : query.data;
+  const refreshButton = (
+    <Button
+      type="button"
+      size="sm"
+      variant="ghost"
+      loading={refresh.pending}
+      onClick={() => {
+        void refresh.run('refresh', async () => {
+          await Promise.all([
+            fetchPage(pagination.page, pagination.pageSize),
+            client.query({
+              ...applicationProjectFilterOptions(workspaceID, scope),
+              staleTime: 0,
+            }),
+            ...(onRefresh ? [onRefresh()] : []),
+          ]);
+        });
+      }}
+    >
+      <RefreshCw aria-hidden="true" />
+      刷新
+    </Button>
+  );
   return (
     <div className="space-y-5">
       <header className="flex min-h-8 flex-wrap items-center justify-between gap-3">
@@ -190,29 +214,11 @@ export function ApplicationList({
               新建申报
             </Button>
           ) : null}
-          <Button
-            variant="outline"
-            loading={refresh.pending}
-            onClick={() => {
-              void refresh.run('refresh', async () => {
-                await Promise.all([
-                  fetchPage(pagination.page, pagination.pageSize),
-                  client.query({
-                    ...applicationProjectFilterOptions(workspaceID, scope),
-                    staleTime: 0,
-                  }),
-                  ...(onRefresh ? [onRefresh()] : []),
-                ]);
-              });
-            }}
-          >
-            <RefreshCw aria-hidden="true" />
-            刷新
-          </Button>
         </div>
       </header>
       <div role="region" id={panelID} aria-label={panelLabel} className="space-y-4">
         <FilterPanel
+          hasUnappliedChanges={hasUnappliedChanges}
           onSubmit={(event) => {
             event.preventDefault();
             void search.run('search', () => applyFilters(draft));
@@ -264,7 +270,6 @@ export function ApplicationList({
               allLabel="全部状态"
               options={applicationStatusOptions(scope)}
               value={draft.status}
-              defaultValue={defaultApplicationFilters(scope).status}
               onValueChange={(status) => {
                 changeFilters({ status });
               }}
@@ -275,6 +280,7 @@ export function ApplicationList({
         {projectFilters.error ? <ErrorMessage>{projectFilters.error.message}</ErrorMessage> : null}
         <Card className="gap-0 overflow-hidden py-0">
           <ManagementTable
+            refreshAction={refreshButton}
             tableID={`project-applications-${scope}`}
             columns={columns}
             data={data?.items ?? []}

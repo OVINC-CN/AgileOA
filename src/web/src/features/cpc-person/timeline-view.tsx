@@ -38,11 +38,13 @@ import { recordTimeColumns } from '@/lib/record-time-columns';
 export function PersonTimelineView({
   view,
   filters,
+  refreshAction,
   workspaceID,
   actions,
 }: {
   view: ReturnType<typeof usePersonTimelineView>;
   filters: ReactNode;
+  refreshAction?: ReactNode;
   workspaceID: string;
   actions: string[];
 }) {
@@ -200,7 +202,6 @@ export function PersonTimelineView({
                 className="w-full"
                 options={view.options}
                 value={String(view.templateID || '')}
-                defaultValue={view.defaultTemplateValue}
                 loading={view.templates.isFetching}
                 onSearchChange={view.searchTemplates}
                 onValueChange={view.selectTemplate}
@@ -217,7 +218,6 @@ export function PersonTimelineView({
                     label: `${String(index + 1)}. ${item.name}`,
                   }))}
                   value={String(node?.numeric_id ?? '')}
-                  defaultValue={String(view.nodes[0]?.numeric_id ?? '')}
                   placeholder={view.nodes.length ? '选择节点' : '暂无可用节点'}
                   disabled={!view.nodes.length}
                   loading={
@@ -277,6 +277,7 @@ export function PersonTimelineView({
         </Card>
         <Card className="min-w-0 gap-0 overflow-hidden py-0 lg:col-start-2">
           <ManagementTable
+            refreshAction={refreshAction}
             tableID={`cpc-person-timeline:${workspaceID}:${String(view.templateID)}:${node?.id ?? 'none'}`}
             columns={columns}
             data={data?.items ?? []}

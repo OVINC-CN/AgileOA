@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { expect, it } from 'vitest';
 
-import { NavigationTabs } from '@/components/navigation-motion';
+import { NavigationMotion, NavigationTabs } from '@/components/navigation-motion';
 import { useNavigationTabs } from '@/lib/navigation-tabs';
 
 const workspaceID = 'w7m2k9p4s6n8c3x5';
@@ -11,6 +11,52 @@ const tabs = [
   { value: 'people', label: '人员视图' },
   { value: 'timeline', label: '时间线视图' },
 ];
+
+it('路径不变时折叠与展开菜单，选中高亮跟随替换后的菜单节点', () => {
+  const menu = (collapsed: boolean) => (
+    <NavigationMotion as="nav" value="/stu/dashboard?tab=accommodation">
+      <button
+        key={collapsed ? 'collapsed' : 'expanded'}
+        type="button"
+        aria-current="page"
+        ref={(element) => {
+          if (!element) return;
+
+          // 模拟浏览器布局，折叠状态与展开状态使用不同的菜单节点和尺寸。
+          Object.defineProperties(element, {
+            offsetWidth: { value: collapsed ? 36 : 160 },
+            offsetHeight: { value: collapsed ? 36 : 32 },
+            offsetLeft: { value: collapsed ? 10 : 28 },
+            offsetTop: { value: collapsed ? 160 : 240 },
+          });
+        }}
+      >
+        {collapsed ? '数据仪表' : '住宿信息表'}
+      </button>
+    </NavigationMotion>
+  );
+  const view = render(menu(false));
+  const indicator = view.container.querySelector('.navigation-motion-indicator');
+  expect(indicator).toHaveStyle({
+    width: '160px',
+    height: '32px',
+    transform: 'translate(28px, 240px)',
+  });
+
+  view.rerender(menu(true));
+  expect(indicator).toHaveStyle({
+    width: '36px',
+    height: '36px',
+    transform: 'translate(10px, 160px)',
+  });
+
+  view.rerender(menu(false));
+  expect(indicator).toHaveStyle({
+    width: '160px',
+    height: '32px',
+    transform: 'translate(28px, 240px)',
+  });
+});
 
 function TabPage({ options }: { options: typeof tabs }) {
   const { selected, items } = useNavigationTabs(options);

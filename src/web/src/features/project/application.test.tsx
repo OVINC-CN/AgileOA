@@ -19,6 +19,7 @@ import { ApplicationDrawer } from '@/features/project/application-drawer';
 import { ApplicationList } from '@/features/project/application-list';
 import { ProjectPage } from '@/features/project/project-page';
 import { StudentAwardsPage } from '@/pages/student-awards-page';
+import { cosMock, preparedUpload } from '@/test/mock-cos';
 import { PageNavigationHarness } from '@/test/page-navigation-harness';
 
 const workspaceID = 'w7m2k9p4s6n8c3x5';
@@ -417,7 +418,7 @@ it('学生草稿展示当前截止时间和自动提交说明，系统流转记�
   expect(notice).toHaveTextContent('未保存的修改不会自动提交');
 });
 
-it('组织节点审批人直接进入填报管理，顶部刷新与面包屑同行，筛选复用相邻 Tab', async () => {
+it('组织节点审批人直接进入填报管理，刷新收进表格，筛选复用相邻 Tab', async () => {
   const requests: string[] = [];
   stubApplicationFetch(
     vi.fn((path: string) => {
@@ -448,7 +449,10 @@ it('组织节点审批人直接进入填报管理，顶部刷新与面包屑同�
   expect(screen.queryByRole('tab', { name: '奖项管理' })).not.toBeInTheDocument();
   const header = screen.getByRole('navigation', { name: '面包屑' }).closest('header');
   if (!header) throw new Error('页面缺少顶部操作区');
-  expect(within(header).getByRole('button', { name: '刷新' })).toBeVisible();
+  expect(within(header).queryByRole('button', { name: '刷新' })).not.toBeInTheDocument();
+  const tableCard = screen.getByRole('table').closest<HTMLElement>('[data-slot="card"]');
+  if (!tableCard) throw new Error('页面缺少表格操作区');
+  expect(within(tableCard).getByRole('button', { name: '刷新' })).toBeVisible();
   expect(screen.getByPlaceholderText('学号或姓名')).toBeVisible();
   expect(screen.getByRole('combobox', { name: '项目名称' })).toHaveTextContent('全部项目');
   expect(screen.getByRole('combobox', { name: '归属年份' })).toHaveTextContent('全部年份');
@@ -492,7 +496,10 @@ it('学生两个子 Tab 使用相同页面布局，只有我的申报提供新�
   expect(screen.getByPlaceholderText('学号或姓名')).toBeVisible();
   const header = screen.getByRole('navigation', { name: '面包屑' }).closest('header');
   if (!header) throw new Error('页面缺少顶部操作区');
-  expect(within(header).getByRole('button', { name: '刷新' })).toBeVisible();
+  expect(within(header).queryByRole('button', { name: '刷新' })).not.toBeInTheDocument();
+  const tableCard = screen.getByRole('table').closest<HTMLElement>('[data-slot="card"]');
+  if (!tableCard) throw new Error('页面缺少表格操作区');
+  expect(within(tableCard).getByRole('button', { name: '刷新' })).toBeVisible();
   expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
   await userEvent.click(screen.getByRole('link', { name: '我的审核' }));
   expect(screen.queryByRole('button', { name: '新建申报' })).not.toBeInTheDocument();
@@ -674,6 +681,108 @@ it('申报上传仅允许图片和 PDF，选择其他类型时不保存申报或
   expect(await screen.findByText('文件类型不在允许上传的范围内')).toBeVisible();
   expect(request).not.toHaveBeenCalled();
 });
+
+it.each([false, true])(
+  '附件上传前确认保存全部修改，取消不请求，上传失败保留已保存内容：%s',
+  async (failed) => {
+    const record: Application = {
+      ...rejectedApplication,
+      detail_names: ['志愿服务'],
+      details: [
+        {
+          id: 1,
+          key: '0123456789abcdef0123456789abcdef',
+          name: '志愿服务',
+          description: '',
+          score: null,
+          attachments: [],
+        },
+      ],
+    };
+    const saved = { ...record, statement: '年度申报补充内容', revision: 3 };
+    const requests: { path: string; options: RequestInit }[] = [];
+    stubApplicationFetch((path, options) => {
+      requests.push({ path, options });
+      if (options.method === 'PUT') return respond(saved);
+      if (path.endsWith('/complete')) return respond({ ...saved, revision: 4 });
+      if (path.endsWith('/attachments')) return respond(preparedUpload());
+      return respond(saved);
+    });
+    cosMock.putObject.mockReset();
+    if (failed) cosMock.putObject.mockRejectedValue(new Error('fixture failure'));
+    else cosMock.putObject.mockResolvedValue({ statusCode: 200 });
+    render(
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      >
+        <ApplicationDrawer
+          workspaceID={workspaceID}
+          scope="mine"
+          record={record}
+          onClose={vi.fn()}
+        />
+      </QueryClientProvider>,
+    );
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: '重新申报' }));
+    await user.type(screen.getByLabelText('申报说明'), '补充内容');
+    const openUpload = () => user.click(screen.getByRole('button', { name: '保存内容并上传' }));
+    await openUpload();
+    let confirmation = within(screen.getByRole('dialog', { name: '保存内容并上传附件' }));
+    expect(
+      confirmation.getByText('保存成功后，取消编辑或上传失败均不会撤销本次保存。'),
+    ).toBeVisible();
+    expect(requests).toHaveLength(0);
+    await user.click(confirmation.getByRole('button', { name: '取消' }));
+    expect(requests).toHaveLength(0);
+    expect(screen.getByLabelText('申报说明')).toHaveValue(saved.statement);
+    await openUpload();
+    confirmation = within(screen.getByRole('dialog', { name: '保存内容并上传附件' }));
+    await user.upload(
+      confirmation.getByLabelText('选择文件并保存上传'),
+      new File(['fixture'], '材料.pdf', { type: 'application/pdf' }),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: '保存内容并上传附件' })).not.toBeInTheDocument(),
+    );
+    expect(requests[0]?.options.method).toBe('PUT');
+    expect(
+      JSON.parse(typeof requests[0]?.options.body === 'string' ? requests[0].options.body : ''),
+    ).toMatchObject({
+      statement: saved.statement,
+      revision: record.revision,
+      details: [{ name: '志愿服务' }],
+    });
+    expect(requests[1]?.path).toMatch(/\/attachments$/u);
+    expect(
+      JSON.parse(typeof requests[1]?.options.body === 'string' ? requests[1].options.body : ''),
+    ).toMatchObject({
+      application_revision: saved.revision,
+    });
+    if (failed) {
+      expect(
+        await screen.findByText('申报内容已保存，附件上传未完成。文件上传失败，请重试'),
+      ).toBeVisible();
+      await user.click(
+        within(screen.getByRole('dialog', { name: '编辑申报' })).getByRole('button', {
+          name: '取消',
+        }),
+      );
+      expect(screen.getByRole('dialog', { name: '申报详情' })).toHaveTextContent(saved.statement);
+    } else {
+      expect(requests[2]?.path).toMatch(/\/attachments\/complete$/u);
+      await user.upload(
+        screen.getByLabelText('上传附件'),
+        new File(['fixture'], '第二份材料.pdf', { type: 'application/pdf' }),
+      );
+      await waitFor(() => {
+        expect(cosMock.putObject).toHaveBeenCalledTimes(2);
+      });
+      expect(requests.filter(({ options }) => options.method === 'PUT')).toHaveLength(1);
+    }
+    cosMock.putObject.mockResolvedValue({ statusCode: 200 });
+  },
+);
 
 it.each(['draft', 'rejected'] as const)('关闭申报后，已有 $0 单据仍可提交', async (status) => {
   const record = { ...rejectedApplication, status };

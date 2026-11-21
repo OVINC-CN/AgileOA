@@ -130,7 +130,7 @@ afterEach(() => {
 });
 
 describe('审计操作筛选', () => {
-  it('用户、对象、请求编号独立精确提交，枚举变化同时提交文本草稿', async () => {
+  it('用户、对象、请求编号经搜索精确提交，枚举变化不提交文本草稿', async () => {
     const paths = renderAudit();
     const user = userEvent.setup();
     await waitFor(() => {
@@ -145,6 +145,17 @@ describe('审计操作筛选', () => {
     await user.click(screen.getByRole('combobox', { name: '用户租户' }));
     await user.click(screen.getByRole('option', { name: '系统' }));
     await user.keyboard('{Escape}');
+    await waitFor(() => {
+      for (const endpoint of ['/logs?', '/statistics?']) {
+        const path = paths.filter((value) => value.includes(endpoint)).at(-1);
+        const query = new URL(path ?? '', 'https://example.com').searchParams;
+        expect(query.getAll('user_identify_tenant_id')).toEqual(['system']);
+        for (const key of ['user_id', 'instance_id', 'request_id'])
+          expect(query.has(key)).toBe(false);
+      }
+    });
+    expect(screen.getByRole('status', { name: '筛选生效提示' })).toHaveTextContent('有未应用条件');
+    await user.click(screen.getByRole('button', { name: '搜索' }));
     await waitFor(() => {
       for (const endpoint of ['/logs?', '/statistics?']) {
         const path = paths.filter((value) => value.includes(endpoint)).at(-1);
@@ -326,7 +337,7 @@ describe('审计操作筛选', () => {
     expect(screen.getAllByRole('option', { name: '不含审计' })).toHaveLength(1);
   });
 
-  it('不含审计与具体操作互斥，具体操作仍可多选，字段重置恢复默认', async () => {
+  it('不含审计与具体操作互斥，具体操作仍可多选，面板重置恢复默认', async () => {
     const paths = renderAudit();
     const user = userEvent.setup();
     await waitFor(() => {
@@ -361,12 +372,20 @@ describe('审计操作筛选', () => {
     });
 
     await user.click(personUpdate);
-    await user.click(screen.getByRole('button', { name: '重置操作' }));
-    expect(excluded).toHaveAttribute('aria-selected', 'true');
-    expect(personUpdate).toHaveAttribute('aria-selected', 'false');
+    await user.keyboard('{Escape}');
+    await user.click(screen.getByRole('button', { name: '重置' }));
     await waitFor(() => {
       expectAction(paths, 'exclude_audit');
     });
+    await user.click(screen.getByRole('combobox', { name: '操作' }));
+    expect(screen.getByRole('option', { name: '不含审计' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(screen.getByRole('option', { name: '编辑党建人员' })).toHaveAttribute(
+      'aria-selected',
+      'false',
+    );
   });
 
   it('全部操作显式传空值，重置恢复不含审计，列表和统计同步更新', async () => {

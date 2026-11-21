@@ -3,10 +3,12 @@ import { Fragment, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { Tooltip } from '@/components/ui/tooltip';
 import { moveNode, newNode, removeNode, type TimelineNode } from '@/features/cpc-timeline/model';
 import { useApiAction } from '@/lib/api-action';
 import { getConfig } from '@/lib/config';
 import { showMessage } from '@/lib/messages';
+import { cn } from '@/lib/utils';
 
 export function NodeList({
   nodes,
@@ -43,9 +45,9 @@ export function NodeList({
     setOverID('');
   };
   return (
-    <div className="flex h-full min-h-0 min-w-0 flex-col gap-3">
+    <div className="flex max-h-52 min-h-0 min-w-0 flex-col gap-3 lg:h-full lg:max-h-none">
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-2">
-        <h3 className="text-sm font-semibold">节点（{String(nodes.length)}）</h3>
+        <h3 className="text-sm font-medium">节点（{String(nodes.length)}）</h3>
         <Button
           type="button"
           size="sm"
@@ -61,15 +63,12 @@ export function NodeList({
           添加
         </Button>
       </div>
-      <p className="shrink-0 text-xs leading-5 text-muted-foreground">
-        拖动手柄调整顺序，也可使用上下移动按钮
-      </p>
       <p role="status" aria-live="polite" className="sr-only">
         {announcement}
       </p>
       <div
         ref={list}
-        className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain rounded-lg p-1"
+        className="min-h-0 flex-1 overflow-y-auto rounded-lg p-1 lg:overscroll-contain"
         onPointerMove={(event) => {
           const activeDrag = drag.current;
           if (!activeDrag) return;
@@ -96,7 +95,7 @@ export function NodeList({
           if (event.pointerId === drag.current?.pointerID) stop(false);
         }}
       >
-        <ol aria-label="时间线节点排序" className="space-y-2">
+        <ol aria-label="时间线节点排序" className="space-y-1">
           {nodes.map((node, index) => (
             <Fragment key={node.id}>
               {!node.group_name.trim() && nodes[index - 1]?.group_name.trim() ? (
@@ -106,13 +105,18 @@ export function NodeList({
               ) : null}
               <li
                 data-timeline-node={node.id}
-                className={`rounded-lg border bg-background/75 p-2 ${selectedID === node.id ? 'border-primary/70' : 'border-border'} ${dragging === node.id ? 'opacity-50' : ''} ${dragging && overID === node.id ? 'ring-2 ring-primary/40' : ''}`}
+                className={cn(
+                  'flex min-h-12 min-w-0 items-center gap-1 rounded-lg p-1 hover:bg-muted',
+                  selectedID === node.id && 'bg-accent hover:bg-accent',
+                  dragging === node.id && 'opacity-50',
+                  dragging && overID === node.id && 'ring-2 ring-primary/40',
+                )}
               >
-                <div className="flex items-center gap-1">
+                {nodes.length > 1 ? (
                   <Button
                     type="button"
                     variant="ghost"
-                    size="icon-sm"
+                    size="icon-xs"
                     disabled={disabled}
                     className="shrink-0 cursor-grab touch-none active:cursor-grabbing"
                     aria-label={`拖动节点 ${String(index + 1)}，方向键调整顺序`}
@@ -141,85 +145,99 @@ export function NodeList({
                   >
                     <GripVertical aria-hidden="true" />
                   </Button>
+                ) : null}
+                <Tooltip content={node.name || '未命名节点'} onlyOverflow>
                   <Button
                     type="button"
                     variant="ghost"
-                    className="h-auto min-w-0 flex-1 justify-start rounded px-1 py-2 text-left text-xs wrap-anywhere whitespace-normal focus-visible:outline-primary"
+                    className={cn(
+                      'h-auto min-h-9 min-w-0 flex-1 justify-start px-1 py-1 text-left font-normal hover:bg-transparent focus-visible:outline-primary',
+                      selectedID === node.id && 'font-medium text-accent-foreground',
+                    )}
                     aria-pressed={selectedID === node.id}
                     disabled={disabled}
                     onClick={() => {
                       onSelect(node.id);
                     }}
                   >
-                    <span className="min-w-0 space-y-1">
-                      <span className="block">
+                    <span className="min-w-0">
+                      <span data-tooltip-overflow className="block truncate leading-5">
                         {String(index + 1)}. {node.name || '未命名节点'}
                       </span>
                       {node.group_name ? (
-                        <span className="block text-xs font-normal text-muted-foreground">
-                          分组：{node.group_name}
+                        <span className="block truncate text-xs leading-4 font-normal text-muted-foreground">
+                          {node.group_name}
                         </span>
                       ) : null}
                     </span>
                   </Button>
-                </div>
-                <div className="flex items-center justify-end gap-1">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    disabled={disabled || index === 0}
-                    aria-label={`上移节点 ${String(index + 1)}`}
-                    onClick={() => {
-                      const previous = nodes[index - 1];
-                      if (previous) move(node.id, previous.id);
-                    }}
-                  >
-                    <ArrowUp aria-hidden="true" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    disabled={disabled || index === nodes.length - 1}
-                    aria-label={`下移节点 ${String(index + 1)}`}
-                    onClick={() => {
-                      const next = nodes[index + 1];
-                      if (next) move(node.id, next.id);
-                    }}
-                  >
-                    <ArrowDown aria-hidden="true" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    disabled={disabled || nodes.length === 1}
-                    loading={remove.isPending(node.id)}
-                    aria-label={`删除节点 ${String(index + 1)}`}
-                    onClick={() => {
-                      try {
-                        const next = removeNode(nodes, node.id);
-                        const apply = () => {
-                          onChange(next);
-                          if (selectedID === node.id && next[0]) onSelect(next[0].id);
-                        };
-                        if (beforeRemove) {
-                          void remove.run(node.id, async () => {
-                            await beforeRemove(node);
-                            apply();
-                          });
-                        } else {
-                          apply();
-                        }
-                      } catch (cause) {
-                        if (cause instanceof Error) showMessage(cause.message);
-                      }
-                    }}
-                  >
-                    <Trash2 aria-hidden="true" />
-                  </Button>
-                </div>
+                </Tooltip>
+                {nodes.length > 1 ? (
+                  <div className="flex shrink-0 items-center">
+                    <Tooltip content="上移">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-xs"
+                        disabled={disabled || index === 0}
+                        aria-label={`上移节点 ${String(index + 1)}`}
+                        onClick={() => {
+                          const previous = nodes[index - 1];
+                          if (previous) move(node.id, previous.id);
+                        }}
+                      >
+                        <ArrowUp aria-hidden="true" />
+                      </Button>
+                    </Tooltip>
+                    <Tooltip content="下移">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-xs"
+                        disabled={disabled || index === nodes.length - 1}
+                        aria-label={`下移节点 ${String(index + 1)}`}
+                        onClick={() => {
+                          const next = nodes[index + 1];
+                          if (next) move(node.id, next.id);
+                        }}
+                      >
+                        <ArrowDown aria-hidden="true" />
+                      </Button>
+                    </Tooltip>
+                    <Tooltip content="删除节点">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-xs"
+                        disabled={disabled || nodes.length === 1}
+                        loading={remove.isPending(node.id)}
+                        aria-label={`删除节点 ${String(index + 1)}`}
+                        onClick={() => {
+                          try {
+                            const next = removeNode(nodes, node.id);
+                            const apply = () => {
+                              onChange(next);
+                              const replacement = next[Math.min(index, next.length - 1)];
+                              if (selectedID === node.id && replacement) onSelect(replacement.id);
+                            };
+                            if (beforeRemove) {
+                              void remove.run(node.id, async () => {
+                                await beforeRemove(node);
+                                apply();
+                              });
+                            } else {
+                              apply();
+                            }
+                          } catch (cause) {
+                            if (cause instanceof Error) showMessage(cause.message);
+                          }
+                        }}
+                      >
+                        <Trash2 aria-hidden="true" />
+                      </Button>
+                    </Tooltip>
+                  </div>
+                ) : null}
               </li>
             </Fragment>
           ))}

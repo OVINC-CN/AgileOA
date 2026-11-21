@@ -68,7 +68,6 @@ export function ApplicationContentVersions({
                   label="历史版本"
                   className="w-full"
                   value={String(previous?.revision ?? '')}
-                  defaultValue={String(defaultVersion?.revision ?? '')}
                   options={versions.map((item) => ({
                     value: String(item.revision),
                     label: `版本 ${String(item.revision)} · ${formatDate(item.updated_at)} · ${formatValue(item.actor_name)}`,

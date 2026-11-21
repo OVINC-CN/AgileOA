@@ -168,10 +168,6 @@ export function PersonEditor({
               disabled={blocked}
               onOpenChange={setStudentOpen}
               onSearchChange={setKeyword}
-              onSearchReset={async () => {
-                setKeyword('');
-                await client.query(personCandidateOptions(workspaceID, ''));
-              }}
               onValueChange={(value) => {
                 const next = candidateValues.find((item) => item.value === Number(value)) ?? null;
                 setSelected(next);

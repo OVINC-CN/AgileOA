@@ -167,22 +167,22 @@ it('党支部列表权限显示党建数据管理入口并默认进入该页面'
   expect(router.state.location.pathname).toBe('/cpc/data-management');
 });
 
-it('数据管理在月度工作之后且紧邻侧栏折叠按钮上方', async () => {
+it('数据管理在月度工作之后，侧栏折叠按钮独立于菜单列表', async () => {
   renderWorkspace(
     ['access_workspace', 'cpc.monthly_work.list', 'cpc.dashboard.list', 'cpc.party_branch.list'],
     cpcRoot,
   );
   await screen.findByRole('heading', { name: '党建月度工作页面' });
   const sidebar = screen.getByRole('navigation', { name: '党建工作导航' });
-  const data = within(sidebar).getByRole('link', { name: '数据管理' });
   expect(
     within(sidebar)
       .getAllByRole('link')
       .map((link) => link.textContent),
   ).toEqual(['月度工作', '数据仪表', '数据管理']);
-  expect(data.parentElement?.nextElementSibling).toBe(
-    within(sidebar).getByRole('button', { name: '折叠侧栏' }),
-  );
+  const aside = screen.getByRole('complementary', { name: '党建工作' });
+  const collapse = within(aside).getByRole('button', { name: '折叠侧栏' });
+  expect(sidebar).not.toContainElement(collapse);
+  expect(collapse.parentElement?.previousElementSibling).toBe(sidebar);
 });
 
 it('数据仪表使用独立列表权限，仅有下载权限时不显示导航', async () => {

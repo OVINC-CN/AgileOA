@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Download, RefreshCw } from 'lucide-react';
+import type { ReactNode } from 'react';
 
 import { TableColumnSettings } from '@/components/table-column-settings';
 import { Button } from '@/components/ui/button';
@@ -55,6 +56,23 @@ function DashboardWorkspace({ workspaceID, actions, refresh: refreshWorkspace }:
     return <Card className="p-6 text-sm text-muted-foreground">暂无查看数据仪表的权限</Card>;
   }
 
+  const refreshButton = (
+    <Button
+      type="button"
+      variant="ghost"
+      size="sm"
+      loading={refresh.pending || query.isPending}
+      onClick={() => {
+        void refresh.run('refresh', async () => {
+          await refreshWorkspace();
+          await client.query({ ...dashboardOptions(workspaceID), staleTime: 0 });
+        });
+      }}
+    >
+      <RefreshCw aria-hidden="true" />
+      刷新
+    </Button>
+  );
   return (
     <section aria-labelledby="cpc-dashboard-title" className="min-w-0 space-y-5">
       <header className="flex min-h-8 flex-wrap items-center justify-between gap-3">
@@ -95,31 +113,26 @@ function DashboardWorkspace({ workspaceID, actions, refresh: refreshWorkspace }:
               </Button>
             </span>
           ) : null}
-          <Button
-            variant="outline"
-            loading={refresh.pending || query.isPending}
-            onClick={() => {
-              void refresh.run('refresh', async () => {
-                await refreshWorkspace();
-                await client.query({ ...dashboardOptions(workspaceID), staleTime: 0 });
-              });
-            }}
-          >
-            <RefreshCw aria-hidden="true" />
-            刷新
-          </Button>
         </div>
       </header>
       <div role="region" id="cpc-dashboard-panel-branches" aria-label={selected?.label}>
         <Card className="gap-0 overflow-hidden py-0">
-          <SummaryTable data={data} loading={query.isFetching} />
+          <SummaryTable refreshAction={refreshButton} data={data} loading={query.isFetching} />
         </Card>
       </div>
     </section>
   );
 }
 
-function SummaryTable({ data, loading }: { data: CPCDashboard | undefined; loading: boolean }) {
+function SummaryTable({
+  data,
+  loading,
+  refreshAction,
+}: {
+  data: CPCDashboard | undefined;
+  loading: boolean;
+  refreshAction?: ReactNode;
+}) {
   const settings = useTableColumns(
     'cpc-dashboard-summary',
     columns.map((column) => ({ ...column, id: column.key })),
@@ -128,7 +141,10 @@ function SummaryTable({ data, loading }: { data: CPCDashboard | undefined; loadi
     <>
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-4">
         <span className="text-xs text-muted-foreground">在编人员</span>
-        <TableColumnSettings settings={settings} />
+        <div className="flex items-center gap-3">
+          <TableColumnSettings settings={settings} />
+          {refreshAction}
+        </div>
       </div>
       <Table aria-label={tabs[0].label} aria-busy={loading}>
         <TableHeader className="bg-table-header">

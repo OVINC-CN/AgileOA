@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import {
   ArrowRight,
-  CalendarDays,
   GripVertical,
   Link2,
   LockKeyhole,
@@ -10,7 +9,7 @@ import {
   Unlink,
   X,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 
 import { ErrorMessage } from '@/components/error-message';
 import { Button } from '@/components/ui/button';
@@ -20,6 +19,7 @@ import {
   MappingSourceButton,
   MappingTargetButton,
 } from '@/components/ui/drag-mapping-board';
+import { Label } from '@/components/ui/label';
 import { SearchSelect } from '@/components/ui/search-select';
 import { Tooltip } from '@/components/ui/tooltip';
 import { timelineTransferTargetsOptions } from '@/features/cpc-timeline/api';
@@ -62,25 +62,26 @@ export function TemplateTransferEditor({
   const activeIndex = Math.max(0, Math.min(selectedIndex, transfers.length - 1));
   const active = transfers[activeIndex] ?? { target_template_id: 0, node_mappings: [] };
   return (
-    <div className="flex h-full min-h-0 min-w-0 flex-col gap-3">
+    <div className="flex min-w-0 flex-col gap-3 lg:h-full lg:min-h-0">
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-3">
-        <div className="space-y-1">
-          <h2 className="text-sm font-semibold">转移配置</h2>
-          <p className="text-xs text-muted-foreground">
-            节点支持一对多、多对一，人员附件随节点映射转移；字段仅支持同类型的手动字段。
-          </p>
-        </div>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => {
-            setSelectedIndex(transfers.length);
-            onChange([...transfers, { target_template_id: 0, node_mappings: [] }]);
-          }}
-        >
-          <Plus aria-hidden="true" />
-          添加转移目标
-        </Button>
+        <p className="text-xs leading-5 text-muted-foreground">
+          节点可多对多映射，附件随节点转移；字段仅支持同类型的手动字段。
+        </p>
+        {transfers.some((item) => item.target_template_id > 0) ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={transfers.some((item) => item.target_template_id === 0)}
+            onClick={() => {
+              setSelectedIndex(transfers.length);
+              onChange([...transfers, { target_template_id: 0, node_mappings: [] }]);
+            }}
+          >
+            <Plus aria-hidden="true" />
+            添加转移目标
+          </Button>
+        ) : null}
       </div>
       {transfers.length > 1 ? (
         <div
@@ -92,9 +93,10 @@ export function TemplateTransferEditor({
             <Button
               key={index}
               type="button"
-              variant="outline"
+              variant="ghost"
+              size="sm"
               aria-pressed={index === activeIndex}
-              className={cn(index === activeIndex && 'border-primary/50 bg-primary/5 text-primary')}
+              className={cn(index === activeIndex && 'bg-accent text-accent-foreground')}
               onClick={() => {
                 setSelectedIndex(index);
               }}
@@ -160,6 +162,7 @@ function TransferTargetEditor({
   onRemove: (() => void) | undefined;
 }) {
   const [keyword, setKeyword] = useState('');
+  const targetID = useId();
   const purpose = templateID ? 'update' : 'create';
   const choices = useQuery(timelineTransferTargetsOptions(workspaceID, purpose, keyword));
   const selected = useQuery({
@@ -224,38 +227,48 @@ function TransferTargetEditor({
     });
   });
   return (
-    <section aria-label="时间线拖拽映射" className="flex min-h-0 flex-1 flex-col gap-3">
+    <section
+      aria-label="时间线拖拽映射"
+      className="flex min-w-0 flex-col gap-3 lg:min-h-0 lg:flex-1"
+    >
       <ErrorMessage>{choices.error?.message ?? selected.error?.message}</ErrorMessage>
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-        <p>
-          已配置 {String(transfer.node_mappings.length)} 组节点映射 ·{' '}
-          {String(
-            transfer.node_mappings.reduce((count, mapping) => count + mapping.fields.length, 0),
-          )}{' '}
-          组字段映射
-        </p>
-        <div className="flex shrink-0 items-center gap-2">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            aria-pressed={syncScroll}
-            className={cn(syncScroll && 'text-primary')}
-            onClick={() => {
-              onSyncScrollChange(!syncScroll);
-            }}
-          >
-            {syncScroll ? <Link2 aria-hidden="true" /> : <Unlink aria-hidden="true" />}
-            {syncScroll ? '关闭联动滚动' : '开启联动滚动'}
-          </Button>
-          {onRemove ? (
-            <Button type="button" variant="ghost" size="sm" onClick={onRemove}>
-              <Trash2 aria-hidden="true" />
-              移除当前目标
-            </Button>
+      {target || onRemove ? (
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+          {target ? (
+            <p>
+              已配置 {String(transfer.node_mappings.length)} 组节点映射 ·{' '}
+              {String(
+                transfer.node_mappings.reduce((count, mapping) => count + mapping.fields.length, 0),
+              )}{' '}
+              组字段映射
+            </p>
           ) : null}
+          <div className="ml-auto flex max-w-full flex-wrap items-center justify-end gap-2">
+            {target ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                aria-pressed={syncScroll}
+                aria-label={syncScroll ? '关闭联动滚动' : '开启联动滚动'}
+                className={cn(syncScroll && 'bg-accent text-accent-foreground')}
+                onClick={() => {
+                  onSyncScrollChange(!syncScroll);
+                }}
+              >
+                {syncScroll ? <Link2 aria-hidden="true" /> : <Unlink aria-hidden="true" />}
+                联动滚动
+              </Button>
+            ) : null}
+            {onRemove ? (
+              <Button type="button" variant="ghost" size="sm" onClick={onRemove}>
+                <Trash2 aria-hidden="true" />
+                移除当前目标
+              </Button>
+            ) : null}
+          </div>
         </div>
-      </div>
+      ) : null}
       {target && missing.length ? (
         <div className="max-h-28 shrink-0 space-y-1 overflow-y-auto rounded-lg border border-warning-border bg-warning px-3 py-2">
           <p className="text-xs font-medium text-warning-foreground">
@@ -311,23 +324,30 @@ function TransferTargetEditor({
             setMappings(connectTransferMapping(transfer.node_mappings, source, target));
         }}
         sourceTitle={
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">当前时间线</p>
-            <h3 className="flex h-8 min-w-0 items-center text-sm font-semibold">
+          <div className="space-y-2">
+            <p className="text-xs leading-5 text-muted-foreground">来源模板</p>
+            <h3 className="flex h-9 min-w-0 items-center rounded-lg bg-background/70 px-3 text-sm font-medium">
               <Tooltip content={templateName.trim() || '当前模板'} onlyOverflow>
                 <span className="min-w-0 flex-1 truncate">{templateName.trim() || '当前模板'}</span>
               </Tooltip>
             </h3>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs leading-4 text-muted-foreground">
               {String(nodes.length)} 个节点 · {String(sourceItems.length - nodes.length)} 个字段
             </p>
           </div>
         }
         targetTitle={
-          <div className="space-y-1">
-            <h3 className="text-xs text-muted-foreground">目标时间线</h3>
+          <div className="space-y-2">
+            <Label
+              htmlFor={targetID}
+              className="text-xs leading-5 font-normal text-muted-foreground"
+            >
+              目标模板
+            </Label>
             <SearchSelect
+              id={targetID}
               label="转移目标模板"
+              placeholder="选择目标模板"
               className="w-full"
               value={transfer.target_template_id ? String(transfer.target_template_id) : ''}
               options={targets.map((item) => ({ value: String(item.id), label: item.name }))}
@@ -337,10 +357,12 @@ function TransferTargetEditor({
                 onChange({ target_template_id: Number(value), node_mappings: [] });
               }}
             />
-            <p className="text-xs text-muted-foreground">
+            <p className="min-h-4 text-xs leading-4 text-muted-foreground">
               {target
                 ? `${String(targetNodes.length)} 个节点 · ${String(targetItems.length - targetNodes.length)} 个字段`
-                : '选择目标模板后展示完整时间线'}
+                : choices.isPending || (selected.isPending && transfer.target_template_id > 0)
+                  ? '正在加载目标模板'
+                  : null}
             </p>
           </div>
         }
@@ -365,7 +387,10 @@ function TransferTargetEditor({
               onChange={setMappings}
             />
           ) : (
-            <p className="py-10 text-center text-sm text-muted-foreground">请选择目标模板</p>
+            <div className="flex min-h-40 flex-col items-center justify-center gap-3 text-center">
+              <ArrowRight aria-hidden="true" className="size-6 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">选择目标模板后开始映射</p>
+            </div>
           )
         }
       />
@@ -399,32 +424,31 @@ function MappingTimeline({
             (side === 'source' ? mapping.source_node_id : mapping.target_node_id) === node.id,
         );
         return (
-          <li
-            key={node.id}
-            data-mapping-node={transferItemID(node.id)}
-            className="relative ml-3 border-l border-border pb-5 pl-5 last:border-transparent"
-          >
-            <span className="absolute top-3 -left-3 flex size-6 items-center justify-center rounded-full bg-border text-xs text-foreground-secondary">
-              {String(index + 1)}
-            </span>
-            <div className="glass-panel space-y-2 rounded-xl border border-border bg-background/75 p-2">
+          <li key={node.id} data-mapping-node={transferItemID(node.id)} className="pb-3 last:pb-0">
+            <div className="space-y-2 rounded-xl border border-border-subtle bg-background/75 p-2">
               <h4>
                 <Entry
                   itemID={transferItemID(node.id)}
                   disabled={!enabled}
-                  aria-label={`${side === 'source' ? '拖动来源节点' : '映射到目标节点'} ${node.name}`}
+                  aria-label={`${side === 'source' ? '拖动来源节点' : '映射到目标节点'} ${node.name.trim() || '未命名节点'}`}
+                  className="min-h-9 py-1 font-normal text-foreground"
                 >
+                  <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-muted text-xs text-foreground-secondary tabular-nums">
+                    {String(index + 1)}
+                  </span>
                   {side === 'source' ? (
                     <GripVertical aria-hidden="true" className="size-4 text-muted-foreground" />
                   ) : (
-                    <ArrowRight aria-hidden="true" className="size-4 text-primary" />
+                    <ArrowRight aria-hidden="true" className="size-4 text-accent-foreground" />
                   )}
-                  <Tooltip content={node.name} onlyOverflow>
-                    <span className="min-w-0 flex-1 truncate font-semibold">{node.name}</span>
+                  <Tooltip content={node.name.trim() || '未命名节点'} onlyOverflow>
+                    <span className="min-w-0 flex-1 truncate font-medium">
+                      {node.name.trim() || '未命名节点'}
+                    </span>
                   </Tooltip>
                   {node.is_baseline ? <BaselineNodeIcon /> : null}
                   {related.length ? (
-                    <span className="shrink-0 text-xs text-primary">
+                    <span className="shrink-0 text-xs text-accent-foreground">
                       {String(related.length)} 组映射
                     </span>
                   ) : null}
@@ -461,7 +485,7 @@ function MappingTimeline({
                 </p>
               ) : null}
               <ul
-                className="space-y-2 rounded-lg border border-border bg-muted/50 p-2"
+                className="space-y-1 border-t border-border-subtle pt-2"
                 aria-label={`${node.name}的字段`}
               >
                 {node.fields.map((field) => {
@@ -479,8 +503,8 @@ function MappingTimeline({
                       <Entry
                         itemID={transferItemID(node.id, field.id)}
                         disabled={!enabled || !!field.student_field}
-                        aria-label={`${side === 'source' ? '拖动来源字段' : '映射到目标字段'} ${node.name} / ${field.name}`}
-                        className="bg-background/75"
+                        aria-label={`${side === 'source' ? '拖动来源字段' : '映射到目标字段'} ${node.name.trim() || '未命名节点'} / ${field.name.trim() || '未命名字段'}`}
+                        className="min-h-8 bg-muted/40 py-1 font-normal text-foreground"
                       >
                         {field.student_field ? (
                           <LockKeyhole
@@ -493,19 +517,18 @@ function MappingTimeline({
                             className="size-3.5 text-muted-foreground"
                           />
                         ) : (
-                          <ArrowRight aria-hidden="true" className="size-3.5 text-primary" />
-                        )}
-                        {field.id === node.time_field_id ? (
-                          <CalendarDays
+                          <ArrowRight
                             aria-hidden="true"
-                            className="size-3.5 text-muted-foreground"
+                            className="size-3.5 text-accent-foreground"
                           />
-                        ) : null}
-                        <Tooltip content={field.name} onlyOverflow>
-                          <span className="min-w-0 flex-1 truncate text-xs font-medium">
-                            {field.name}
+                        )}
+                        <Tooltip content={field.name.trim() || '未命名字段'} onlyOverflow>
+                          <span className="min-w-0 flex-1 truncate text-sm font-normal">
+                            {field.name.trim() || '未命名字段'}
                             {field.required && !field.student_field ? (
-                              <span className="ml-1 text-primary">*</span>
+                              <span aria-hidden="true" className="ml-1 text-danger-foreground">
+                                *
+                              </span>
                             ) : null}
                           </span>
                         </Tooltip>
@@ -515,7 +538,7 @@ function MappingTimeline({
                             : fieldTypes.find((item) => item.value === field.type)?.label}
                         </span>
                         {side === 'source' && fieldMappings.length ? (
-                          <span className="flex shrink-0 items-center gap-1 text-xs text-primary">
+                          <span className="flex shrink-0 items-center gap-1 text-xs text-accent-foreground">
                             <ArrowRight aria-hidden="true" className="size-3" />
                             {String(fieldMappings.length)}
                           </span>
@@ -599,7 +622,7 @@ function MappingChip({
 }) {
   const counterpart = side === 'source' ? target : source;
   return (
-    <div className="flex min-w-0 items-center gap-1 rounded-md border border-primary/15 bg-primary/5 px-1 py-0.5 text-xs text-foreground-secondary">
+    <div className="flex min-w-0 items-center gap-1 rounded-lg bg-accent/70 px-1 py-0.5 text-xs text-foreground-secondary">
       {side === 'source' ? (
         <ArrowRight aria-hidden="true" className="ml-1 size-3.5 shrink-0 text-primary" />
       ) : null}

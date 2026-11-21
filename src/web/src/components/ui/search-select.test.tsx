@@ -134,7 +134,7 @@ describe('自定义下拉选择', () => {
     ];
     expect(screen.getAllByRole('option').map((option) => option.textContent)).toEqual(expected);
     expect(expand).toBeVisible();
-    expect(screen.getByRole('button', { name: '重置编号' }).nextElementSibling).toBe(expand);
+    expect(screen.getByRole('searchbox').parentElement?.nextElementSibling).toBe(expand);
     await user.click(expand);
     expect(screen.getAllByRole('option').map((option) => option.textContent)).toEqual(expected);
     expect(screen.getByRole('button', { name: '收起编号选择器' })).toBeVisible();
@@ -143,115 +143,6 @@ describe('自定义下拉选择', () => {
       await user.click(screen.getByRole('option', { name: '12' }));
       expect(change).toHaveBeenCalledExactlyOnceWith(['12']);
     }
-  });
-
-  it.each([false, true])('单选重置恢复初始选值并清空搜索，展开状态：%s', async (expanded) => {
-    const searchChange = vi.fn();
-    const searchReset = vi.fn(() => Promise.resolve());
-    function Example() {
-      const [value, setValue] = useState('enabled');
-      return (
-        <SearchSelect
-          label="状态"
-          value={value}
-          onValueChange={setValue}
-          onSearchChange={searchChange}
-          onSearchReset={searchReset}
-          options={[
-            { value: 'enabled', label: '启用' },
-            { value: 'disabled', label: '停用' },
-          ]}
-        />
-      );
-    }
-    render(<Example />);
-    const user = userEvent.setup();
-    const trigger = screen.getByRole('combobox', { name: '状态' });
-    await user.click(trigger);
-    await user.click(screen.getByRole('option', { name: '停用' }));
-    await user.click(trigger);
-    if (expanded) await user.click(screen.getByRole('button', { name: '展开状态选择器' }));
-    const reset = screen.getByRole('button', { name: '重置状态' });
-    expect(reset).toBeEnabled();
-    const search = screen.getByRole('searchbox');
-    await user.type(search, '停');
-    await user.click(reset);
-    expect(search).toHaveValue('');
-    expect(search).toHaveFocus();
-    expect(searchChange).toHaveBeenLastCalledWith('');
-    expect(trigger).toHaveTextContent('启用');
-    expect(screen.getByRole('option', { name: '启用' })).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByRole('listbox')).toBeVisible();
-    expect(searchReset).toHaveBeenCalledOnce();
-    await waitFor(() => {
-      expect(reset).toBeDisabled();
-    });
-  });
-
-  it.each([{ defaults: [] }, { defaults: ['anhui'] }])(
-    '多选重置恢复该字段默认值 $defaults，仍可通过全部入口清空',
-    async ({ defaults }) => {
-      function Example() {
-        const [value, setValue] = useState(['beijing']);
-        return (
-          <SearchSelect
-            multiple
-            label="地区"
-            value={value}
-            defaultValue={defaults}
-            onValueChange={setValue}
-            options={[
-              { value: 'beijing', label: '北京' },
-              { value: 'anhui', label: '安徽' },
-            ]}
-          />
-        );
-      }
-      render(<Example />);
-      const user = userEvent.setup();
-      await user.click(screen.getByRole('combobox', { name: '地区' }));
-      await user.click(screen.getByRole('button', { name: '展开地区选择器' }));
-      await user.type(screen.getByRole('searchbox'), '北京');
-      await user.click(screen.getByRole('button', { name: '重置地区' }));
-      expect(screen.getByRole('searchbox')).toHaveValue('');
-      expect(screen.getByRole('option', { name: '北京' })).toHaveAttribute(
-        'aria-selected',
-        'false',
-      );
-      expect(screen.getByRole('option', { name: '安徽' })).toHaveAttribute(
-        'aria-selected',
-        String(defaults.includes('anhui')),
-      );
-      await user.click(screen.getByRole('option', { name: '全部地区' }));
-      expect(screen.getByRole('combobox')).toHaveTextContent('全部地区');
-      expect(screen.getByRole('option', { name: '全部地区' })).toHaveAttribute(
-        'aria-selected',
-        'true',
-      );
-    },
-  );
-
-  it('异步提供默认值后可直接重置，不取排序后的第一个选项', async () => {
-    const change = vi.fn();
-    const { rerender } = render(
-      <SearchSelect label="工作空间" value="" options={[]} onValueChange={change} />,
-    );
-    rerender(
-      <SearchSelect
-        label="工作空间"
-        value="alpha"
-        defaultValue="zeta"
-        options={[
-          { value: 'zeta', label: 'Zeta' },
-          { value: 'alpha', label: 'Alpha' },
-        ]}
-        onValueChange={change}
-      />,
-    );
-    const user = userEvent.setup();
-    await user.click(screen.getByRole('combobox'));
-    await user.click(screen.getByRole('button', { name: '重置工作空间' }));
-    expect(change).toHaveBeenCalledExactlyOnceWith('zeta');
   });
 
   it('选项仅在文本被截断时悬停显示完整提示，仍可正常选择', async () => {
@@ -358,12 +249,10 @@ describe('自定义下拉选择', () => {
     expect(search).toHaveAttribute('data-1p-ignore', 'true');
     await userEvent.type(search, '停用');
     expect(screen.queryByRole('option', { name: '启用' })).not.toBeInTheDocument();
-    const reset = screen.getByRole('button', { name: '重置工作空间状态' });
-    expect(search.nextElementSibling).toBe(reset);
-    expect(reset.nextElementSibling).toBe(
+    expect(search.parentElement?.nextElementSibling).toBe(
       screen.getByRole('button', { name: '展开工作空间状态选择器' }),
     );
-    await userEvent.click(reset);
+    await userEvent.clear(search);
     expect(search).toHaveValue('');
     expect(search).toHaveFocus();
     expect(screen.getByRole('option', { name: '启用' })).toBeVisible();

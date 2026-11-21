@@ -15,7 +15,9 @@ import {
 import { createPortal } from 'react-dom';
 
 import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 import { type MappingScrollLink, useMappingScroll } from '@/components/ui/mapping-scroll';
+import { SearchSelect } from '@/components/ui/search-select';
 import { showMessage } from '@/lib/messages';
 import { cn } from '@/lib/utils';
 
@@ -46,6 +48,7 @@ interface MappingContext {
 }
 
 const Context = createContext<MappingContext | null>(null);
+const wideMappingMediaQuery = '(min-width: 48rem)';
 
 function useMappingBoard() {
   const context = useContext(Context);
@@ -108,6 +111,14 @@ export function DragMappingBoard({
   const [hovered, setHovered] = useState('');
   const [cursor, setCursor] = useState<{ x: number; y: number } | null>(null);
   const [announcement, setAnnouncement] = useState('');
+  const [selectedSource, setSelectedSource] = useState('');
+  const [selectedTarget, setSelectedTarget] = useState('');
+  const [compact, setCompact] = useState(() =>
+    typeof window.matchMedia === 'function'
+      ? !window.matchMedia(wideMappingMediaQuery).matches
+      : true,
+  );
+  const selectID = useId();
   const [paths, setPaths] = useState<
     { id: string; sourceID: string; d: string; clipped: boolean }[]
   >([]);
@@ -120,6 +131,19 @@ export function DragMappingBoard({
     () => new Map(targetItems.map((item) => [item.id, item])),
     [targetItems],
   );
+
+  useLayoutEffect(() => {
+    if (typeof window.matchMedia !== 'function') return;
+    const media = window.matchMedia(wideMappingMediaQuery);
+    const update = () => {
+      // 切换到双栏时卸载选择弹层，避免弹层停留在已隐藏的入口上。
+      setCompact(!media.matches);
+    };
+    media.addEventListener('change', update);
+    return () => {
+      media.removeEventListener('change', update);
+    };
+  }, []);
 
   const measure = useCallback(() => {
     const bounds = canvas.current?.getBoundingClientRect();
@@ -203,7 +227,7 @@ export function DragMappingBoard({
     (sourceID: string, targetID: string) => {
       const sourceItem = sourceItems.find((item) => item.id === sourceID);
       const targetItem = targetItems.find((item) => item.id === targetID);
-      if (!sourceItem || !targetItem) return;
+      if (!sourceItem || sourceItem.disabled || !targetItem || targetItem.disabled) return;
       const error = validate(sourceID, targetID);
       if (error) {
         showMessage(error);
@@ -331,19 +355,30 @@ export function DragMappingBoard({
     ],
   );
   const activeLabel = sourceLookup.get(dragging)?.label;
+  const selectedSourceItem = sourceLookup.get(selectedSource);
+  const validSource = selectedSourceItem && !selectedSourceItem.disabled ? selectedSource : '';
+  const availableTargets = validSource
+    ? targetItems.filter((item) => !item.disabled && !validate(validSource, item.id))
+    : [];
+  const validTarget = availableTargets.some((item) => item.id === selectedTarget)
+    ? selectedTarget
+    : '';
+  const connected = links.some(
+    (link) => link.sourceID === validSource && link.targetID === validTarget,
+  );
   const scroll = (side: 'source' | 'target', panel: HTMLDivElement) => {
     if (!drag.current?.active) synchronize(side, panel);
     measure();
   };
   return (
     <Context.Provider value={context}>
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2">
+      <div className="flex min-w-0 flex-col gap-2 md:h-[min(32rem,70dvh)] md:max-h-[32rem] md:min-h-80 lg:h-auto lg:min-h-0 lg:flex-1">
         <p role="status" aria-live="polite" className="sr-only">
           {announcement}
         </p>
         <div
           ref={root}
-          className="min-h-0 flex-1 overflow-x-auto rounded-xl border border-border bg-background/50"
+          className="min-w-0 rounded-xl border border-border-subtle bg-background/50 md:min-h-0 md:flex-1 md:overflow-x-auto"
           onClickCapture={(event) => {
             if (!suppressClick.current) return;
             event.preventDefault();
@@ -390,44 +425,98 @@ export function DragMappingBoard({
         >
           <div
             ref={canvas}
-            className="relative grid h-full min-w-[680px] grid-cols-[minmax(0,1fr)_64px_minmax(0,1fr)]"
+            className="relative grid min-w-0 grid-cols-1 md:h-full md:min-w-[640px] md:grid-cols-[minmax(0,1fr)_32px_minmax(0,1fr)] md:grid-rows-[auto_minmax(0,1fr)]"
           >
-            <div className="flex min-h-0 min-w-0 flex-col">
-              <div className="shrink-0 border-b border-border bg-background/70 px-4 py-3">
-                {sourceTitle}
-              </div>
-              <div
-                ref={sourcePanel}
-                data-mapping-scroll="source"
-                onScroll={(event) => {
-                  scroll('source', event.currentTarget);
-                }}
-                className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4"
-              >
-                {source}
-              </div>
+            <div className="order-first min-w-0 border-b border-border-subtle bg-muted/30 px-4 py-3 md:order-none md:col-start-3 md:row-start-1">
+              {targetTitle}
             </div>
-            <div className="flex items-start justify-center border-x border-border bg-muted/60 pt-4 text-muted-foreground">
-              <ArrowRight aria-hidden="true" className="size-5" />
+            <div className="order-1 min-w-0 border-b border-border-subtle bg-muted/30 px-4 py-3 md:order-none md:col-start-1 md:row-start-1">
+              {sourceTitle}
             </div>
-            <div className="flex min-h-0 min-w-0 flex-col">
-              <div className="shrink-0 border-b border-border bg-background/70 px-4 py-3">
-                {targetTitle}
-              </div>
+            {compact && targetItems.length > 0 ? (
               <div
-                ref={targetPanel}
-                data-mapping-scroll="target"
-                onScroll={(event) => {
-                  scroll('target', event.currentTarget);
-                }}
-                className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4"
+                role="group"
+                aria-label="选择式映射"
+                className="order-2 grid min-w-0 gap-3 border-b border-border-subtle p-4 md:hidden"
               >
-                {target}
+                <div className="min-w-0 space-y-2">
+                  <Label htmlFor={`${selectID}-source`} className="leading-5">
+                    来源节点或字段
+                  </Label>
+                  <SearchSelect
+                    id={`${selectID}-source`}
+                    label="映射来源"
+                    placeholder="选择来源节点或字段"
+                    className="w-full"
+                    value={validSource}
+                    options={sourceItems
+                      .filter((item) => !item.disabled)
+                      .map((item) => ({ value: item.id, label: item.label }))}
+                    onValueChange={(value) => {
+                      setSelectedSource(value);
+                      setSelectedTarget('');
+                    }}
+                  />
+                </div>
+                <div className="min-w-0 space-y-2">
+                  <Label htmlFor={`${selectID}-target`} className="leading-5">
+                    目标节点或字段
+                  </Label>
+                  <SearchSelect
+                    id={`${selectID}-target`}
+                    label="映射目标"
+                    placeholder="选择对应的目标"
+                    className="w-full"
+                    disabled={!validSource}
+                    value={validTarget}
+                    options={availableTargets.map((item) => ({
+                      value: item.id,
+                      label: item.label,
+                    }))}
+                    onValueChange={setSelectedTarget}
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={connected || !validSource || !validTarget}
+                  onClick={() => {
+                    connect(validSource, validTarget);
+                  }}
+                >
+                  <ArrowRight aria-hidden="true" />
+                  {connected ? '已建立映射' : '建立映射'}
+                </Button>
               </div>
+            ) : null}
+            <div
+              ref={sourcePanel}
+              data-mapping-scroll="source"
+              onScroll={(event) => {
+                scroll('source', event.currentTarget);
+              }}
+              className="order-3 min-w-0 p-3 md:order-none md:col-start-1 md:row-start-2 md:min-h-0 md:overflow-y-auto md:overscroll-contain"
+            >
+              <p className="mb-3 text-sm font-medium md:hidden">来源节点和字段</p>
+              {source}
+            </div>
+            <div className="hidden items-start justify-center border-x border-border-subtle bg-muted/30 pt-4 text-muted-foreground md:col-start-2 md:row-span-2 md:row-start-1 md:flex">
+              <ArrowRight aria-hidden="true" className="size-4" />
+            </div>
+            <div
+              ref={targetPanel}
+              data-mapping-scroll="target"
+              onScroll={(event) => {
+                scroll('target', event.currentTarget);
+              }}
+              className="order-4 min-w-0 border-t border-border-subtle p-3 md:order-none md:col-start-3 md:row-start-2 md:min-h-0 md:overflow-y-auto md:overscroll-contain md:border-t-0"
+            >
+              <p className="mb-3 text-sm font-medium md:hidden">目标节点和字段</p>
+              {target}
             </div>
             <svg
               aria-hidden="true"
-              className="pointer-events-none absolute inset-0 z-10 size-full overflow-hidden text-primary"
+              className="pointer-events-none absolute inset-0 z-10 hidden size-full overflow-hidden text-primary md:block"
             >
               <defs>
                 <marker
@@ -456,7 +545,10 @@ export function DragMappingBoard({
             </svg>
           </div>
         </div>
-        <p className="min-h-4 shrink-0 text-xs wrap-anywhere text-muted-foreground">
+        <p className="min-h-4 shrink-0 text-xs wrap-anywhere text-muted-foreground md:hidden">
+          选择来源及对应目标后建立映射；点击已配置的映射名称可定位对应节点或字段。
+        </p>
+        <p className="hidden min-h-4 shrink-0 text-xs wrap-anywhere text-muted-foreground md:block">
           {dragging && activeLabel
             ? `正在拖拽：${activeLabel}，放到右侧目标以建立映射；按 Esc 取消。`
             : '拖动左侧节点或字段到右侧建立映射；点击映射名称定位另一侧，虚线表示一端在可视区域外。'}
@@ -502,7 +594,7 @@ export function MappingSourceButton({
       disabled={disabled}
       tabIndex={-1}
       className={cn(
-        'h-auto w-full min-w-0 cursor-grab touch-none justify-start rounded-lg border border-transparent px-2 py-2 text-left whitespace-normal active:cursor-grabbing motion-reduce:transition-none',
+        'h-auto w-full min-w-0 cursor-grab touch-pan-y touch-pinch-zoom justify-start rounded-lg border border-transparent px-2 py-2 text-left whitespace-normal active:cursor-grabbing disabled:opacity-100 motion-reduce:transition-none md:touch-none',
         context.highlightedSource === itemID && 'border-primary/60 bg-primary/5',
         context.dragging === itemID && 'opacity-50',
         className,
@@ -547,7 +639,7 @@ export function MappingTargetButton({
       data-mapping-target={itemID}
       aria-disabled={disabled || (!!context.dragging && !!problem)}
       className={cn(
-        'h-auto w-full min-w-0 justify-start rounded-lg border border-transparent px-2 py-2 text-left whitespace-normal motion-reduce:transition-none',
+        'h-auto w-full min-w-0 justify-start rounded-lg border border-transparent px-2 py-2 text-left whitespace-normal disabled:opacity-100 motion-reduce:transition-none',
         compatible && 'border-dashed border-primary/40 bg-primary/5',
         context.hovered === itemID &&
           (compatible
@@ -581,7 +673,7 @@ export function MappingLocateButton({
       variant="ghost"
       disabled={!items.has(itemID)}
       className={cn(
-        'h-6 min-w-0 flex-1 shrink justify-start px-1 text-xs font-normal hover:text-primary has-[>svg]:px-1',
+        'h-6 min-w-0 flex-1 shrink justify-start px-1 text-xs font-normal hover:text-accent-foreground has-[>svg]:px-1',
         className,
       )}
       onClick={() => {

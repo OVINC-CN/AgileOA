@@ -398,7 +398,6 @@ function DetailNameInput({
   canQuery: boolean;
   onChange: (value: string) => void;
 }) {
-  const client = useQueryClient();
   const [keyword, setKeyword] = useState('');
   const names = useQuery({
     ...detailNameOptions(workspaceID, projectID, keyword),
@@ -417,10 +416,6 @@ function DetailNameInput({
         value={value}
         onValueChange={onChange}
         onSearchChange={setKeyword}
-        {...(canQuery && {
-          onSearchReset: () =>
-            client.query({ ...detailNameOptions(workspaceID, projectID, ''), staleTime: 0 }),
-        })}
         loading={names.isFetching}
         disabled={!projectID || !canQuery}
         maxLength={100}

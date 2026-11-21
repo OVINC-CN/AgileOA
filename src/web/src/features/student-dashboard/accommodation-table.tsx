@@ -1,4 +1,6 @@
-import { SearchResetButton } from '@/components/search-reset-button';
+import type { ReactNode } from 'react';
+
+import { type AppliedFilter, AppliedFilters } from '@/components/applied-filters';
 import { TableColumnSettings } from '@/components/table-column-settings';
 import { Card } from '@/components/ui/card';
 import { SearchSelect } from '@/components/ui/search-select';
@@ -12,14 +14,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  type AccommodationData,
-  type AccommodationFilterOptions,
-  type AccommodationFilters,
-  type AccommodationRow,
-  defaultAccommodationFilters,
+import type {
+  AccommodationData,
+  AccommodationFilterOptions,
+  AccommodationFilters,
+  AccommodationRow,
 } from '@/features/student-dashboard/api';
-import { useApiAction } from '@/lib/api-action';
 import { useFilterForm } from '@/lib/filter-form';
 import { formatDashboardCount, formatValue } from '@/lib/format';
 import { useTableColumns } from '@/lib/table-columns';
@@ -47,6 +47,7 @@ export function AccommodationTable({
   optionsLoading,
   values,
   onApply,
+  refreshAction,
 }: {
   workspaceID: string;
   data: AccommodationData | undefined;
@@ -55,10 +56,27 @@ export function AccommodationTable({
   optionsLoading: boolean;
   values: AccommodationFilters;
   onApply: (values: AccommodationFilters) => Promise<unknown>;
+  refreshAction?: ReactNode;
 }) {
-  const reset = useApiAction();
-  const { draft, setDraft, changeFilters } = useFilterForm(values, onApply);
+  const { draft, changeFilters, applyChanges } = useFilterForm(values, onApply, values);
   const settings = useTableColumns(`student-dashboard-accommodation:${workspaceID}`, columns);
+  const appliedFilters: AppliedFilter[] = filters.flatMap((field) => {
+    const selected = values[field.key];
+    if (selected.length === 0) return [];
+    return [
+      {
+        id: field.key,
+        label: field.label,
+        value: selected
+          .map(
+            (value) =>
+              options?.[field.options].find((option) => option.value === value)?.label ?? value,
+          )
+          .join('、'),
+        onRemove: () => applyChanges({ [field.key]: [] }),
+      },
+    ];
+  });
 
   return (
     <section aria-label="住宿信息统计" className="space-y-4">
@@ -66,20 +84,14 @@ export function AccommodationTable({
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-4">
           <span className="text-xs text-muted-foreground">在籍学生</span>
           <div className="flex items-center gap-3">
-            <SearchResetButton
-              loading={reset.pending}
-              disabled={!filters.some(({ key }) => draft[key].length > 0)}
-              onClick={() => {
-                void reset.run('reset', async () => {
-                  const defaults = defaultAccommodationFilters();
-                  setDraft(defaults);
-                  await onApply(defaults);
-                });
-              }}
-            />
             <TableColumnSettings settings={settings} />
+            {refreshAction}
           </div>
         </div>
+        <AppliedFilters
+          filters={appliedFilters}
+          className="border-b border-border-subtle px-5 py-3"
+        />
         <Table aria-label="住宿信息表" aria-busy={loading}>
           <TableHeader className="bg-table-header">
             <TableRow className="border-border hover:bg-transparent">

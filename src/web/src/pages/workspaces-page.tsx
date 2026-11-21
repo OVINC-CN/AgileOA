@@ -112,7 +112,11 @@ export function WorkspacesPage() {
     setPage(1);
     await client.query({ ...workspaceListOptions(next, 1, pageSize), staleTime: 0 });
   };
-  const { draft, setDraft, changeFilters } = useFilterForm(defaultFilters, applyFilters);
+  const { draft, setDraft, changeFilters, hasUnappliedChanges } = useFilterForm(
+    defaultFilters,
+    applyFilters,
+    filters,
+  );
   const columns: ColumnDef<Workspace>[] = [
     {
       accessorKey: 'name',
@@ -169,9 +173,6 @@ export function WorkspacesPage() {
   return (
     <section className="space-y-6" aria-labelledby="workspaces-title">
       <ManagementPageHeader id="workspaces-title" title="工作空间">
-        <RefreshButton
-          onRefresh={() => client.invalidateQueries({ queryKey: ['management', 'workspaces'] })}
-        />
         <Button
           onClick={() => {
             setEditor({ workspace: null });
@@ -187,6 +188,7 @@ export function WorkspacesPage() {
         </p>
       ) : null}
       <FilterPanel
+        hasUnappliedChanges={hasUnappliedChanges}
         onSubmit={(event) => {
           event.preventDefault();
           void searchAction.run('search', () => applyFilters(draft));
@@ -248,6 +250,11 @@ export function WorkspacesPage() {
       <Card className="gap-0 overflow-hidden border-border py-0">
         {list.error ? <ErrorMessage>{list.error.message}</ErrorMessage> : null}
         <ManagementTable
+          refreshAction={
+            <RefreshButton
+              onRefresh={() => client.invalidateQueries({ queryKey: ['management', 'workspaces'] })}
+            />
+          }
           tableID="system-workspaces"
           columns={columns}
           data={list.data?.items ?? empty}

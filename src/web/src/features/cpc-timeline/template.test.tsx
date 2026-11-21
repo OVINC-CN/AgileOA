@@ -79,14 +79,12 @@ it('发生时间可切换手动填写、出生日期和成年日期，引用时�
   await user.click(source);
   await user.click(screen.getByRole('option', { name: '出生日期' }));
   expect(source).toHaveTextContent('出生日期');
-  expect(screen.getByText('发生时间 · 日期 · 自动引用')).toBeVisible();
   expect(screen.getByText(/内容来自学生档案，请在学生信息中修改/u)).toBeVisible();
   await user.click(source);
   await user.click(screen.getByRole('option', { name: '成年日期（出生日期加 18 年）' }));
   expect(source).toHaveTextContent('成年日期（出生日期加 18 年）');
   await user.click(source);
   await user.click(screen.getByRole('option', { name: '手动填写' }));
-  expect(screen.getByText('发生时间 · 日期 · 必填')).toBeVisible();
   expect(screen.queryByText(/内容来自学生档案，请在学生信息中修改/u)).not.toBeInTheDocument();
 });
 

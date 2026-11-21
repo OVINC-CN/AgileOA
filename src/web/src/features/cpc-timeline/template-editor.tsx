@@ -23,8 +23,6 @@ import { TemplatePreview } from '@/features/cpc-timeline/template-preview';
 import { TemplateTransferEditor } from '@/features/cpc-timeline/transfer-editor';
 import { useApiAction } from '@/lib/api-action';
 
-const basicFieldClassName = 'h-8 min-h-8 py-1 leading-[22px]';
-
 export function TemplateEditor({
   workspaceID,
   original,
@@ -47,6 +45,7 @@ export function TemplateEditor({
       : { name: '', description: '', definition: { nodes: [newNode()] } },
   );
   const [selectedID, setSelectedID] = useState(values.definition.nodes[0]?.id ?? '');
+  const [focusNodeName, setFocusNodeName] = useState(false);
   const [preview, setPreview] = useState(false);
   const [section, setSection] = useState<'nodes' | 'transfers'>('nodes');
   const [checkingNode, setCheckingNode] = useState(false);
@@ -88,22 +87,7 @@ export function TemplateEditor({
       onClose={onClose}
       busy={busy}
       size="full"
-      contentClassName="overflow-hidden"
-      footerNavigation={
-        <DrawerTabs
-          id={tabsID}
-          label="模板配置"
-          value={section}
-          items={[
-            { value: 'nodes', label: '节点配置' },
-            { value: 'transfers', label: '转移配置' },
-          ]}
-          disabled={busy}
-          onChange={(value) => {
-            if (value === 'nodes' || value === 'transfers') setSection(value);
-          }}
-        />
-      }
+      contentClassName="lg:overflow-hidden"
       form={{
         noValidate: true,
         onSubmit: (event) => {
@@ -139,91 +123,80 @@ export function TemplateEditor({
       }
     >
       <fieldset
-        role="tabpanel"
-        id={`${tabsID}-panel-${section}`}
-        aria-labelledby={`${tabsID}-tab-${section}`}
         disabled={busy}
-        className="flex h-full min-h-0 min-w-0 flex-col"
+        className="flex min-h-full min-w-0 flex-col lg:grid lg:h-full lg:min-h-0 lg:grid-cols-[280px_minmax(0,1fr)] lg:grid-rows-[auto_minmax(0,1fr)]"
       >
-        {section === 'nodes' || removedNodes.length > 0 ? (
-          <div className="shrink-0 space-y-3 border-b border-border-subtle p-4 sm:px-6">
-            {section === 'nodes' ? (
-              <div className="grid gap-3 sm:grid-cols-[minmax(180px,1fr)_minmax(0,2fr)]">
-                <Label className="block space-y-2">
-                  <span>模板名称</span>
-                  <Input
-                    aria-label="模板名称"
-                    className={basicFieldClassName}
-                    required
-                    maxLength={100}
-                    value={values.name}
-                    onChange={(event) => {
-                      setValues({ ...values, name: event.target.value });
-                    }}
-                  />
-                </Label>
-                <Label className="block space-y-2">
-                  <span>模板说明</span>
-                  <Textarea
-                    aria-label="模板说明"
-                    rows={1}
-                    className={basicFieldClassName}
-                    maxLength={1000}
-                    value={values.description}
-                    onChange={(event) => {
-                      setValues({ ...values, description: event.target.value });
-                    }}
-                  />
-                </Label>
-              </div>
-            ) : null}
-            {removedNodes.length ? (
-              <p className="rounded-lg border border-warning-border bg-warning p-3 text-sm font-medium text-warning-foreground">
-                保存将同步删除所有绑定人员的 {String(removedNodes.length)}{' '}
-                个对应节点及填写内容，无法恢复。
-              </p>
-            ) : null}
+        <div className="sticky top-0 z-10 shrink-0 border-b border-border-subtle bg-popover/95 px-4 py-2 backdrop-blur-xl sm:px-6 lg:static lg:col-start-2 lg:row-start-1">
+          <div className="mx-auto flex w-full max-w-6xl justify-center">
+            <DrawerTabs
+              id={tabsID}
+              label="模板配置"
+              value={section}
+              className="border-0 bg-transparent p-0 backdrop-blur-none"
+              items={[
+                { value: 'nodes', label: '节点配置' },
+                { value: 'transfers', label: '转移配置' },
+              ]}
+              disabled={busy}
+              onChange={(value) => {
+                if (value === 'nodes' || value === 'transfers') setSection(value);
+              }}
+            />
           </div>
-        ) : null}
-        {section === 'transfers' ? (
-          <section aria-label="模板转移配置" className="min-h-0 flex-1 overflow-hidden p-4 sm:p-6">
-            <div className="mx-auto h-full min-h-0 max-w-7xl">
-              <TemplateTransferEditor
-                workspaceID={workspaceID}
-                templateID={original?.id}
-                templateName={values.name}
-                nodes={nodes}
-                transfers={values.transfers ?? []}
-                onChange={(transfers) => {
-                  setValues({ ...values, transfers });
-                }}
-              />
+        </div>
+        <aside
+          aria-label="模板信息与节点"
+          className="flex min-w-0 shrink-0 flex-col border-b border-border-subtle lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:min-h-0 lg:border-r lg:border-b-0"
+        >
+          <section aria-label="模板信息" className="shrink-0 p-4 sm:p-5">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
+              <div className="space-y-2">
+                <Label htmlFor={`${tabsID}-name`} required className="leading-5">
+                  模板名称
+                </Label>
+                <Input
+                  id={`${tabsID}-name`}
+                  aria-label="模板名称"
+                  placeholder="例如：党员发展时间线"
+                  required
+                  maxLength={100}
+                  value={values.name}
+                  onChange={(event) => {
+                    setValues({ ...values, name: event.target.value });
+                  }}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor={`${tabsID}-description`} className="leading-5">
+                  模板说明
+                </Label>
+                <Textarea
+                  id={`${tabsID}-description`}
+                  aria-label="模板说明"
+                  placeholder="说明模板用途或适用范围"
+                  rows={3}
+                  className="min-h-20"
+                  maxLength={1000}
+                  value={values.description}
+                  onChange={(event) => {
+                    setValues({ ...values, description: event.target.value });
+                  }}
+                />
+              </div>
             </div>
           </section>
-        ) : preview ? (
-          <section
-            aria-label="模板预览"
-            className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6"
-          >
-            <div className="mx-auto max-w-5xl">
-              <TemplatePreview
-                nodes={nodes}
-                workspaceID={workspaceID}
-                template={original}
-                actions={actions}
-              />
-            </div>
-          </section>
-        ) : (
-          <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,0.7fr)_minmax(0,1.3fr)] overflow-hidden sm:grid-cols-[minmax(240px,300px)_minmax(0,1fr)] sm:grid-rows-1">
+          {section === 'nodes' && !preview ? (
             <section
               aria-label="时间线节点"
-              className="min-h-0 min-w-0 border-b border-border-subtle bg-muted/50 p-4 sm:border-r sm:border-b-0 sm:p-5"
+              className="min-w-0 border-t border-border-subtle p-4 sm:p-5 lg:min-h-0 lg:flex-1"
             >
               <NodeList
                 nodes={nodes}
                 selectedID={selected?.id ?? ''}
-                onSelect={setSelectedID}
+                onSelect={(id) => {
+                  setFocusNodeName(!nodes.some((node) => node.id === id));
+                  setSelectedID(id);
+                }}
                 disabled={busy}
                 beforeRemove={async (node) => {
                   if (
@@ -250,16 +223,64 @@ export function TemplateEditor({
                 }}
               />
             </section>
+          ) : null}
+        </aside>
+        <div
+          role="tabpanel"
+          id={`${tabsID}-panel-${section}`}
+          aria-labelledby={`${tabsID}-tab-${section}`}
+          className="flex min-w-0 flex-1 flex-col lg:col-start-2 lg:row-start-2 lg:min-h-0"
+        >
+          {removedNodes.length ? (
+            <p className="m-4 shrink-0 rounded-lg border border-warning-border bg-warning p-3 text-sm font-medium text-warning-foreground sm:mx-6">
+              保存将同步删除所有绑定人员的 {String(removedNodes.length)}{' '}
+              个对应节点及填写内容，无法恢复。
+            </p>
+          ) : null}
+          {section === 'transfers' ? (
+            <section
+              aria-label="模板转移配置"
+              className="min-w-0 p-4 sm:p-6 lg:min-h-0 lg:flex-1 lg:overflow-hidden"
+            >
+              <div className="mx-auto max-w-7xl min-w-0 lg:h-full lg:min-h-0">
+                <TemplateTransferEditor
+                  workspaceID={workspaceID}
+                  templateID={original?.id}
+                  templateName={values.name}
+                  nodes={nodes}
+                  transfers={values.transfers ?? []}
+                  onChange={(transfers) => {
+                    setValues({ ...values, transfers });
+                  }}
+                />
+              </div>
+            </section>
+          ) : preview ? (
+            <section
+              aria-label="模板预览"
+              className="min-w-0 flex-1 p-4 sm:p-6 lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain"
+            >
+              <div className="mx-auto max-w-5xl">
+                <TemplatePreview
+                  nodes={nodes}
+                  workspaceID={workspaceID}
+                  template={original}
+                  actions={actions}
+                />
+              </div>
+            </section>
+          ) : (
             <section
               key={selected?.id}
               aria-label="节点配置"
-              className="min-h-0 min-w-0 overflow-y-auto overscroll-contain p-4 sm:p-6"
+              className="min-w-0 flex-1 p-4 sm:p-6 lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain"
             >
               {selected ? (
-                <div className="mx-auto w-full max-w-5xl">
+                <div className="mx-auto w-full max-w-6xl">
                   <NodeEditor
                     node={selected}
                     nodes={nodes}
+                    autoFocusName={focusNodeName}
                     attachments={renderAttachments(selected)}
                     onChange={(node) => {
                       setValues({
@@ -273,8 +294,8 @@ export function TemplateEditor({
                 </div>
               ) : null}
             </section>
-          </div>
-        )}
+          )}
+        </div>
       </fieldset>
       {confirmingDeletion ? (
         <Drawer

@@ -134,7 +134,11 @@ function MonthlyWorkWorkspace({
     setFilters(next);
     await fetchRecords(next);
   };
-  const { draft, setDraft, changeFilters } = useFilterForm(filters, applyFilters);
+  const { draft, setDraft, changeFilters, hasUnappliedChanges } = useFilterForm(
+    filters,
+    applyFilters,
+    filters,
+  );
   const yearOptions = [
     ...new Map(
       [
@@ -147,6 +151,27 @@ function MonthlyWorkWorkspace({
       ].map((option) => [option.value, option]),
     ).values(),
   ].sort((first, second) => second.value.localeCompare(first.value));
+  const refreshButton = (
+    <Button
+      type="button"
+      size="sm"
+      variant="ghost"
+      loading={refresh.pending || (canList && (query.isPending || filterOptions.isPending))}
+      onClick={() => {
+        void refresh.run('refresh', async () => {
+          await refreshWorkspace();
+          if (canList)
+            await Promise.all([
+              fetchRecords(),
+              client.query({ ...workFilterOptions(workspaceID, category), staleTime: 0 }),
+            ]);
+        });
+      }}
+    >
+      <RefreshCw aria-hidden="true" />
+      刷新
+    </Button>
+  );
   return (
     <section className="space-y-5" aria-labelledby="monthly-work-title">
       <header className="flex min-h-8 flex-wrap items-center justify-between gap-3">
@@ -182,28 +207,14 @@ function MonthlyWorkWorkspace({
               新增工作
             </Button>
           ) : null}
-          <Button
-            variant="outline"
-            loading={refresh.pending || (canList && (query.isPending || filterOptions.isPending))}
-            onClick={() => {
-              void refresh.run('refresh', async () => {
-                await refreshWorkspace();
-                if (canList)
-                  await Promise.all([
-                    fetchRecords(),
-                    client.query({ ...workFilterOptions(workspaceID, category), staleTime: 0 }),
-                  ]);
-              });
-            }}
-          >
-            <RefreshCw aria-hidden="true" />
-            刷新
-          </Button>
+          {!canList ? refreshButton : null}
         </div>
       </header>
       {canList ? <WorkChart records={data?.items} userID={userID} /> : null}
       {canList ? (
         <FilterPanel
+          refreshAction={refreshButton}
+          hasUnappliedChanges={hasUnappliedChanges}
           onSubmit={(event) => {
             event.preventDefault();
             void search.run('search', () => applyFilters(draft));
@@ -236,7 +247,6 @@ function MonthlyWorkWorkspace({
               className="w-full"
               options={yearOptions}
               value={draft.year}
-              defaultValue={defaultWorkFilters().year}
               loading={filterOptions.isFetching}
               onValueChange={(year) => {
                 changeFilters({ year });

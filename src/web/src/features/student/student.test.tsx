@@ -178,7 +178,7 @@ function mockAPI(
   );
   return calls;
 }
-function renderWorkspace(query: Record<string, string> = {}) {
+function renderWorkspace(query: Record<string, string> = {}, hash = '') {
   const search = new URLSearchParams({ workspace: first, ...query });
   const router = createMemoryRouter(
     [
@@ -188,7 +188,7 @@ function renderWorkspace(query: Record<string, string> = {}) {
         children: [{ path: 'roster', Component: WorkspaceStudentsPage }],
       },
     ],
-    { initialEntries: [`/stu/roster?${search.toString()}`] },
+    { initialEntries: [`/stu/roster?${search.toString()}${hash}`] },
   );
   render(
     <QueryClientProvider client={queryClient()}>
@@ -299,10 +299,10 @@ describe('工作空间学生信息', () => {
     expect(await screen.findByRole('menuitem', { name: '导出所有数据' })).toBeVisible();
     expect(screen.queryByRole('menuitem', { name: '导出 XJ 明细表' })).not.toBeInTheDocument();
     await userEvent.keyboard('{Escape}');
-    const position = screen.getByRole('combobox', { name: '班内任职' });
     expect(screen.queryByRole('combobox', { name: '班内任职状态' })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /更多筛选/u }));
+    const position = screen.getByRole('combobox', { name: '班内任职' });
     expect(screen.getByRole('combobox', { name: '是否有宗教信仰' })).toBeDisabled();
-    await userEvent.click(screen.getByRole('button', { name: '更多筛选' }));
     const status = screen.getByRole('combobox', { name: '班内任职状态' });
     expect(status.tagName).toBe('BUTTON');
     expect(position.tagName).toBe('BUTTON');
@@ -446,6 +446,7 @@ describe('工作空间学生信息', () => {
 
     await user.click(drawer.getByRole('button', { name: '编辑' }));
     const editor = within(await screen.findByRole('dialog', { name: '编辑学生' }));
+    await user.click(editor.getByRole('tab', { name: '联系住宿' }));
     expect(editor.getByRole('combobox', { name: '校外住宿开始日期' })).toHaveTextContent(
       '2026年9月1日',
     );
@@ -554,6 +555,7 @@ describe('工作空间学生信息', () => {
     await userEvent.type(status, '待复核');
     await userEvent.click(screen.getByRole('option', { name: '新建“待复核”' }));
     if (allowed) {
+      await userEvent.click(within(dialog).getByRole('tab', { name: '敏感信息' }));
       const address = within(dialog).getByLabelText('家庭详细住址');
       await userEvent.clear(address);
       await userEvent.type(address, '虚构地址2号');
@@ -595,15 +597,22 @@ describe('工作空间学生信息', () => {
     renderWorkspace();
     await userEvent.click(await screen.findByRole('button', { name: '编辑' }));
     const dialog = within(await screen.findByRole('dialog', { name: '编辑学生' }));
+    await userEvent.click(dialog.getByRole('tab', { name: '敏感信息' }));
     const identity = await dialog.findByLabelText('身份证号码 *');
     expect(dialog.queryByRole('textbox', { name: '出生日期' })).not.toBeInTheDocument();
     await userEvent.clear(identity);
     await userEvent.type(identity, '00000020040229001x');
+    await userEvent.click(dialog.getByRole('tab', { name: '学籍资料' }));
     expect(dialog.getByText('2004-02-29')).toBeVisible();
     expect(dialog.queryByText('2000-01-02')).not.toBeInTheDocument();
+    await userEvent.click(dialog.getByRole('tab', { name: '敏感信息' }));
     await userEvent.clear(identity);
+    await userEvent.click(dialog.getByRole('tab', { name: '学籍资料' }));
     await userEvent.click(dialog.getByRole('button', { name: '保存' }));
     expect(await screen.findByText('身份证号码不能为空')).toBeVisible();
+    expect(dialog.getByRole('tab', { name: '敏感信息' })).toHaveAttribute('aria-selected', 'true');
+    await waitFor(() => expect(identity).toHaveFocus());
+    expect(identity).toHaveAttribute('aria-invalid', 'true');
     expect(calls.some(({ options }) => options.method === 'PUT')).toBe(false);
   });
 
@@ -643,6 +652,7 @@ describe('工作空间学生信息', () => {
     renderWorkspace();
     await userEvent.click(await screen.findByRole('button', { name: '编辑' }));
     const dialog = within(await screen.findByRole('dialog', { name: '编辑学生' }));
+    await userEvent.click(dialog.getByRole('tab', { name: '联系住宿' }));
     const accommodation = dialog.getByRole('combobox', { name: '住宿类型' });
     expect(accommodation).toHaveTextContent('选择住宿类型');
     expect(accommodation).toHaveAttribute('aria-required', 'true');
@@ -772,13 +782,16 @@ describe('工作空间学生信息', () => {
     expect(screen.getByRole('navigation', { name: '学生工作导航' })).toBeVisible();
   });
 
-  it('学历和是否有宗教信仰默认显示，学历位于年级前面', async () => {
+  it('学生信息保留三行常用筛选，默认状态不重复展示，展开后可修改', async () => {
     mockAPI(['student.list']);
     renderWorkspace();
     await screen.findByText(student.name);
-    const names = [
+    const labels = [
       '学历',
       '年级',
+      '班级',
+      '班内任职',
+      '住宿类型',
       '住宿园区',
       '宿舍楼',
       '宿舍号',
@@ -786,13 +799,17 @@ describe('工作空间学生信息', () => {
       '导师姓名',
       '是否有宗教信仰',
     ];
-    for (const name of names) expect(screen.getByRole('combobox', { name })).toBeVisible();
-    const education = screen.getByRole('combobox', { name: '学历' });
-    const grade = screen.getByRole('combobox', { name: '年级' });
-    expect(education.compareDocumentPosition(grade)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
-
-    await userEvent.click(screen.getByRole('button', { name: '更多筛选' }));
-    for (const name of names) expect(screen.getAllByRole('combobox', { name })).toHaveLength(1);
+    const fields = labels.map((name) => screen.getByRole('combobox', { name }));
+    for (const field of fields) expect(field).toBeVisible();
+    fields.slice(1).forEach((field, index) => {
+      expect(fields[index]?.compareDocumentPosition(field)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    });
+    expect(screen.queryByRole('combobox', { name: '状态' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: '专业' })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('已应用筛选')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /更多筛选/u }));
+    expect(screen.getAllByRole('combobox', { name: '状态' })).toHaveLength(1);
+    expect(screen.getByRole('combobox', { name: '专业' })).toBeVisible();
     expect(screen.getByRole('combobox', { name: '入学政治面貌' })).toBeVisible();
   });
 
@@ -800,13 +817,13 @@ describe('工作空间学生信息', () => {
     const calls = mockAPI(['student.list', sensitiveAction]);
     renderWorkspace();
     await screen.findByText(student.name);
-    expect(screen.queryByRole('combobox', { name: '状态' })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('已应用筛选')).not.toBeInTheDocument();
     const initialList = calls.find(({ url }) =>
       url.startsWith(`/v1/workspaces/${first}/students?`),
     );
     const initialFilters = new URL(initialList?.url ?? '', 'https://fixture.example').searchParams;
     expect(initialFilters.get('status')).toBe('在籍');
-    await userEvent.click(screen.getByRole('button', { name: '更多筛选' }));
+    await userEvent.click(screen.getByRole('button', { name: /更多筛选/u }));
     expect(screen.getByRole('combobox', { name: '状态' })).toHaveTextContent('在籍');
     for (const [label, value] of [
       ['年级', '2026级'],
@@ -837,6 +854,121 @@ describe('工作空间学生信息', () => {
     expect(calls.some(({ url }) => url.endsWith('/sensitive-options?field=has_religion'))).toBe(
       true,
     );
+  });
+
+  it('更多筛选收起后保留已应用提示，状态可重新选择在籍', async () => {
+    const calls = mockAPI(['student.list']);
+    renderWorkspace();
+    await screen.findByText(student.name);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /更多筛选/u }));
+    await user.click(screen.getByRole('combobox', { name: '状态' }));
+    await user.click(await screen.findByRole('option', { name: '全部状态' }));
+    await user.keyboard('{Escape}');
+    expect(screen.queryByLabelText('已应用筛选')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('combobox', { name: '状态' }));
+    await user.click(await screen.findByRole('option', { name: '在籍' }));
+    await user.keyboard('{Escape}');
+    expect(screen.getByRole('combobox', { name: '状态' })).toHaveTextContent('在籍');
+    await user.click(screen.getByRole('combobox', { name: '班内任职状态' }));
+    await user.click(screen.getByRole('option', { name: '有任职' }));
+    await user.keyboard('{Escape}');
+    await user.click(screen.getByRole('button', { name: '更多筛选（1）' }));
+    expect(screen.queryByRole('combobox', { name: '班内任职状态' })).not.toBeInTheDocument();
+    expect(screen.getByLabelText('已应用筛选')).toHaveTextContent('班内任职状态：有任职');
+    expect(calls.filter(({ url }) => url.includes('/students?')).at(-1)?.url).toContain(
+      'position_status=assigned',
+    );
+  });
+
+  it('撤销筛选保留文字草稿，统一通过重置恢复在籍', async () => {
+    const calls = mockAPI(['student.list', 'student.statistics']);
+    renderWorkspace();
+    await screen.findByText(student.name);
+    const user = userEvent.setup();
+    const keyword = screen.getByRole('searchbox', { name: '学号或姓名' });
+    await user.click(screen.getByRole('button', { name: /更多筛选/u }));
+    await user.click(screen.getByRole('combobox', { name: '状态' }));
+    await user.click(await screen.findByRole('option', { name: student.status }));
+    await user.keyboard('{Escape}');
+    await user.type(keyword, '待搜索文字');
+    await user.click(screen.getByRole('button', { name: /^移除筛选 状态：/u }));
+    expect(keyword).toHaveValue('待搜索文字');
+    let url = new URL(
+      calls.filter(({ url }) => url.includes('/students?')).at(-1)?.url ?? '',
+      'https://fixture.example',
+    );
+    expect(url.searchParams.has('status')).toBe(false);
+    expect(url.searchParams.get('keyword')).toBeNull();
+    await user.click(screen.getByRole('button', { name: '搜索' }));
+    expect(screen.getByLabelText('已应用筛选')).toHaveTextContent('学号或姓名：待搜索文字');
+    expect(screen.queryByRole('button', { name: '清除筛选' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '重置' }));
+    expect(keyword).toHaveValue('');
+    expect(screen.queryByLabelText('已应用筛选')).not.toBeInTheDocument();
+    url = new URL(
+      calls.filter(({ url }) => url.includes('/students?')).at(-1)?.url ?? '',
+      'https://fixture.example',
+    );
+    expect(url.searchParams.get('status')).toBe('在籍');
+  });
+
+  it('学生姓名可打开详情，更多菜单保留删除确认且取消不写入', async () => {
+    const calls = mockAPI(['student.list', 'student.detail', 'student.delete']);
+    const router = renderWorkspace({ source: 'fixture' }, '#student-list');
+    const user = userEvent.setup();
+    await user.click(
+      await screen.findByRole('link', {
+        name: `查看 ${student.name}(${student.student_no}) 的详情`,
+      }),
+    );
+    expect(await screen.findByRole('dialog', { name: '学生详情' })).toBeVisible();
+    expect(router.state.location.search).toContain('source=fixture');
+    expect(router.state.location.hash).toBe('#student-list');
+    await user.click(screen.getByRole('button', { name: '关闭抽屉' }));
+    expect(router.state.location.hash).toBe('#student-list');
+    expect(screen.queryByRole('button', { name: '删除' })).not.toBeInTheDocument();
+    await user.click(
+      screen.getByRole('button', { name: `更多操作 ${student.name}(${student.student_no})` }),
+    );
+    await user.click(screen.getByRole('menuitem', { name: '删除学生' }));
+    const confirmation = within(await screen.findByRole('dialog', { name: '删除学生' }));
+    expect(confirmation.getByText(/将永久删除/)).toBeVisible();
+    await user.click(confirmation.getByRole('button', { name: '取消' }));
+    expect(calls.some(({ options }) => options.method === 'DELETE')).toBe(false);
+  });
+
+  it('编辑分区保留草稿并统一保存，错误字段自动定位到学籍资料', async () => {
+    const calls = mockAPI(['student.list', 'student.update']);
+    renderWorkspace();
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: '编辑' }));
+    const editor = within(await screen.findByRole('dialog', { name: '编辑学生' }));
+    const name = editor.getByLabelText('姓名 *');
+    await user.clear(name);
+    await user.click(editor.getByRole('tab', { name: '联系住宿' }));
+    const phone = editor.getByLabelText('电话号码');
+    await user.clear(phone);
+    await user.type(phone, '虚构新电话');
+    await user.click(editor.getByRole('button', { name: '保存' }));
+    expect(await screen.findByText('姓名不能为空')).toBeVisible();
+    expect(editor.getByRole('tab', { name: '学籍资料' })).toHaveAttribute('aria-selected', 'true');
+    await waitFor(() => expect(name).toHaveFocus());
+    expect(calls.some(({ options }) => options.method === 'PUT')).toBe(false);
+    await user.click(editor.getByLabelText('学号 *'));
+    await user.click(editor.getByRole('button', { name: '保存' }));
+    await waitFor(() => expect(name).toHaveFocus());
+    expect(calls.some(({ options }) => options.method === 'PUT')).toBe(false);
+    await user.type(name, '虚构新姓名');
+    await user.click(editor.getByRole('tab', { name: '联系住宿' }));
+    expect(phone).toHaveValue('虚构新电话');
+    await user.click(editor.getByRole('button', { name: '保存' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    const body = calls.find(({ options }) => options.method === 'PUT')?.options.body;
+    expect(typeof body === 'string' ? JSON.parse(body) : null).toMatchObject({
+      name: '虚构新姓名',
+      phone: '虚构新电话',
+    });
   });
 
   it('切换工作空间时不复用上一空间的学生', async () => {

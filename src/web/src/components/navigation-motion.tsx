@@ -23,10 +23,11 @@ export function NavigationMotion({
     const highlight = indicator.current;
     if (!root || !highlight) return;
 
-    const selected = root.querySelector<HTMLElement>(
-      '[aria-current="page"], [role="tab"][aria-selected="true"]',
-    );
     const measure = () => {
+      // 折叠会替换菜单节点，每次定位都读取当前选中项。
+      const selected = root.querySelector<HTMLElement>(
+        '[aria-current="page"], [role="tab"][aria-selected="true"]',
+      );
       highlight.hidden = !selected;
       if (!selected) return;
 
@@ -44,6 +45,9 @@ export function NavigationMotion({
     });
     const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(measure) : undefined;
     observer?.observe(root);
+    const selected = root.querySelector<HTMLElement>(
+      '[aria-current="page"], [role="tab"][aria-selected="true"]',
+    );
     if (selected) observer?.observe(selected);
     window.addEventListener('resize', measure);
 
@@ -53,7 +57,7 @@ export function NavigationMotion({
       observer?.disconnect();
       window.removeEventListener('resize', measure);
     };
-  }, [value]);
+  }, [value, children]);
 
   return (
     <Container {...props} ref={setContainer} className={cn('navigation-motion', className)}>
