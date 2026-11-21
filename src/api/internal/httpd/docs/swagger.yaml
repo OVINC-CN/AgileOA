@@ -1532,6 +1532,10 @@ definitions:
         description: Status 是 normal、abnormal 或 transferring，未绑定时为空字符串。
         example: abnormal
         type: string
+      student_no:
+        description: StudentNo 是所属人员关联学生的学号。
+        example: S20260001
+        type: string
       template_id:
         description: TemplateID 是已绑定模板编号，未绑定时为 null。
         example: 1

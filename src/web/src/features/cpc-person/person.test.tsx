@@ -82,23 +82,40 @@ afterEach(() => {
 
 describe('党建人员', () => {
   it('通知直接打开目标人员时间线，审核模式沿用独立审核接口及权限', async () => {
-    const fetch = vi.fn(() =>
-      Promise.resolve(
-        respond({
-          person_id: 42,
-          person_name: '虚构审核人员',
-          person_revision: 1,
-          template_id: 1,
-          template_name: '虚构待审核时间线',
-          template_revision: 1,
-          can_update: false,
-          can_review_transfer: true,
-          transfer_target_name: '虚构目标模板',
-          status: 'transferring',
-          nodes: [],
-        }),
-      ),
-    );
+    const timeline = {
+      person_id: 42,
+      person_name: '虚构审核人员',
+      student_no: '000073',
+      person_revision: 1,
+      template_id: 1,
+      template_name: '虚构待审核时间线',
+      template_revision: 1,
+      can_update: false,
+      can_review_transfer: true,
+      transfer_target_name: '虚构目标模板',
+      status: 'transferring',
+      nodes: [],
+    };
+    const fetch = vi.fn((path: string) => {
+      if (path.endsWith('/timeline/review')) return Promise.resolve(respond(timeline));
+      if (path.endsWith('/timeline/transfer-review')) {
+        return Promise.resolve(
+          respond({
+            source_template_id: 1,
+            source_template_name: timeline.template_name,
+            preview_version: 'a'.repeat(64),
+            discarded_fields: [],
+            timeline: {
+              ...timeline,
+              status: 'normal',
+              template_id: 2,
+              template_name: '虚构目标模板',
+            },
+          }),
+        );
+      }
+      throw new Error(`未预期请求：${path}`);
+    });
     vi.stubGlobal('fetch', fetch);
     const user = userEvent.setup();
     render(
@@ -116,12 +133,20 @@ describe('党建人员', () => {
       </QueryClientProvider>,
     );
     const drawer = await screen.findByRole('dialog', { name: '人员时间线' });
-    expect(await within(drawer).findByRole('button', { name: '审核' })).toBeVisible();
-    expect(drawer).toHaveAccessibleDescription('虚构审核人员 (42)');
+    const review = await within(drawer).findByRole('button', { name: '审核' });
+    expect(drawer).toHaveAccessibleDescription('虚构审核人员(000073)');
     expect(fetch).toHaveBeenCalledExactlyOnceWith(
       `/v1/workspaces/${first}/cpc-people/42/timeline/review`,
       expect.anything(),
     );
+    await user.click(review);
+    const reviewDrawer = await screen.findByRole('dialog', { name: '审核时间线转移' });
+    expect(reviewDrawer).toHaveAccessibleDescription('虚构审核人员(000073)');
+    await user.click(within(reviewDrawer).getByRole('button', { name: '取消' }));
+    await user.click(await within(drawer).findByRole('button', { name: '驳回' }));
+    const rejectDrawer = await screen.findByRole('dialog', { name: '驳回时间线转移' });
+    expect(rejectDrawer).toHaveAccessibleDescription('虚构审核人员(000073)');
+    await user.click(within(rejectDrawer).getByRole('button', { name: '取消' }));
     await user.click(within(drawer).getByRole('button', { name: '关闭抽屉' }));
     await waitFor(() => {
       expect(screen.queryByRole('dialog', { name: '人员时间线' })).not.toBeInTheDocument();

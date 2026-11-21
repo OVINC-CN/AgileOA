@@ -247,6 +247,8 @@ COS 和 STS 协议位于 [tencentcos](src/api/internal/apis/tencentcos/)。
 筛选、导出及转移映射检查。转移预览、发起及审核仅以来源时间线异常阻断，目标异常在预览中
 展示并按实际状态保存。通知从业务事务连接 notification 模块，再由前端
 [notification/navigation.ts](src/web/src/features/notification/navigation.ts) 处理已读和对象定位。
+时间线详情和转移预览提供 `person_name` 与 `student_no`，通知直达审核时也使用接口返回的
+姓名和学号生成抽屉页头。
 [时间线模板表单](src/web/src/features/cpc-timeline/template-editor.tsx)从底部切换节点配置与转移配置。
 模板名称和说明在节点配置中编辑。转移映射面板填满可用高度，并在并排布局中分别滚动两侧。
 

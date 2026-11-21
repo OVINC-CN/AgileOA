@@ -38,7 +38,10 @@ export function PersonTimelineNodeDrawer({
     data?.template_id === person.timeline_template_id
       ? data.nodes.find((item) => item.id === original.id)
       : undefined;
-  const personLabel = formatIdentity(person.name, person.student_no);
+  const personLabel = formatIdentity(
+    data?.person_name ?? person.name,
+    data?.student_no ?? person.student_no,
+  );
   const invalidate = async () => {
     await Promise.all([
       client.invalidateQueries({ queryKey: personKey(workspaceID) }),

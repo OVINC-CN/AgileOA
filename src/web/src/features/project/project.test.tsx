@@ -357,6 +357,45 @@ describe('评奖评优', () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
+  it('获奖学生重新搜索后保留所选学生的姓名和学号', async () => {
+    const fetch = vi.fn((path: string) => {
+      const url = new URL(path, 'https://fixture.example');
+      return Promise.resolve(
+        respond(
+          url.pathname.endsWith('/students') && url.searchParams.get('keyword') === ''
+            ? [{ value: 42, label: '另一位学生(000073)' }]
+            : [],
+        ),
+      );
+    });
+    vi.stubGlobal('fetch', fetch);
+    render(
+      <QueryClientProvider client={client()}>
+        <ParticipationEditor
+          workspaceID={first}
+          record={record}
+          actions={['project.participation.list']}
+          onClose={() => undefined}
+        />
+      </QueryClientProvider>,
+    );
+    const user = userEvent.setup();
+    const students = screen.getByRole('combobox', { name: '学生' });
+    await user.click(students);
+    await user.click(await screen.findByRole('option', { name: '另一位学生(000073)' }));
+    await user.type(screen.getByRole('textbox', { name: '检索学生关键词' }), '其他');
+    const search = screen.getByRole('button', { name: '搜索' });
+    await user.click(search);
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringContaining(new URLSearchParams({ keyword: '其他' }).toString()),
+        expect.anything(),
+      );
+      expect(search).toBeEnabled();
+      expect(students).toHaveTextContent('另一位学生(000073)');
+    });
+  });
+
   it.each([true, false])(
     '子项仅选择项目配置，按列表权限查询：%s，保存保留独立总分',
     async (canList) => {
