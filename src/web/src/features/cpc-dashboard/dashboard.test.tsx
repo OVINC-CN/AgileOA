@@ -82,7 +82,9 @@ it('表格按参考列顺序将零人数留空，保留空值、英文逗号导�
     vi.fn(() => Promise.resolve(respond(data))),
   );
   renderDashboard(['cpc.dashboard.list']);
-  const table = within(await screen.findByRole('table'));
+  const summaryTable = await screen.findByRole('table', { name: '支部党员表' });
+  expect(summaryTable).toHaveAttribute('data-pin-first-column');
+  const table = within(summaryTable);
   await table.findByRole('rowheader', { name: '虚构支部' });
   expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
   const tabs = within(screen.getByRole('group', { name: '数据仪表子菜单' }));
@@ -104,7 +106,7 @@ it('表格按参考列顺序将零人数留空，保留空值、英文逗号导�
     '支部书记',
     '组织委员',
     '宣传委员',
-    '纪律委员',
+    '纪检委员',
     '导师姓名',
   ]);
   const rows = table.getAllByRole('row');

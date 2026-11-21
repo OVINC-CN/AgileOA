@@ -14,8 +14,6 @@ export const studentProfileSchema = studentDetailSchema.pick({
   major: true,
   class_name: true,
   class_position: true,
-  admission_type: true,
-  arrival_month: true,
 });
 export type StudentProfile = z.infer<typeof studentProfileSchema>;
 

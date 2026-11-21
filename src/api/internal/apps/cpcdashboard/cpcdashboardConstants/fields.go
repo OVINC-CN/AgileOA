@@ -39,7 +39,7 @@ var Fields = []cpcdashboardModels.Field{
 		Description: "在编宣传委员姓名，去重后以英文逗号拼接，未填写为空", Example: "虚构学生丙",
 	},
 	{
-		Key: "discipline_members", Label: "纪律委员", Type: "string",
+		Key: "discipline_members", Label: "纪检委员", Type: "string",
 		Description: "在编人员中纪检委员或纪律委员姓名，去重后以英文逗号拼接，未填写为空",
 		Example:     "虚构学生丁",
 	},

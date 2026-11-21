@@ -87,15 +87,25 @@ export function PermissionsPage() {
         : new Error('无法加载操作权限，请重试');
     }
   };
+  const getEditAction = (user: AccessUser, entry: 'user' | 'action') => {
+    const key = `${entry}:${workspaceID}/${String(user.id)}`;
+    return {
+      loading: editAction.isPending(key),
+      disabled: editAction.pending || selectorAction.pending,
+      onClick: () => {
+        void editAction
+          .run(key, () => loadEditor(user))
+          .then((result) => {
+            if (result.ok) setEditing({ workspaceID, user, creating: false });
+          });
+      },
+    };
+  };
   const columns: ColumnDef<AccessUser>[] = [
     {
-      accessorKey: 'username',
+      id: 'username',
+      accessorFn: (user) => formatIdentity(user.display_name, user.username),
       header: '用户',
-      cell: ({ row }) => (
-        <p className="font-medium">
-          {formatIdentity(row.original.display_name, row.original.username)}
-        </p>
-      ),
     },
     {
       accessorKey: 'is_enabled',
@@ -112,17 +122,7 @@ export function PermissionsPage() {
       id: 'actions',
       header: '操作',
       cell: ({ row }) => (
-        <TableActionButton
-          loading={editAction.isPending(`${workspaceID}/${String(row.original.id)}`)}
-          disabled={editAction.pending || selectorAction.pending}
-          onClick={() => {
-            void editAction
-              .run(`${workspaceID}/${String(row.original.id)}`, () => loadEditor(row.original))
-              .then((result) => {
-                if (result.ok) setEditing({ workspaceID, user: row.original, creating: false });
-              });
-          }}
-        >
+        <TableActionButton {...getEditAction(row.original, 'action')}>
           <ShieldCheck aria-hidden="true" />
           配置权限
         </TableActionButton>
@@ -263,6 +263,8 @@ export function PermissionsPage() {
             {users.error ? <ErrorMessage>{users.error.message}</ErrorMessage> : null}
             <ManagementTable
               tableID="system-permissions"
+              pinnedColumn="username"
+              primaryColumn={{ id: 'username', getAction: (user) => getEditAction(user, 'user') }}
               columns={columns}
               data={users.data?.items ?? empty}
               total={users.data?.total ?? 0}

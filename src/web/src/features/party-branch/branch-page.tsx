@@ -18,6 +18,7 @@ import { FilterField, FilterPanel } from '@/components/filter-panel';
 import { ManagementTable } from '@/components/management-table';
 import { SearchResetButton } from '@/components/search-reset-button';
 import { TableActionButton } from '@/components/table-action-button';
+import { TableActionsMenu } from '@/components/table-actions-menu';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Drawer } from '@/components/ui/drawer';
@@ -91,8 +92,13 @@ function BranchWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
     pagination.setPage(1);
     await fetchPage(1, pagination.pageSize, next);
   };
+  const openDetail = async (branch: PartyBranch, key: string) => {
+    const result = await loadDetail.run(key, () =>
+      client.query({ ...partyBranchAdmissionRuleOptions(workspaceID, branch.id), staleTime: 0 }),
+    );
+    if (result.ok) setDetail({ branch, rule: result.data.rule });
+  };
   const columns: ColumnDef<PartyBranch>[] = [
-    { accessorKey: 'priority', header: '优先级' },
     { accessorKey: 'short_name', header: '党支部简称' },
     {
       accessorKey: 'full_name',
@@ -103,6 +109,7 @@ function BranchWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
         </p>
       ),
     },
+    { accessorKey: 'priority', header: '优先级' },
     {
       id: 'secretary',
       header: '管理员',
@@ -121,15 +128,7 @@ function BranchWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
             loading={loadDetail.isPending(String(row.original.id))}
             disabled={loadDetail.pending}
             onClick={() => {
-              void (async () => {
-                const result = await loadDetail.run(String(row.original.id), () =>
-                  client.query({
-                    ...partyBranchAdmissionRuleOptions(workspaceID, row.original.id),
-                    staleTime: 0,
-                  }),
-                );
-                if (result.ok) setDetail({ branch: row.original, rule: result.data.rule });
-              })();
+              void openDetail(row.original, String(row.original.id));
             }}
           >
             <Eye aria-hidden="true" />
@@ -164,14 +163,19 @@ function BranchWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
             </TableActionButton>
           ) : null}
           {can('delete') ? (
-            <TableActionButton
-              onClick={() => {
-                setDeleting(row.original);
-              }}
-            >
-              <Trash2 aria-hidden="true" />
-              删除
-            </TableActionButton>
+            <TableActionsMenu
+              label={row.original.short_name}
+              actions={[
+                {
+                  label: '删除',
+                  icon: Trash2,
+                  destructive: true,
+                  onSelect: () => {
+                    setDeleting(row.original);
+                  },
+                },
+              ]}
+            />
           ) : null}
         </div>
       ),
@@ -322,6 +326,20 @@ function BranchWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
             <ManagementTable
               refreshAction={refreshButton}
               tableID="cpc-party-branches"
+              pinnedColumn="short_name"
+              primaryColumn={{
+                id: 'short_name',
+                getAction: (branch) => {
+                  const key = `name:${String(branch.id)}`;
+                  return {
+                    disabled: loadDetail.pending,
+                    loading: loadDetail.isPending(key),
+                    onClick: () => {
+                      void openDetail(branch, key);
+                    },
+                  };
+                },
+              }}
               columns={columns}
               data={data?.items ?? []}
               total={data?.total ?? 0}
@@ -370,40 +388,40 @@ function BranchWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
           onClose={() => {
             setReordering(false);
           }}
+          footerDismiss={
+            <Button
+              variant="cancel"
+              disabled={reorder.pending}
+              onClick={() => {
+                setReordering(false);
+              }}
+            >
+              取消
+            </Button>
+          }
           footer={
-            <>
-              <Button
-                variant="outline"
-                disabled={reorder.pending}
-                onClick={() => {
-                  setReordering(false);
-                }}
-              >
-                取消
-              </Button>
-              <Button
-                loading={reorder.pending}
-                onClick={() => {
-                  void reorder.run('reorder', async () => {
-                    const result = await reorderPartyBranchPeople(workspaceID);
-                    await client.invalidateQueries({
-                      queryKey: personKey(workspaceID),
-                      refetchType: 'none',
-                    });
-                    await client.invalidateQueries({ queryKey: ['management', 'audit'] });
-                    setReordering(false);
-                    showMessage(
-                      result.queued
-                        ? '重排任务已提交，执行结果将通过站内通知发送'
-                        : '当前没有需要重排的在编人员',
-                    );
+            <Button
+              loading={reorder.pending}
+              onClick={() => {
+                void reorder.run('reorder', async () => {
+                  const result = await reorderPartyBranchPeople(workspaceID);
+                  await client.invalidateQueries({
+                    queryKey: personKey(workspaceID),
+                    refetchType: 'none',
                   });
-                }}
-              >
-                <Shuffle aria-hidden="true" />
-                确认重排
-              </Button>
-            </>
+                  await client.invalidateQueries({ queryKey: ['management', 'audit'] });
+                  setReordering(false);
+                  showMessage(
+                    result.queued
+                      ? '重排任务已提交，执行结果将通过站内通知发送'
+                      : '当前没有需要重排的在编人员',
+                  );
+                });
+              }}
+            >
+              <Shuffle aria-hidden="true" />
+              确认重排
+            </Button>
           }
         >
           <div className="space-y-3 p-6 text-sm">
@@ -459,42 +477,42 @@ function BranchWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
           onClose={() => {
             setDeleting(null);
           }}
+          footerDismiss={
+            <Button
+              variant="cancel"
+              disabled={remove.pending}
+              onClick={() => {
+                setDeleting(null);
+              }}
+            >
+              取消
+            </Button>
+          }
           footer={
-            <>
-              <Button
-                variant="outline"
-                disabled={remove.pending}
-                onClick={() => {
+            <Button
+              variant="destructive"
+              loading={remove.pending}
+              onClick={() => {
+                void remove.run('delete', async () => {
+                  await deletePartyBranch(workspaceID, deleting);
+                  const page = Math.max(
+                    1,
+                    Math.min(
+                      pagination.page,
+                      Math.ceil(((data?.total ?? 1) - 1) / pagination.pageSize),
+                    ),
+                  );
+                  pagination.setPage(page);
+                  await client.invalidateQueries({ queryKey: partyBranchKey(workspaceID) });
+                  await client.invalidateQueries({ queryKey: personKey(workspaceID) });
+                  await fetchPage(page, pagination.pageSize);
                   setDeleting(null);
-                }}
-              >
-                取消
-              </Button>
-              <Button
-                variant="destructive"
-                loading={remove.pending}
-                onClick={() => {
-                  void remove.run('delete', async () => {
-                    await deletePartyBranch(workspaceID, deleting);
-                    const page = Math.max(
-                      1,
-                      Math.min(
-                        pagination.page,
-                        Math.ceil(((data?.total ?? 1) - 1) / pagination.pageSize),
-                      ),
-                    );
-                    pagination.setPage(page);
-                    await client.invalidateQueries({ queryKey: partyBranchKey(workspaceID) });
-                    await client.invalidateQueries({ queryKey: personKey(workspaceID) });
-                    await fetchPage(page, pagination.pageSize);
-                    setDeleting(null);
-                  });
-                }}
-              >
-                <Trash2 aria-hidden="true" />
-                确认删除
-              </Button>
-            </>
+                });
+              }}
+            >
+              <Trash2 aria-hidden="true" />
+              确认删除
+            </Button>
           }
         >
           <p className="p-6 text-sm text-muted-foreground">

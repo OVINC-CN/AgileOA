@@ -132,7 +132,7 @@ function AttachmentPanel({
         description={`${record.date} · ${record.work_item}`}
         busy={upload.pending || remove.pending}
         onClose={onClose}
-        footer={
+        footerRefresh={
           canRead ? (
             <Button
               type="button"
@@ -215,38 +215,38 @@ function AttachmentPanel({
           onClose={() => {
             setDeleting(null);
           }}
+          footerDismiss={
+            <Button
+              type="button"
+              variant="cancel"
+              disabled={remove.pending}
+              onClick={() => {
+                setDeleting(null);
+              }}
+            >
+              取消
+            </Button>
+          }
           footer={
-            <>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={remove.pending}
-                onClick={() => {
-                  setDeleting(null);
-                }}
-              >
-                取消
-              </Button>
-              <Button
-                type="button"
-                loading={remove.pending}
-                onClick={() => {
-                  void (async () => {
-                    const result = await remove.run(String(deleting.id), async () => {
-                      try {
-                        await deleteWorkAttachment(workspaceID, deleting, category);
-                      } finally {
-                        await invalidate();
-                      }
-                    });
-                    if (result.ok) setDeleting(null);
-                  })();
-                }}
-              >
-                <Trash2 aria-hidden="true" />
-                确认删除
-              </Button>
-            </>
+            <Button
+              type="button"
+              loading={remove.pending}
+              onClick={() => {
+                void (async () => {
+                  const result = await remove.run(String(deleting.id), async () => {
+                    try {
+                      await deleteWorkAttachment(workspaceID, deleting, category);
+                    } finally {
+                      await invalidate();
+                    }
+                  });
+                  if (result.ok) setDeleting(null);
+                })();
+              }}
+            >
+              <Trash2 aria-hidden="true" />
+              确认删除
+            </Button>
           }
         >
           <p className="p-6 text-sm">将永久删除文件及其记录。</p>

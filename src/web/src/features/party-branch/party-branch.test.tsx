@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
@@ -83,6 +83,31 @@ describe('党支部', () => {
     );
     expect(await screen.findByRole('button', { name: '导入' })).toBeVisible();
     expect(screen.queryByRole('button', { name: '重排人员' })).not.toBeInTheDocument();
+  });
+
+  it('有删除权限时，更多操作中的删除打开党支部确认抽屉', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve(respond({ items: [record], total: 1, page: 1, page_size: 5 }))),
+    );
+    render(
+      <QueryClientProvider client={client()}>
+        <BranchPage
+          workspaceID={workspaceID}
+          workspaceName="虚构空间"
+          actions={['cpc.party_branch.list', 'cpc.party_branch.delete']}
+          refresh={() => Promise.resolve()}
+        />
+      </QueryClientProvider>,
+    );
+    const table = within(screen.getByRole('table'));
+    const more = await table.findByRole('button', { name: `更多操作 ${record.short_name}` });
+    expect(table.queryByRole('button', { name: '删除' })).not.toBeInTheDocument();
+    await userEvent.click(more);
+    await userEvent.click(screen.getByRole('menuitem', { name: '删除' }));
+    expect(screen.getByRole('dialog', { name: '删除党支部' })).toHaveAccessibleDescription(
+      `确认删除“${record.full_name}”？`,
+    );
   });
 
   it('编辑权限允许重排，按钮紧邻新增左侧，二次确认前不提交且提交中保护关闭', async () => {

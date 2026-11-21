@@ -5,6 +5,7 @@ import { SearchSelect } from '@/components/ui/search-select';
 import { useApiAction } from '@/lib/api-action';
 import { getConfig } from '@/lib/config';
 import { formatNumber } from '@/lib/format';
+import { cn } from '@/lib/utils';
 
 export function ManagementPagination({
   total,
@@ -13,6 +14,7 @@ export function ManagementPagination({
   loading,
   onPage,
   onPageSize,
+  className,
 }: {
   total: number;
   page: number;
@@ -20,11 +22,17 @@ export function ManagementPagination({
   loading: boolean;
   onPage: (page: number) => Promise<unknown>;
   onPageSize: (size: number) => Promise<unknown>;
+  className?: string;
 }) {
   const pages = Math.max(1, Math.ceil(total / pageSize));
   const pagination = useApiAction();
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border-subtle px-5 py-3">
+    <div
+      className={cn(
+        'flex flex-wrap items-center justify-between gap-3 border-t border-border-subtle px-5 py-3',
+        className,
+      )}
+    >
       <p aria-live="polite" className="text-xs text-muted-foreground tabular-nums">
         共 {formatNumber(total)} 条记录
       </p>

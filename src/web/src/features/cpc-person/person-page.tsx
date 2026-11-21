@@ -135,6 +135,12 @@ function PersonWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
     apply,
     filters,
   );
+  const openDetail = (id: number, key: string) => {
+    void read.run(key, async () => {
+      const person = await client.query({ ...personDetailOptions(workspaceID, id), staleTime: 0 });
+      setDetail(person);
+    });
+  };
   const renderActions = (person: Person) => (
     <div className="flex items-center gap-2">
       {can('detail') ||
@@ -161,13 +167,7 @@ function PersonWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
         <TableActionButton
           loading={read.isPending(String(person.id))}
           onClick={() => {
-            void read.run(String(person.id), async () => {
-              const result = await client.query({
-                ...personDetailOptions(workspaceID, person.id),
-                staleTime: 0,
-              });
-              setDetail(result);
-            });
+            openDetail(person.id, String(person.id));
           }}
         >
           <Eye aria-hidden="true" />
@@ -202,8 +202,8 @@ function PersonWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
     </div>
   );
   const columns: ColumnDef<Person>[] = [
-    { accessorKey: 'student_no', header: '学号' },
     { accessorKey: 'name', header: '姓名' },
+    { accessorKey: 'student_no', header: '学号' },
     { accessorKey: 'grade', header: '年级' },
     { accessorKey: 'status', header: '状态' },
     {
@@ -440,7 +440,20 @@ function PersonWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
                     title="人员列表"
                     tableID="cpc-people"
                     rowID={(person) => String(person.id)}
-                    pinnedColumn="student_no"
+                    pinnedColumn="name"
+                    primaryColumn={{
+                      id: 'name',
+                      getAction: ({ id }) => {
+                        if (!can('detail')) return undefined;
+                        const key = `name:${String(id)}`;
+                        return {
+                          loading: read.isPending(key),
+                          onClick: () => {
+                            openDetail(id, key);
+                          },
+                        };
+                      },
+                    }}
                     columns={columns}
                     data={peopleData?.items ?? []}
                     total={peopleData?.total ?? 0}
@@ -516,9 +529,9 @@ function PersonWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
           onClose={() => {
             setDetail(null);
           }}
-          footer={
+          footerDismiss={
             <Button
-              variant="secondary"
+              variant="cancel"
               onClick={() => {
                 setDetail(null);
               }}
@@ -539,41 +552,41 @@ function PersonWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
           onClose={() => {
             setDeleting(null);
           }}
+          footerDismiss={
+            <Button
+              variant="cancel"
+              disabled={remove.pending}
+              onClick={() => {
+                setDeleting(null);
+              }}
+            >
+              取消
+            </Button>
+          }
           footer={
-            <>
-              <Button
-                variant="outline"
-                disabled={remove.pending}
-                onClick={() => {
+            <Button
+              variant="destructive"
+              loading={remove.pending}
+              onClick={() => {
+                void remove.run('delete', async () => {
+                  await deletePerson(workspaceID, deleting);
+                  const page = Math.max(
+                    1,
+                    Math.min(
+                      pagination.page,
+                      Math.ceil(((data.total || 1) - 1) / pagination.pageSize),
+                    ),
+                  );
+                  pagination.setPage(page);
+                  await client.invalidateQueries({ queryKey: personKey(workspaceID) });
+                  await fetchPage(page, pagination.pageSize);
                   setDeleting(null);
-                }}
-              >
-                取消
-              </Button>
-              <Button
-                variant="destructive"
-                loading={remove.pending}
-                onClick={() => {
-                  void remove.run('delete', async () => {
-                    await deletePerson(workspaceID, deleting);
-                    const page = Math.max(
-                      1,
-                      Math.min(
-                        pagination.page,
-                        Math.ceil(((data.total || 1) - 1) / pagination.pageSize),
-                      ),
-                    );
-                    pagination.setPage(page);
-                    await client.invalidateQueries({ queryKey: personKey(workspaceID) });
-                    await fetchPage(page, pagination.pageSize);
-                    setDeleting(null);
-                  });
-                }}
-              >
-                <Trash2 aria-hidden="true" />
-                确认删除
-              </Button>
-            </>
+                });
+              }}
+            >
+              <Trash2 aria-hidden="true" />
+              确认删除
+            </Button>
           }
         >
           <p className="p-6 text-sm">

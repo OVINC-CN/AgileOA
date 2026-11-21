@@ -113,6 +113,11 @@ export function TemplateEditor({
           }}
         />
       }
+      footerDismiss={
+        <Button type="button" variant="cancel" disabled={busy} onClick={onClose}>
+          取消
+        </Button>
+      }
       footer={
         <>
           {section === 'nodes' ? (
@@ -128,9 +133,7 @@ export function TemplateEditor({
               {preview ? '继续编辑' : '预览'}
             </Button>
           ) : null}
-          <Button type="button" variant="outline" disabled={busy} onClick={onClose}>
-            取消
-          </Button>
+
           <Button type="submit" loading={save.pending} disabled={checkingNode || attachmentBusy}>
             <Save aria-hidden="true" />
             保存
@@ -310,30 +313,30 @@ export function TemplateEditor({
           onClose={() => {
             setConfirmingDeletion(false);
           }}
+          footerDismiss={
+            <Button
+              type="button"
+              variant="cancel"
+              disabled={save.pending}
+              onClick={() => {
+                setConfirmingDeletion(false);
+              }}
+            >
+              返回检查
+            </Button>
+          }
           footer={
-            <>
-              <Button
-                type="button"
-                variant="secondary"
-                disabled={save.pending}
-                onClick={() => {
-                  setConfirmingDeletion(false);
-                }}
-              >
-                返回检查
-              </Button>
-              <Button
-                type="button"
-                variant="destructive"
-                loading={save.pending}
-                onClick={() => {
-                  submit(true);
-                }}
-              >
-                <TriangleAlert aria-hidden="true" />
-                确认删除并保存
-              </Button>
-            </>
+            <Button
+              type="button"
+              variant="destructive"
+              loading={save.pending}
+              onClick={() => {
+                submit(true);
+              }}
+            >
+              <TriangleAlert aria-hidden="true" />
+              确认删除并保存
+            </Button>
           }
         >
           <div className="space-y-4 p-6 text-sm">

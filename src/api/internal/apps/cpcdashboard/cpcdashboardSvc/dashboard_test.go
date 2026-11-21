@@ -76,6 +76,9 @@ func TestExportKeepsAdvisorLastAndIncludesTotals(t *testing.T) {
 	if len(records) != 3 || records[0][8] != "导师姓名" || records[1][8] != "导师甲,导师乙" {
 		t.Fatalf("导出列顺序或导师姓名被改变：%v", records)
 	}
+	if records[0][7] != "纪检委员" {
+		t.Fatalf("导出缺少纪检委员列：%v", records[0])
+	}
 	if !reflect.DeepEqual(records[2], []string{"合计", "2", "0", "2", "", "", "", "", ""}) {
 		t.Fatalf("导出未保留零或人数合计：%v", records[2])
 	}

@@ -780,8 +780,8 @@ describe('工作空间学生信息', () => {
       charts.compareDocumentPosition(screen.getByRole('searchbox', { name: '学号或姓名' })),
     ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     expect(screen.getAllByRole('columnheader').map((item) => item.textContent)).toEqual([
-      '学号',
       '姓名',
+      '学号',
       '年级',
       '状态',
       '导师',
@@ -796,6 +796,14 @@ describe('工作空间学生信息', () => {
       '更新时间',
       '操作',
     ]);
+    expect(screen.getByRole('columnheader', { name: '姓名' })).toHaveClass(
+      'table-pinned',
+      'left-0',
+    );
+    const nameCell = screen.getByRole('cell', { name: student.name });
+    expect(nameCell).toHaveClass('table-pinned', 'left-0');
+    expect(within(nameCell).queryByRole('link')).not.toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: '学号' })).not.toHaveClass('table-pinned');
     expect(screen.getByRole('region', { name: '表格内容，可横向滚动' })).toHaveClass(
       'overflow-x-auto',
     );
@@ -952,7 +960,7 @@ describe('工作空间学生信息', () => {
     await user.click(
       screen.getByRole('button', { name: `更多操作 ${student.name}(${student.student_no})` }),
     );
-    await user.click(screen.getByRole('menuitem', { name: '删除学生' }));
+    await user.click(screen.getByRole('menuitem', { name: '删除' }));
     const confirmation = within(await screen.findByRole('dialog', { name: '删除学生' }));
     expect(confirmation.getByText(/将永久删除/)).toBeVisible();
     await user.click(confirmation.getByRole('button', { name: '取消' }));

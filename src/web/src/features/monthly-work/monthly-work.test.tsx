@@ -422,7 +422,12 @@ describe('月度工作', () => {
       );
       const user = userEvent.setup();
       expect(await screen.findByRole('button', { name: '管理附件' })).toBeVisible();
-      expect(screen.getByRole('button', { name: '删除' })).toBeVisible();
+      const more = { name: `更多操作 ${record.work_item}` };
+      expect(screen.queryByRole('button', { name: '删除' })).not.toBeInTheDocument();
+      await user.click(screen.getByRole('button', more));
+      await user.click(screen.getByRole('menuitem', { name: '删除' }));
+      const confirmation = within(screen.getByRole('dialog', { name: '删除月度工作' }));
+      await user.click(confirmation.getByRole('button', { name: '取消' }));
       await user.click(screen.getByRole('button', { name: '编辑' }));
       await user.click(screen.getByRole('combobox', { name: '负责人' }));
       await user.click(
@@ -435,7 +440,7 @@ describe('月度工作', () => {
       const readAttachments = await screen.findByRole('button', { name: '查看附件' });
       const work = within(screen.getByRole('article', { name: record.work_item }));
       expect(work.queryByRole('button', { name: '编辑' })).not.toBeInTheDocument();
-      expect(work.queryByRole('button', { name: '删除' })).not.toBeInTheDocument();
+      expect(work.queryByRole('button', more)).not.toBeInTheDocument();
       await user.click(readAttachments);
       const drawer = await screen.findByRole('dialog', { name: '月度工作附件' });
       expect(await within(drawer).findByRole('button', { name: '虚构附件.pdf' })).toBeVisible();

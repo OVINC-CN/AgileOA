@@ -204,7 +204,7 @@ function SummaryTable({
           {refreshAction}
         </div>
       </div>
-      <Table aria-label="学生专业表" aria-busy={loading}>
+      <Table pinFirstColumn aria-label="学生专业表" aria-busy={loading}>
         <TableHeader className="bg-table-header">
           <TableRow className="border-border hover:bg-transparent">
             {settings.visibleColumns.map((column) => {

@@ -422,7 +422,7 @@ it('节点、字段和时间规则在切换配置及预览后保留草稿，保�
   const dialog = within(screen.getByRole('dialog'));
   const cancel = dialog.getByRole('button', { name: '取消' });
   expect(cancel).toBeEnabled();
-  expect(cancel).toHaveAttribute('data-variant', 'outline');
+  expect(cancel).toHaveAttribute('data-variant', 'cancel');
   expect(dialog.getByRole('button', { name: '保存' })).toBeVisible();
   await user.click(screen.getByRole('tab', { name: '节点配置' }));
   expect(screen.getByRole('button', { name: '预览' })).toBeVisible();

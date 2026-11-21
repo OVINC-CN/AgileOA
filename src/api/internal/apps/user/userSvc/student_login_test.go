@@ -132,8 +132,6 @@ func checkStudentLogin(t *testing.T, server *echo.Echo, admin *http.Cookie) {
 			Major:          student.Major,
 			ClassName:      student.ClassName,
 			ClassPosition:  student.ClassPosition,
-			AdmissionType:  student.AdmissionType,
-			ArrivalMonth:   student.ArrivalMonth,
 		}) {
 			t.Fatal("个人信息未按可信身份返回学籍信息")
 		}
@@ -147,8 +145,6 @@ func checkStudentLogin(t *testing.T, server *echo.Echo, admin *http.Cookie) {
 			"major":           true,
 			"class_name":      true,
 			"class_position":  true,
-			"admission_type":  true,
-			"arrival_month":   true,
 		}
 		profileFields := data[map[string]json.RawMessage](t, profileResponse)
 		if len(profileFields) != len(fields) {

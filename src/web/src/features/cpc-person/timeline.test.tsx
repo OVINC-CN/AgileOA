@@ -97,9 +97,9 @@ it.each(['pending', 'completed'] as const)(
     );
     const user = userEvent.setup();
     await user.clear(screen.getByLabelText('数量 *'));
-    const skip = screen.getByRole('button', { name: '跳过节点' });
-    const reset = screen.getByRole('button', { name: '重置节点' });
-    const save = screen.getByRole('button', { name: '保存并完成' });
+    const skip = screen.getByRole('button', { name: '跳过' });
+    const reset = screen.getByRole('button', { name: '重置' });
+    const save = screen.getByRole('button', { name: '提交' });
     expect(skip.nextElementSibling).toBe(reset);
     await user.click(skip);
     await waitFor(() => {
@@ -249,7 +249,7 @@ it.each(['2026-02-28', undefined])(
     expect(screen.getByLabelText('发生时间')).toHaveValue(date ?? '-');
     expect(screen.getByLabelText('发生时间')).toHaveAttribute('readonly');
     expect(screen.getByLabelText('发生时间')).toBeDisabled();
-    await userEvent.click(screen.getByRole('button', { name: '保存并完成' }));
+    await userEvent.click(screen.getByRole('button', { name: '提交' }));
     await waitFor(() => {
       expect(closed).toHaveBeenCalledOnce();
     });
@@ -509,8 +509,8 @@ it.each(['completed', 'pending'] as const)(
       </QueryClientProvider>,
     );
     await user.clear(screen.getByLabelText('数量 *'));
-    const reset = screen.getByRole('button', { name: '重置节点' });
-    const save = screen.getByRole('button', { name: '保存并完成' });
+    const reset = screen.getByRole('button', { name: '重置' });
+    const save = screen.getByRole('button', { name: '提交' });
     expect(reset.nextElementSibling).toBe(save);
     expect(reset).toBeEnabled();
     await user.click(reset);

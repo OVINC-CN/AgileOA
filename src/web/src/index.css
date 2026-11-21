@@ -238,8 +238,13 @@
   table > tbody > tr:has([aria-expanded='true']) {
     --table-row-surface: var(--table-selected);
   }
-  .table-pinned {
+  .table-pinned,
+  :where(table[data-pin-first-column])
+    > :is(thead, tbody, tfoot)
+    > tr
+    > :is(th, td):first-child:not([colspan], [rowspan]) {
     position: sticky;
+    left: 0;
     z-index: 2;
     border-right: 1px solid var(--border-subtle);
     background-color: var(--table-row-surface, var(--table-header));

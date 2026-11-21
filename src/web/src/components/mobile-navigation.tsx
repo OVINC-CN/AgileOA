@@ -77,11 +77,7 @@ export function MobileNavigation({
             trigger.current?.focus();
           }}
         >
-          <nav
-            id={navigationID}
-            aria-label="全部导航"
-            className="px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))]"
-          >
+          <nav id={navigationID} aria-label="全部导航" className="px-4 py-4">
             <MenuLevel
               items={items}
               depth={0}

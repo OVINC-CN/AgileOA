@@ -71,32 +71,32 @@ export function StudentDetailDrawer({
           />
         ) : undefined
       }
+      footerRefresh={
+        <Button
+          variant="outline"
+          loading={refresh.pending || (valid && canDetail && detail.isPending)}
+          onClick={() => {
+            void refresh.run('refresh', async () => {
+              await onRefresh();
+              await client.invalidateQueries({ queryKey: studentKey(workspaceID) });
+            });
+          }}
+        >
+          <RefreshCw aria-hidden="true" />
+          刷新
+        </Button>
+      }
       footer={
-        <>
+        student && (canBasic || canSensitive) ? (
           <Button
-            variant="outline"
-            loading={refresh.pending || (valid && canDetail && detail.isPending)}
             onClick={() => {
-              void refresh.run('refresh', async () => {
-                await onRefresh();
-                await client.invalidateQueries({ queryKey: studentKey(workspaceID) });
-              });
+              setEditing(true);
             }}
           >
-            <RefreshCw aria-hidden="true" />
-            刷新
+            <Pencil aria-hidden="true" />
+            编辑
           </Button>
-          {student && (canBasic || canSensitive) ? (
-            <Button
-              onClick={() => {
-                setEditing(true);
-              }}
-            >
-              <Pencil aria-hidden="true" />
-              编辑
-            </Button>
-          ) : null}
-        </>
+        ) : null
       }
     >
       {!valid ? (

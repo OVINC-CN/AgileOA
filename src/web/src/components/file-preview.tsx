@@ -121,28 +121,28 @@ function PreviewWindow({
       description={storedName}
       onClose={onClose}
       contentClassName="flex overflow-hidden bg-muted/70"
+      footerDismiss={
+        <Button type="button" variant="cancel" onClick={onClose}>
+          关闭
+        </Button>
+      }
       footer={
-        <>
-          <Button
-            type="button"
-            variant="outline"
-            disabled={!state.blob}
-            onClick={() => {
-              if (!state.blob) return;
-              try {
-                downloadFile(storedName, state.blob);
-              } catch {
-                showMessage('文件保存失败，请重试');
-              }
-            }}
-          >
-            <Download aria-hidden="true" />
-            下载
-          </Button>
-          <Button type="button" variant="secondary" onClick={onClose}>
-            关闭
-          </Button>
-        </>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={!state.blob}
+          onClick={() => {
+            if (!state.blob) return;
+            try {
+              downloadFile(storedName, state.blob);
+            } catch {
+              showMessage('文件保存失败，请重试');
+            }
+          }}
+        >
+          <Download aria-hidden="true" />
+          下载
+        </Button>
       }
     >
       {state.status === 'ready' ? (

@@ -1,7 +1,7 @@
-import { X } from 'lucide-react';
 import { Dialog } from 'radix-ui';
 import {
   type ComponentProps,
+  type ReactElement,
   type ReactNode,
   type SubmitEventHandler,
   useCallback,
@@ -21,6 +21,8 @@ interface Props {
   headerNavigation?: ReactNode;
   footerNavigation?: ReactNode;
   children: ReactNode;
+  footerDismiss?: ReactElement | undefined;
+  footerRefresh?: ReactNode;
   footer?: ReactNode;
   form?: {
     onSubmit: SubmitEventHandler<HTMLFormElement>;
@@ -42,6 +44,8 @@ export function Drawer({
   headerNavigation,
   footerNavigation,
   children,
+  footerDismiss,
+  footerRefresh,
   footer,
   form,
   onClose,
@@ -141,13 +145,13 @@ export function Drawer({
         <Dialog.Close asChild>
           <Button
             type="button"
-            variant="ghost"
-            size="icon-sm"
+            variant="cancel"
+            size="sm"
             aria-label={closeLabel}
             className="shrink-0"
             disabled={busy}
           >
-            <X className="size-4" aria-hidden="true" />
+            关闭
           </Button>
         </Dialog.Close>
       </div>
@@ -162,31 +166,32 @@ export function Drawer({
       >
         {children}
       </div>
-      {footer || footerNavigation ? (
-        <div
-          className={cn(
-            'flex shrink-0 flex-wrap items-center justify-end border-t border-border-subtle px-4 sm:px-6',
-            footerNavigation
-              ? 'gap-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))]'
-              : 'gap-2 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] sm:gap-3',
+      <div
+        data-slot="drawer-footer"
+        className={cn(
+          'mt-auto flex shrink-0 flex-wrap items-center justify-end border-t border-border-subtle px-4 sm:px-6',
+          footerNavigation
+            ? 'gap-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))]'
+            : 'gap-2 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] sm:gap-3',
+        )}
+      >
+        {footerNavigation ? (
+          <div data-slot="drawer-footer-navigation" className="mr-auto max-w-full min-w-0">
+            {footerNavigation}
+          </div>
+        ) : null}
+        <div className="ml-auto flex max-w-full flex-wrap items-center justify-end gap-2 sm:gap-3">
+          {footerDismiss ?? (
+            <Dialog.Close asChild>
+              <Button type="button" variant="cancel" disabled={busy}>
+                关闭
+              </Button>
+            </Dialog.Close>
           )}
-        >
-          {footerNavigation ? (
-            <>
-              <div data-slot="drawer-footer-navigation" className="mr-auto max-w-full min-w-0">
-                {footerNavigation}
-              </div>
-              {footer ? (
-                <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
-                  {footer}
-                </div>
-              ) : null}
-            </>
-          ) : (
-            footer
-          )}
+          {footerRefresh}
+          {footer}
         </div>
-      ) : null}
+      </div>
     </>
   );
   return (

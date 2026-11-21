@@ -53,16 +53,16 @@ export function TimelineTransferRejectDrawer({
           });
         },
       }}
+      footerDismiss={
+        <Button type="button" variant="cancel" disabled={reject.pending} onClick={onClose}>
+          取消
+        </Button>
+      }
       footer={
-        <>
-          <Button type="button" variant="outline" disabled={reject.pending} onClick={onClose}>
-            取消
-          </Button>
-          <Button type="submit" loading={reject.pending}>
-            <X aria-hidden="true" />
-            确认驳回
-          </Button>
-        </>
+        <Button type="submit" loading={reject.pending}>
+          <X aria-hidden="true" />
+          确认驳回
+        </Button>
       }
     >
       <div className="space-y-2 p-6">

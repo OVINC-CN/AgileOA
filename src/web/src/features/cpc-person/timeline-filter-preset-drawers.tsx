@@ -57,16 +57,16 @@ export function TimelinePresetEditorDrawer({
           }
         },
       }}
+      footerDismiss={
+        <Button type="button" variant="cancel" onClick={onClose}>
+          取消
+        </Button>
+      }
       footer={
-        <>
-          <Button type="button" variant="outline" onClick={onClose}>
-            取消
-          </Button>
-          <Button type="submit">
-            <Save aria-hidden="true" />
-            {editor.mode === 'overwrite' ? '覆盖保存' : '保存'}
-          </Button>
-        </>
+        <Button type="submit">
+          <Save aria-hidden="true" />
+          {editor.mode === 'overwrite' ? '覆盖保存' : '保存'}
+        </Button>
       }
     >
       <div className="space-y-6 p-6">
@@ -121,8 +121,8 @@ export function TimelinePresetManagerDrawer({
       title="管理常用筛选方案"
       description="方案仅保存在当前浏览器，清除浏览器数据后需要重新保存"
       onClose={onClose}
-      footer={
-        <Button type="button" variant="secondary" onClick={onClose}>
+      footerDismiss={
+        <Button type="button" variant="cancel" onClick={onClose}>
           关闭
         </Button>
       }
@@ -193,27 +193,27 @@ export function TimelinePresetDeleteDrawer({
       title="删除常用筛选方案"
       description={preset.name}
       onClose={onClose}
+      footerDismiss={
+        <Button type="button" variant="cancel" onClick={onClose}>
+          取消
+        </Button>
+      }
       footer={
-        <>
-          <Button type="button" variant="outline" onClick={onClose}>
-            取消
-          </Button>
-          <Button
-            type="button"
-            variant="destructive"
-            onClick={() => {
-              try {
-                onDelete();
-                onClose();
-              } catch (cause) {
-                showMessage(cause instanceof Error ? cause.message : '删除方案失败，请重试');
-              }
-            }}
-          >
-            <Trash2 aria-hidden="true" />
-            删除方案
-          </Button>
-        </>
+        <Button
+          type="button"
+          variant="destructive"
+          onClick={() => {
+            try {
+              onDelete();
+              onClose();
+            } catch (cause) {
+              showMessage(cause instanceof Error ? cause.message : '删除方案失败，请重试');
+            }
+          }}
+        >
+          <Trash2 aria-hidden="true" />
+          删除方案
+        </Button>
       }
     >
       <p className="p-6 text-sm text-muted-foreground">

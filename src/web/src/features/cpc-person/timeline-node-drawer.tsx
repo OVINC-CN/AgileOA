@@ -72,7 +72,7 @@ export function PersonTimelineNodeDrawer({
       description={`${personLabel} · ${original.name}`}
       busy={refresh.pending}
       onClose={onClose}
-      footer={
+      footerRefresh={
         <Button
           variant="outline"
           loading={refresh.pending || query.isPending}

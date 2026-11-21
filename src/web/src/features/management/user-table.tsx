@@ -4,6 +4,7 @@ import { type ReactNode, useMemo } from 'react';
 
 import { ManagementTable } from '@/components/management-table';
 import { TableActionButton } from '@/components/table-action-button';
+import { TableActionsMenu } from '@/components/table-actions-menu';
 import { TableTimestamp } from '@/components/table-timestamp';
 import type { UserRow } from '@/features/management/api';
 import { recordTimeColumns } from '@/lib/record-time-columns';
@@ -122,26 +123,29 @@ export function UserTable({
               <Plug aria-hidden="true" />
               MCP
             </TableActionButton>
-            <TableActionButton
-              aria-label={`撤销 ${row.original.username} 的会话`}
-              disabled={row.original.id === currentID}
-              onClick={() => {
-                onRevoke(row.original);
-              }}
-            >
-              <Unplug aria-hidden="true" />
-              撤销会话
-            </TableActionButton>
-            <TableActionButton
-              aria-label={`删除用户 ${row.original.username}`}
-              disabled={row.original.id === currentID}
-              onClick={() => {
-                onDelete(row.original);
-              }}
-            >
-              <Trash2 aria-hidden="true" />
-              删除
-            </TableActionButton>
+            <TableActionsMenu
+              label={row.original.username}
+              actions={[
+                {
+                  label: '撤销会话',
+                  icon: Unplug,
+                  disabled: row.original.id === currentID,
+                  destructive: true,
+                  onSelect: () => {
+                    onRevoke(row.original);
+                  },
+                },
+                {
+                  label: '删除',
+                  icon: Trash2,
+                  disabled: row.original.id === currentID,
+                  destructive: true,
+                  onSelect: () => {
+                    onDelete(row.original);
+                  },
+                },
+              ]}
+            />
           </div>
         ),
       },
@@ -152,6 +156,15 @@ export function UserTable({
     <ManagementTable
       refreshAction={refreshAction}
       tableID="system-users"
+      pinnedColumn="id"
+      primaryColumn={{
+        id: 'id',
+        getAction: (user) => ({
+          onClick: () => {
+            onEdit(user);
+          },
+        }),
+      }}
       columns={columns}
       data={data}
       total={total}

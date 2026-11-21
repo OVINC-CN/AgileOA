@@ -92,7 +92,7 @@ export function AccommodationTable({
           filters={appliedFilters}
           className="border-b border-border-subtle px-5 py-3"
         />
-        <Table aria-label="住宿信息表" aria-busy={loading}>
+        <Table pinFirstColumn aria-label="住宿信息表" aria-busy={loading}>
           <TableHeader className="bg-table-header">
             <TableRow className="border-border hover:bg-transparent">
               {settings.visibleColumns.map((column) => {

@@ -40,6 +40,11 @@ import { uploadHint, validateUploadFile } from '@/lib/file-upload';
 import { formatValue } from '@/lib/format';
 
 const emptyValues: ApplicationValues = { statement: '', rank: null, score: null };
+const applicationTabs = [
+  { value: 'main', label: '主要信息' },
+  { value: 'flow', label: '审批流程' },
+  { value: 'history', label: '流转记录' },
+] as const;
 const valuesOf = (record: Application): ApplicationValues => ({
   statement: record.statement,
   rank: record.rank,
@@ -290,6 +295,7 @@ export function ApplicationDrawer({
   };
   const canProcess = record && (record.can_edit || record.can_approve || record.can_reject);
   const reapplying = scope === 'mine' && record?.status === 'rejected';
+  const showEditSteps = editing && initialRecord !== null;
   const deadline = record ? record.self_apply_deadline : project?.self_apply_deadline;
   return (
     <>
@@ -304,42 +310,39 @@ export function ApplicationDrawer({
         busy={busy}
         contentClassName="p-6 text-sm"
         headerNavigation={
-          editing ? (
+          showEditSteps ? (
             <DrawerSteps
               id={tabsID}
               label="申报内容分类"
               value={tab}
-              items={[
-                { value: 'main', label: '主要信息' },
-                { value: 'flow', label: '审批流程' },
-                { value: 'history', label: '流转记录' },
-              ]}
+              items={applicationTabs}
               onChange={setTab}
               disabled={busy}
             />
           ) : undefined
         }
         footerNavigation={
-          !editing ? (
+          !showEditSteps ? (
             <DrawerTabs
               id={tabsID}
               label="申报内容分类"
               value={tab}
-              items={[
-                { value: 'main', label: '主要信息' },
-                { value: 'flow', label: '审批流程' },
-                { value: 'history', label: '流转记录' },
-              ]}
+              items={applicationTabs}
               onChange={setTab}
+              disabled={editing && busy}
             />
+          ) : undefined
+        }
+        footerDismiss={
+          editing ? (
+            <Button type="button" variant="cancel" disabled={busy} onClick={cancelEdit}>
+              取消
+            </Button>
           ) : undefined
         }
         footer={
           editing ? (
             <>
-              <Button type="button" variant="outline" disabled={busy} onClick={cancelEdit}>
-                取消
-              </Button>
               <Button
                 type="button"
                 variant={reapplying ? 'outline' : 'default'}
@@ -360,7 +363,7 @@ export function ApplicationDrawer({
                   }}
                 >
                   <Send aria-hidden="true" />
-                  提交申报
+                  提交
                 </Button>
               ) : null}
             </>
@@ -378,9 +381,6 @@ export function ApplicationDrawer({
             </Button>
           ) : (
             <>
-              <Button type="button" variant="secondary" disabled={busy} onClick={onClose}>
-                关闭
-              </Button>
               {record?.can_edit ? (
                 <Button
                   type="button"
@@ -423,7 +423,7 @@ export function ApplicationDrawer({
                   }}
                 >
                   {scope === 'mine' ? <Send aria-hidden="true" /> : <Check aria-hidden="true" />}
-                  {scope === 'mine' ? '提交申报' : '通过'}
+                  {scope === 'mine' ? '提交' : '通过'}
                 </Button>
               ) : null}
             </>
@@ -558,26 +558,26 @@ export function ApplicationDrawer({
             setUploadTarget(null);
           }}
           busy={files.pending}
+          footerDismiss={
+            <Button
+              variant="cancel"
+              disabled={files.pending}
+              onClick={() => {
+                setUploadTarget(null);
+              }}
+            >
+              取消
+            </Button>
+          }
           footer={
-            <>
-              <Button
-                variant="outline"
-                disabled={files.pending}
-                onClick={() => {
-                  setUploadTarget(null);
-                }}
-              >
-                取消
-              </Button>
-              <FileUploadButton
-                label="选择文件并保存上传"
-                loading={files.isPending(`upload:${uploadTarget}`)}
-                disabled={busy}
-                onFileSelect={(file) => {
-                  upload(uploadTarget, file);
-                }}
-              />
-            </>
+            <FileUploadButton
+              label="选择文件并保存上传"
+              loading={files.isPending(`upload:${uploadTarget}`)}
+              disabled={busy}
+              onFileSelect={(file) => {
+                upload(uploadTarget, file);
+              }}
+            />
           }
         >
           <div className="space-y-3 p-5 text-sm leading-5">
@@ -600,31 +600,27 @@ export function ApplicationDrawer({
             setDecision(null);
           }}
           busy={action.pending}
+          footerDismiss={
+            <Button
+              variant="cancel"
+              disabled={action.pending}
+              onClick={() => {
+                setDecision(null);
+              }}
+            >
+              取消
+            </Button>
+          }
           footer={
-            <>
-              <Button
-                variant="outline"
-                disabled={action.pending}
-                onClick={() => {
-                  setDecision(null);
-                }}
-              >
-                取消
-              </Button>
-              <Button
-                loading={action.isPending(decision)}
-                onClick={() => {
-                  process(decision);
-                }}
-              >
-                {decision === 'reject' ? (
-                  <Undo2 aria-hidden="true" />
-                ) : (
-                  <Check aria-hidden="true" />
-                )}
-                {decision === 'reject' ? '驳回' : '通过'}
-              </Button>
-            </>
+            <Button
+              loading={action.isPending(decision)}
+              onClick={() => {
+                process(decision);
+              }}
+            >
+              {decision === 'reject' ? <Undo2 aria-hidden="true" /> : <Check aria-hidden="true" />}
+              {decision === 'reject' ? '驳回' : '通过'}
+            </Button>
           }
         >
           <div className="space-y-2 p-6">
@@ -651,25 +647,22 @@ export function ApplicationDrawer({
             setDeleting(null);
           }}
           busy={files.pending}
+          footerDismiss={
+            <Button
+              variant="cancel"
+              disabled={files.pending}
+              onClick={() => {
+                setDeleting(null);
+              }}
+            >
+              取消
+            </Button>
+          }
           footer={
-            <>
-              <Button
-                variant="outline"
-                disabled={files.pending}
-                onClick={() => {
-                  setDeleting(null);
-                }}
-              >
-                取消
-              </Button>
-              <Button
-                loading={files.isPending(`delete:${String(deleting.id)}`)}
-                onClick={removeFile}
-              >
-                <Trash2 aria-hidden="true" />
-                删除
-              </Button>
-            </>
+            <Button loading={files.isPending(`delete:${String(deleting.id)}`)} onClick={removeFile}>
+              <Trash2 aria-hidden="true" />
+              删除
+            </Button>
           }
         >
           <p className="p-6 text-sm">将永久删除此子项附件及文件，历史审计保留。</p>

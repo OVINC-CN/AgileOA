@@ -155,10 +155,6 @@ type ProfileData struct {
 	ClassName string `json:"class_name" example:"2026级一班"`
 	// ClassPosition 是班内任职，最多 64 个字符。
 	ClassPosition string `json:"class_position" example:"班长"`
-	// AdmissionType 是录取类型，最多 32 个字符。
-	AdmissionType string `json:"admission_type" example:"非定向"`
-	// ArrivalMonth 是来校年月，格式为 YYYY-MM，年份为 1900 至 9999，未填写时为空。
-	ArrivalMonth string `json:"arrival_month" example:"2026-09"`
 }
 
 // ProfileResponse 仅返回学生本人的学籍信息。

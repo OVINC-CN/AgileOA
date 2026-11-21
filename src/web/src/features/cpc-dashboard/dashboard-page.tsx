@@ -33,7 +33,7 @@ const columns = [
   { key: 'secretaries', label: '支部书记' },
   { key: 'organization_members', label: '组织委员' },
   { key: 'publicity_members', label: '宣传委员' },
-  { key: 'discipline_members', label: '纪律委员' },
+  { key: 'discipline_members', label: '纪检委员' },
   { key: 'advisors', label: '导师姓名' },
 ] as const;
 
@@ -146,7 +146,7 @@ function SummaryTable({
           {refreshAction}
         </div>
       </div>
-      <Table aria-label={tabs[0].label} aria-busy={loading}>
+      <Table pinFirstColumn aria-label={tabs[0].label} aria-busy={loading}>
         <TableHeader className="bg-table-header">
           <TableRow className="border-border hover:bg-transparent">
             {settings.visibleColumns.map((column) => (

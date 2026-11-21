@@ -240,7 +240,7 @@ describe('评奖评优', () => {
     expect(screen.getAllByRole('menuitem').map((item) => item.textContent)).toEqual(['导出奖项']);
   });
 
-  it('项目详情以只读标签展示配置名称，说明及附件为空时显示短横线', async () => {
+  it('奖项管理将年份合入固定项目首列，点击项目打开只读详情', async () => {
     const project: Project = {
       allow_self_apply: false,
       self_apply_deadline: null,
@@ -273,13 +273,25 @@ describe('评奖评优', () => {
           <ProjectPage
             workspaceID={first}
             workspaceName="虚构空间"
-            actions={['project.list']}
+            actions={['project.list', 'project.delete']}
             refresh={() => Promise.resolve()}
           />
         </MemoryRouter>
       </QueryClientProvider>,
     );
-    await userEvent.click(await screen.findByRole('button', { name: '详情' }));
+    const table = within(screen.getByRole('table'));
+    const openProject = await table.findByRole('button', { name: '2026 · 虚构项目' });
+    const [firstHeader] = table.getAllByRole('columnheader');
+    expect(firstHeader).toHaveTextContent('项目');
+    expect(firstHeader).toHaveClass('table-pinned', 'left-0');
+    expect(table.getByRole('cell', { name: '2026 · 虚构项目' })).toHaveClass(
+      'table-pinned',
+      'left-0',
+    );
+    expect(table.queryByRole('columnheader', { name: '归属年份' })).not.toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: '归属年份' })).toBeVisible();
+    await userEvent.click(openProject);
+    expect(screen.getByRole('dialog', { name: '虚构项目' })).toBeVisible();
     const tags = screen.getByRole('list', { name: '可选子项名称' });
     expect(tags.querySelectorAll('[data-slot="badge"]')).toHaveLength(2);
     expect(tags).toHaveTextContent('志愿服务社会实践');
@@ -289,6 +301,71 @@ describe('评奖评优', () => {
     );
     expect(screen.getByRole('heading', { name: '项目附件' }).nextElementSibling).toHaveTextContent(
       '-',
+    );
+    await userEvent.click(screen.getByRole('button', { name: '关闭抽屉' }));
+    expect(table.queryByRole('button', { name: '删除' })).not.toBeInTheDocument();
+    await userEvent.click(table.getByRole('button', { name: '更多操作 2026 · 虚构项目' }));
+    await userEvent.click(screen.getByRole('menuitem', { name: '删除' }));
+    expect(screen.getByRole('dialog', { name: '删除项目' })).toHaveTextContent(project.name);
+  });
+
+  it('获奖学生固定姓名为首列，学号为第二列，点击姓名读取评分详情', async () => {
+    const detailPath = `/v1/workspaces/${first}/project-participations/${String(record.id)}`;
+    let completeDetail: ((response: Response) => void) | undefined;
+    const fetch = vi.fn((path: string) => {
+      if (path === detailPath)
+        return new Promise<Response>((resolve) => {
+          completeDetail = resolve;
+        });
+      return Promise.resolve(
+        respond(
+          path.includes('/filter-options')
+            ? { names: [], years: [], education_levels: [], majors: [], grades: [] }
+            : { items: [record], total: 1, page: 1, page_size: 5 },
+        ),
+      );
+    });
+    vi.stubGlobal('fetch', fetch);
+    render(
+      <QueryClientProvider client={client()}>
+        <MemoryRouter>
+          <ProjectPage
+            workspaceID={first}
+            workspaceName="虚构空间"
+            actions={['project.participation.list', 'project.participation.delete']}
+            refresh={() => Promise.resolve()}
+          />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    const table = within(screen.getByRole('table'));
+    const studentName = await table.findByRole('button', { name: record.student_name });
+    const [nameHeader, numberHeader] = table.getAllByRole('columnheader');
+    expect(nameHeader).toHaveTextContent('姓名');
+    expect(nameHeader).toHaveClass('table-pinned', 'left-0');
+    expect(numberHeader).toHaveTextContent('学号');
+    expect(numberHeader).not.toHaveClass('table-pinned');
+    expect(table.getByRole('cell', { name: record.student_name })).toHaveClass(
+      'table-pinned',
+      'left-0',
+    );
+    const nameText = within(studentName).getByText(record.student_name);
+    await userEvent.click(studentName);
+    expect(fetch.mock.calls.filter(([path]) => path === detailPath)).toHaveLength(1);
+    expect(studentName).toBeDisabled();
+    expect(studentName).toHaveAttribute('aria-busy', 'true');
+    expect(studentName).toHaveClass('[&>svg]:absolute');
+    expect(within(studentName).getByText(record.student_name)).toBe(nameText);
+    expect(table.getByRole('button', { name: '详情' })).toBeEnabled();
+    completeDetail?.(respond(record));
+    const drawer = within(await screen.findByRole('dialog', { name: '参与评分详情' }));
+    expect(drawer.getByText('已有子项')).toBeVisible();
+    await userEvent.click(drawer.getByRole('button', { name: '关闭抽屉' }));
+    expect(table.queryByRole('button', { name: '删除' })).not.toBeInTheDocument();
+    await userEvent.click(table.getByRole('button', { name: /^更多操作 虚构学生/u }));
+    await userEvent.click(screen.getByRole('menuitem', { name: '删除' }));
+    expect(screen.getByRole('dialog', { name: '删除获奖记录' })).toHaveTextContent(
+      record.student_name,
     );
   });
 

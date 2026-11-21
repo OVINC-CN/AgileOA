@@ -80,9 +80,12 @@ export function PersonTimelineView({
       editing,
     });
   };
+  const openDetail = (person: Person, key: string) => {
+    void read.run(key, () => openNode(person, false));
+  };
   const columns: ColumnDef<TimelineViewPerson>[] = [
+    { id: 'person_name', accessorKey: 'person.name', header: '姓名' },
     { accessorKey: 'person.student_no', header: '学号' },
-    { accessorKey: 'person.name', header: '姓名' },
     {
       accessorKey: 'status_label',
       header: '节点状态',
@@ -114,27 +117,15 @@ export function PersonTimelineView({
         const canEdit = canUpdate && person.can_update && person.timeline_status !== 'transferring';
         return (
           <div className="flex items-center gap-2">
-            {canDetail ||
-            (canUpdate && person.can_update) ||
-            (canReview && person.can_review_timeline_transfer) ? (
-              <TableActionButton
-                onClick={() => {
-                  setTimelinePerson(person);
-                }}
-              >
-                <GitBranch aria-hidden="true" />
-                时间线
-              </TableActionButton>
-            ) : null}
             {canDetail ? (
               <TableActionButton
                 loading={read.isPending(String(person.id))}
                 onClick={() => {
-                  void read.run(String(person.id), () => openNode(person, false));
+                  openDetail(person, String(person.id));
                 }}
               >
                 <Eye aria-hidden="true" />
-                节点详情
+                详情
               </TableActionButton>
             ) : null}
             {canEdit ? (
@@ -145,7 +136,19 @@ export function PersonTimelineView({
                 }}
               >
                 <Pencil aria-hidden="true" />
-                节点编辑
+                编辑
+              </TableActionButton>
+            ) : null}
+            {canDetail ||
+            (canUpdate && person.can_update) ||
+            (canReview && person.can_review_timeline_transfer) ? (
+              <TableActionButton
+                onClick={() => {
+                  setTimelinePerson(person);
+                }}
+              >
+                <GitBranch aria-hidden="true" />
+                时间线
               </TableActionButton>
             ) : null}
           </div>
@@ -279,6 +282,20 @@ export function PersonTimelineView({
           <ManagementTable
             refreshAction={refreshAction}
             tableID={`cpc-person-timeline:${workspaceID}:${String(view.templateID)}:${node?.id ?? 'none'}`}
+            pinnedColumn="person_name"
+            primaryColumn={{
+              id: 'person_name',
+              getAction: ({ person }) => {
+                if (!canDetail) return undefined;
+                const key = `name:${String(person.id)}`;
+                return {
+                  loading: read.isPending(key),
+                  onClick: () => {
+                    openDetail(person, key);
+                  },
+                };
+              },
+            }}
             columns={columns}
             data={data?.items ?? []}
             total={data?.total ?? 0}

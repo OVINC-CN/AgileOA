@@ -1,7 +1,7 @@
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
 import { Eye, Search } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import { ErrorMessage } from '@/components/error-message';
 import { FilterField, FilterPanel } from '@/components/filter-panel';
@@ -80,6 +80,23 @@ export function AuditPage() {
     defaultAuditFilters,
     applyFilters,
     filters,
+  );
+  const getDetailAction = useCallback(
+    (row: AuditRow, entry: 'id' | 'action') => {
+      const key = `${entry}:${row.event_id}`;
+      return {
+        loading: detailAction.isPending(key),
+        disabled: detailAction.pending,
+        onClick: () => {
+          void detailAction
+            .run(key, () => client.query({ ...auditDetailOptions(row), staleTime: 0 }))
+            .then((result) => {
+              if (result.ok) setSelected(row);
+            });
+        },
+      };
+    },
+    [client, detailAction],
   );
   const columns = useMemo<ColumnDef<AuditRow>[]>(
     () => [
@@ -169,17 +186,7 @@ export function AuditPage() {
         cell: ({ row }) => (
           <TableActionButton
             aria-label={`查看${row.original.event_content ?? row.original.action_id}详情`}
-            loading={detailAction.isPending(row.original.event_id)}
-            disabled={detailAction.pending}
-            onClick={() => {
-              void detailAction
-                .run(row.original.event_id, () =>
-                  client.query({ ...auditDetailOptions(row.original), staleTime: 0 }),
-                )
-                .then((result) => {
-                  if (result.ok) setSelected(row.original);
-                });
-            }}
+            {...getDetailAction(row.original, 'action')}
           >
             <Eye aria-hidden="true" />
             详情
@@ -187,7 +194,7 @@ export function AuditPage() {
         ),
       },
     ],
-    [client, detailAction, list.data],
+    [getDetailAction, list.data],
   );
   return (
     <section className="space-y-6" aria-labelledby="audit-title">
@@ -382,6 +389,9 @@ export function AuditPage() {
             />
           }
           tableID="system-audit"
+          pinnedColumn="id"
+          pinnedEndColumn="detail"
+          primaryColumn={{ id: 'id', getAction: (row) => getDetailAction(row, 'id') }}
           columns={columns}
           data={list.data?.items ?? emptyRows}
           total={list.data?.total ?? 0}

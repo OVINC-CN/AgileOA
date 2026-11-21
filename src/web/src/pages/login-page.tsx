@@ -411,7 +411,7 @@ export function LoginPage({ student = false }: { student?: boolean }) {
                 <span className="text-sm font-medium">安全验证</span>
                 <Button
                   type="button"
-                  variant="ghost"
+                  variant="cancel"
                   size="xs"
                   className="text-muted-foreground"
                   onClick={() => captchaAttempt.current?.abort()}

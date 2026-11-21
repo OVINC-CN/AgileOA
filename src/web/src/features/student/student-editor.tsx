@@ -106,7 +106,7 @@ export function StudentEditor({
         truncateDescription
         description={formatIdentity(student.name, student.student_no)}
         onClose={onClose}
-        footer={
+        footerRefresh={
           <Button
             variant="outline"
             loading={pendingReads.some((read) => read.isFetching) || retry.pending}
@@ -304,11 +304,13 @@ function StudentEditorForm({
           />
         )
       }
+      footerDismiss={
+        <Button type="button" variant="cancel" disabled={busy} onClick={onClose}>
+          取消
+        </Button>
+      }
       footer={
         <>
-          <Button type="button" variant="outline" disabled={busy} onClick={onClose}>
-            取消
-          </Button>
           {creating && activeIndex > 0 ? (
             <Button
               type="button"
@@ -539,21 +541,21 @@ export function DeleteStudent({
       description={formatIdentity(student.name, student.student_no)}
       busy={mutation.isPending}
       onClose={onClose}
+      footerDismiss={
+        <Button variant="cancel" disabled={mutation.isPending} onClick={onClose}>
+          取消
+        </Button>
+      }
       footer={
-        <>
-          <Button variant="outline" disabled={mutation.isPending} onClick={onClose}>
-            取消
-          </Button>
-          <Button
-            loading={mutation.isPending}
-            onClick={() => {
-              mutation.mutate();
-            }}
-          >
-            <Trash2 aria-hidden="true" />
-            确认删除
-          </Button>
-        </>
+        <Button
+          loading={mutation.isPending}
+          onClick={() => {
+            mutation.mutate();
+          }}
+        >
+          <Trash2 aria-hidden="true" />
+          确认删除
+        </Button>
       }
     >
       <div className="space-y-4 p-6 text-sm">

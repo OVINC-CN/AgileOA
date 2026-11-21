@@ -11,12 +11,14 @@ import { ManagementTable } from '@/components/management-table';
 import { RefreshButton } from '@/components/refresh-button';
 import { SearchResetButton } from '@/components/search-reset-button';
 import { TableActionButton } from '@/components/table-action-button';
+import { TableActionsMenu } from '@/components/table-actions-menu';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Drawer } from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
 import { SearchSelect } from '@/components/ui/search-select';
+import { Tooltip } from '@/components/ui/tooltip';
 import { useCurrentUser } from '@/features/user/api';
 import {
   deleteWorkspace,
@@ -64,21 +66,21 @@ function DeleteWorkspace({
       onClose={() => {
         if (!mutation.isPending) onClose();
       }}
+      footerDismiss={
+        <Button variant="cancel" disabled={mutation.isPending} onClick={onClose}>
+          取消
+        </Button>
+      }
       footer={
-        <>
-          <Button variant="outline" disabled={mutation.isPending} onClick={onClose}>
-            取消
-          </Button>
-          <Button
-            loading={mutation.isPending}
-            onClick={() => {
-              mutation.mutate();
-            }}
-          >
-            <Trash2 aria-hidden="true" />
-            确认删除
-          </Button>
-        </>
+        <Button
+          loading={mutation.isPending}
+          onClick={() => {
+            mutation.mutate();
+          }}
+        >
+          <Trash2 aria-hidden="true" />
+          确认删除
+        </Button>
       }
     >
       <div className="space-y-4 p-6 text-sm">
@@ -118,15 +120,20 @@ export function WorkspacesPage() {
     filters,
   );
   const columns: ColumnDef<Workspace>[] = [
+    { accessorKey: 'name', header: '工作空间' },
     {
-      accessorKey: 'name',
-      header: '工作空间',
-      cell: ({ row }) => (
-        <div className="flex items-center gap-3">
-          <p className="font-medium">{row.original.name}</p>
-          <p className="text-xs text-muted-foreground">{formatValue(row.original.description)}</p>
-        </div>
-      ),
+      accessorKey: 'description',
+      header: '描述',
+      cell: ({ row }) => {
+        const description = formatValue(row.original.description);
+        return (
+          <Tooltip content={description} onlyOverflow>
+            <span className="block max-w-36 truncate text-xs text-muted-foreground sm:max-w-64">
+              {description}
+            </span>
+          </Tooltip>
+        );
+      },
     },
     {
       accessorKey: 'is_enabled',
@@ -157,14 +164,19 @@ export function WorkspacesPage() {
               权限
             </Link>
           </TableActionButton>
-          <TableActionButton
-            onClick={() => {
-              setDeleting(row.original);
-            }}
-          >
-            <Trash2 aria-hidden="true" />
-            删除
-          </TableActionButton>
+          <TableActionsMenu
+            label={row.original.name}
+            actions={[
+              {
+                label: '删除',
+                icon: Trash2,
+                destructive: true,
+                onSelect: () => {
+                  setDeleting(row.original);
+                },
+              },
+            ]}
+          />
         </div>
       ),
     },
@@ -256,6 +268,15 @@ export function WorkspacesPage() {
             />
           }
           tableID="system-workspaces"
+          pinnedColumn="name"
+          primaryColumn={{
+            id: 'name',
+            getAction: (workspace) => ({
+              onClick: () => {
+                setEditor({ workspace });
+              },
+            }),
+          }}
           columns={columns}
           data={list.data?.items ?? empty}
           total={list.data?.total ?? 0}
