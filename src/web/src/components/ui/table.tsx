@@ -71,7 +71,9 @@ function TableRow({ className, ...props }: React.ComponentProps<'tr'>) {
     <tr
       data-slot="table-row"
       className={cn(
-        'border-b border-border-subtle transition-colors focus-within:bg-table-hover hover:bg-table-hover has-aria-expanded:bg-table-selected data-[state=selected]:bg-table-selected motion-reduce:transition-none',
+        'border-b border-border-subtle transition-colors motion-reduce:transition-none',
+        'focus-within:bg-table-hover hover:bg-table-hover data-[state=selected]:bg-table-selected',
+        'has-[[aria-expanded=true]:not([aria-haspopup=menu])]:bg-table-selected',
         className,
       )}
       {...props}

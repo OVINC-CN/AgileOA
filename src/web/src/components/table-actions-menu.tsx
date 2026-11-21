@@ -27,7 +27,7 @@ export function TableActionsMenu({
       <DropdownMenu.Trigger asChild disabled={disabled || loading}>
         <Button
           type="button"
-          variant="ghost"
+          variant="table-action"
           size="icon-sm"
           aria-label={`更多操作 ${label}`}
           loading={loading}

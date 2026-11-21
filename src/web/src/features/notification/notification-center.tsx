@@ -9,6 +9,10 @@ import { Button } from '@/components/ui/button';
 import { Drawer } from '@/components/ui/drawer';
 import { LoadingIcon } from '@/components/ui/loading-icon';
 import {
+  NavigationButtonGroup,
+  NavigationGroupButton,
+} from '@/components/ui/navigation-button-group';
+import {
   markNotificationsRead,
   type NotificationInfo,
   notificationKey,
@@ -195,11 +199,10 @@ function NotificationDrawer({
       }
     >
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border-subtle px-6 py-3">
-        <div role="group" aria-label="通知范围" className="flex items-center gap-1">
+        <NavigationButtonGroup value={status} role="group" aria-label="通知范围">
           {notificationStatuses.map(({ value, label }) => (
-            <Button
+            <NavigationGroupButton
               key={value}
-              variant={value === status ? 'secondary' : 'ghost'}
               aria-pressed={value === status}
               disabled={mark.pending || filter.pending}
               loading={filter.isPending(value)}
@@ -214,11 +217,10 @@ function NotificationDrawer({
                 });
               }}
             >
-              <Bell aria-hidden="true" />
               {label}
-            </Button>
+            </NavigationGroupButton>
           ))}
-        </div>
+        </NavigationButtonGroup>
         <div className="ml-auto flex items-center gap-2">
           <Button
             variant="outline"

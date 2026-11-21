@@ -165,6 +165,7 @@ API 侧先在业务事务中保存任务所需状态和操作审计，由 app �
 | 输入、自动增高文本及文件选择 | [input.tsx](src/web/src/components/ui/input.tsx)、[auto-textarea.tsx](src/web/src/components/ui/auto-textarea.tsx)、[file-upload-button.tsx](src/web/src/components/ui/file-upload-button.tsx) |
 | 下拉、日期及日期时间 | [search-select.tsx](src/web/src/components/ui/search-select.tsx)、[date-picker.tsx](src/web/src/components/ui/date-picker.tsx)、[date-time-picker.tsx](src/web/src/components/ui/date-time-picker.tsx) |
 | 筛选、统计、表格及分页 | [filter-panel.tsx](src/web/src/components/filter-panel.tsx)、[metric-card.tsx](src/web/src/components/metric-card.tsx)、[management-table.tsx](src/web/src/components/management-table.tsx)、[management-pagination.tsx](src/web/src/components/management-pagination.tsx) |
+| 表格行操作及更多操作 | [table-action-button.tsx](src/web/src/components/table-action-button.tsx)、[table-actions-menu.tsx](src/web/src/components/table-actions-menu.tsx)，共用 `table-action` 按钮样式 |
 | Drawer、底部分区及提示 | [drawer.tsx](src/web/src/components/ui/drawer.tsx)、[drawer-tabs.tsx](src/web/src/components/ui/drawer-tabs.tsx)、[tooltip.tsx](src/web/src/components/ui/tooltip.tsx) |
 | 桌面和移动导航 | [side-navigation-layout.tsx](src/web/src/components/side-navigation-layout.tsx)、[mobile-navigation.tsx](src/web/src/components/mobile-navigation.tsx) |
 | 表格列、空值、时间和身份 | [table-columns.ts](src/web/src/lib/table-columns.ts)、[record-time-columns.tsx](src/web/src/lib/record-time-columns.tsx)、[format.ts](src/web/src/lib/format.ts) |
@@ -175,6 +176,8 @@ API 侧先在业务事务中保存任务所需状态和操作审计，由 app �
 `truncateDescription` 启用同样的行为。
 Drawer 默认在底部提供「关闭」。通过 `footerDismiss` 自定义取消或返回操作，
 刷新和重试放入 `footerRefresh`，业务操作放入 `footer`，组件按此顺序渲染。
+[通知抽屉](src/web/src/features/notification/notification-center.tsx)的范围按钮与 `DrawerTabs`
+共用 [NavigationButtonGroup](src/web/src/components/ui/navigation-button-group.tsx) 的分组外观、悬停和选中高亮。
 右上角使用无边框 X 图标关闭按钮，可通过 `closeLabel` 自定义无障碍名称。底部关闭按钮使用纯文字。
 并列分区通过 `DrawerTabs`、`footerNavigation` 接到底部，
 切换时保留原表单状态。导航修改同时连接 `features/*/navigation.ts`，并核对
