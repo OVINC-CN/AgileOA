@@ -373,7 +373,7 @@ function BranchWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
           footer={
             <>
               <Button
-                variant="secondary"
+                variant="outline"
                 disabled={reorder.pending}
                 onClick={() => {
                   setReordering(false);
@@ -462,7 +462,7 @@ function BranchWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
           footer={
             <>
               <Button
-                variant="secondary"
+                variant="outline"
                 disabled={remove.pending}
                 onClick={() => {
                   setDeleting(null);

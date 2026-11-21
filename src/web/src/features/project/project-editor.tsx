@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DateTimePicker } from '@/components/ui/date-time-picker';
 import { Drawer } from '@/components/ui/drawer';
-import { DrawerSteps } from '@/components/ui/drawer-steps';
+import { DrawerTabs } from '@/components/ui/drawer-tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SearchSelect } from '@/components/ui/search-select';
@@ -100,8 +100,8 @@ export function ProjectEditor({
         busy={mutation.isPending}
         contentClassName="flex flex-col overflow-hidden"
         onClose={onClose}
-        headerNavigation={
-          <DrawerSteps
+        footerNavigation={
+          <DrawerTabs
             id={tabsID}
             label="项目内容分类"
             value={tab}
@@ -116,12 +116,7 @@ export function ProjectEditor({
         }
         footer={
           <>
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={mutation.isPending}
-              onClick={onClose}
-            >
+            <Button type="button" variant="outline" disabled={mutation.isPending} onClick={onClose}>
               取消
             </Button>
             <Button type="submit" loading={mutation.isPending}>

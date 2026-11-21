@@ -266,9 +266,9 @@ export const studentStatisticsOptions = (workspaceID: string, filters: StudentFi
     retry: false,
   });
 
-export const studentSensitiveOptions = (workspaceID: string, id: number) =>
+export const studentSensitiveOptions = (workspaceID: string, id: number, revision?: number) =>
   queryOptions({
-    queryKey: [...studentKey(workspaceID), 'sensitive', id],
+    queryKey: [...studentKey(workspaceID), 'sensitive', id, revision],
     queryFn: ({ signal }) =>
       apiGet(`${base(workspaceID)}/${String(id)}/sensitive`, sensitiveSchema, signal),
     staleTime: 0,
@@ -319,9 +319,6 @@ export function deleteStudent(workspaceID: string, student: Student) {
     `${base(workspaceID)}/${String(student.id)}?revision=${String(student.revision)}`,
     z.null(),
   );
-}
-export function readStudentSensitive(workspaceID: string, id: number) {
-  return apiGet(`${base(workspaceID)}/${String(id)}/sensitive`, sensitiveSchema);
 }
 export function updateStudentSensitive(
   workspaceID: string,

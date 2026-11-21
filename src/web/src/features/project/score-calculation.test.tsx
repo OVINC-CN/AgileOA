@@ -35,7 +35,7 @@ it('项目详情用条件树和公式代码块展示配置，不显示编辑控�
   const fetch = vi.fn();
   vi.stubGlobal('fetch', fetch);
   const formula = 'MIN([子项A], 10) +\n  MAX([子项B], 0)';
-  const project: Project = {
+  const project = {
     id: 1,
     revision: 1,
     name: '虚构年度项目',
@@ -73,15 +73,17 @@ it('项目详情用条件树和公式代码块展示配置，不显示编辑控�
         },
       ],
     },
-  };
-  render(
+  } satisfies Project;
+  const onClose = vi.fn();
+  const showDetail = (calculation: ScoreCalculation = project.score_calculation) => (
     <ProjectDetail
       workspaceID="w7m2k9p4s6n8c3x5"
-      project={project}
+      project={{ ...project, score_calculation: calculation }}
       canReadAttachments={false}
-      onClose={vi.fn()}
-    />,
+      onClose={onClose}
+    />
   );
+  const { rerender } = render(showDetail());
   await userEvent.setup().click(screen.getByRole('tab', { name: '分数计算' }));
   const detail = within(screen.getByRole('tabpanel', { name: '分数计算' }));
   const tree = within(detail.getByRole('list', { name: '第 1 组条件' }));
@@ -90,14 +92,21 @@ it('项目详情用条件树和公式代码块展示配置，不显示编辑控�
   for (const text of ['年级', '2026', '学历', '博士', '专业', '软件工程', '班级', '01班']) {
     expect(tree.getByText(text)).toBeVisible();
   }
-  expect(detail.getByText('开启')).toBeVisible();
-  expect(detail.getByText('全奖项统一排名')).toBeVisible();
+  const badge = { selector: '[data-slot="badge"]' };
+  expect(detail.getByText('开启', badge)).toHaveClass('bg-success');
+  expect(detail.getByText('全奖项统一排名', badge)).toBeVisible();
   const code = detail.getByText(/MIN\(\[子项A\], 10\)/u, { selector: 'code' });
   expect(code.textContent).toBe(formula);
   expect(code.parentElement?.tagName).toBe('PRE');
   for (const role of ['checkbox', 'combobox', 'textbox', 'button']) {
     expect(detail.queryByRole(role)).not.toBeInTheDocument();
   }
+  rerender(showDetail({ ...project.score_calculation, ranking_dimensions: ['grade', 'major'] }));
+  expect(detail.getByText('年级', badge)).toBeVisible();
+  expect(detail.getByText('专业', badge)).toBeVisible();
+  rerender(showDetail(emptyScoreCalculation()));
+  expect(detail.getByText('关闭', badge)).toBeVisible();
+  expect(detail.queryByText('排名维度')).not.toBeInTheDocument();
   expect(fetch).not.toHaveBeenCalled();
 });
 

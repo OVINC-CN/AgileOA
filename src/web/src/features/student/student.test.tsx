@@ -382,7 +382,7 @@ describe('工作空间学生信息', () => {
     }
   });
 
-  it.each([false, true])('详情页面敏感信息默认折叠，显示原始值权限：%s', async (allowed) => {
+  it.each([false, true])('详情使用底部分区，敏感信息处理权限：%s', async (allowed) => {
     const calls = mockAPI([
       'student.list',
       'student.detail',
@@ -391,9 +391,17 @@ describe('工作空间学生信息', () => {
     renderWorkspace();
     await userEvent.click(await screen.findByRole('link', { name: '详情' }));
     const drawer = within(await screen.findByRole('dialog', { name: '学生详情' }));
-    await drawer.findByRole('heading', { name: '基本信息' });
-    for (const name of ['学籍信息', '导师信息', '个人信息', '联系方式', '住宿信息', '家庭联系'])
-      expect(screen.getByRole('heading', { name })).toBeVisible();
+    const tabs = await drawer.findByRole('tablist', { name: '学生信息分区' });
+    expect(tabs.closest('[data-slot="drawer-footer-navigation"]')).toBeInTheDocument();
+    expect(
+      within(tabs)
+        .getAllByRole('tab')
+        .map((tab) => tab.textContent),
+    ).toEqual(['学籍资料', '联系住宿', ...(allowed ? ['敏感信息'] : [])]);
+    const academicTab = drawer.getByRole('tab', { name: '学籍资料' });
+    expect(academicTab).toHaveAttribute('aria-selected', 'true');
+    for (const name of ['学籍信息', '来校前经历', '导师信息', '个人信息'])
+      expect(drawer.getByRole('heading', { name })).toBeVisible();
     expect(drawer.getByText(student.previous_school_or_employer)).toBeVisible();
     expect(drawer.getByText(student.arrival_month)).toBeVisible();
     expect(drawer.getByText(student.previous_graduation_month)).toBeVisible();
@@ -401,29 +409,33 @@ describe('工作空间学生信息', () => {
     await userEvent.click(academic);
     expect(academic).toHaveAttribute('aria-expanded', 'false');
     expect(drawer.getByText(student.advisor_no)).toBeVisible();
-    const sensitiveSection = drawer.getByRole('button', { name: '敏感信息' });
-    expect(sensitiveSection).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.queryByText('宗教信仰起始年份')).not.toBeInTheDocument();
+    expect(drawer.getByText('虚构户籍市')).toBeVisible();
+    expect(drawer.getByText('虚构籍贯县')).toBeVisible();
+    await userEvent.click(drawer.getByRole('tab', { name: '联系住宿' }));
+    const contact = within(drawer.getByRole('tabpanel', { name: '联系住宿' }));
+    for (const name of ['联系方式', '家庭联系', '住宿信息'])
+      expect(contact.getByRole('heading', { name })).toBeVisible();
+    expect(drawer.queryByRole('heading', { name: '学籍信息' })).not.toBeInTheDocument();
+    expect(drawer.queryByText('宗教信仰起始年份')).not.toBeInTheDocument();
+    expect(drawer.queryByRole('button', { name: '显示原始值' })).not.toBeInTheDocument();
     expect(calls.some(({ url }) => url.endsWith('/sensitive'))).toBe(false);
-    expect(screen.getByText('虚构户籍市')).toBeVisible();
-    expect(screen.getByText('虚构籍贯县')).toBeVisible();
     if (!allowed) {
-      expect(drawer.queryByRole('button', { name: '显示原始值' })).not.toBeInTheDocument();
-      await userEvent.click(sensitiveSection);
-      expect(screen.getAllByText('***')).toHaveLength(14);
+      expect(drawer.queryByRole('tab', { name: '敏感信息' })).not.toBeInTheDocument();
       return;
     }
-    const reveal = drawer.getByRole('button', { name: '显示原始值' });
-    expect(reveal.parentElement).toBe(drawer.getByRole('button', { name: '刷新' }).parentElement);
-    await userEvent.click(reveal);
-    expect(sensitiveSection).toHaveAttribute('aria-expanded', 'true');
-    expect(await screen.findByText(fixtureIdentityNumber)).toBeVisible();
-    expect(screen.getByText('2020年')).toBeVisible();
-    await userEvent.click(drawer.getByRole('button', { name: '隐藏原始值' }));
-    expect(sensitiveSection).toHaveAttribute('aria-expanded', 'false');
-    await userEvent.click(sensitiveSection);
-    expect(screen.getAllByText('***')).toHaveLength(14);
-    expect(drawer.queryByRole('button', { name: '复制身份证号码' })).not.toBeInTheDocument();
+    const sensitiveTab = drawer.getByRole('tab', { name: '敏感信息' });
+    await userEvent.click(sensitiveTab);
+    const sensitive = within(drawer.getByRole('tabpanel', { name: '敏感信息' }));
+    expect(await sensitive.findByText(fixtureIdentityNumber)).toBeVisible();
+    expect(sensitive.getByText('2020年')).toBeVisible();
+    expect(sensitive.getByRole('button', { name: '复制身份证号码' })).toBeInTheDocument();
+    expect(drawer.queryByRole('button', { name: /^(显示|隐藏)原始值$/u })).not.toBeInTheDocument();
+    expect(calls.filter(({ url }) => url.endsWith('/sensitive'))).toHaveLength(1);
+    await userEvent.click(academicTab);
+    expect(drawer.queryByText(fixtureIdentityNumber)).not.toBeInTheDocument();
+    await userEvent.click(sensitiveTab);
+    expect(await sensitive.findByText(fixtureIdentityNumber)).toBeVisible();
+    expect(calls.filter(({ url }) => url.endsWith('/sensitive'))).toHaveLength(2);
   });
 
   it('校外住宿并入普通编辑，详情字段可复制', async () => {
@@ -433,7 +445,8 @@ describe('工作空间学生信息', () => {
     const copy = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined);
     await user.click(await screen.findByRole('link', { name: '详情' }));
     const drawer = within(await screen.findByRole('dialog', { name: '学生详情' }));
-    const address = await drawer.findByText('校外居住地详细地址');
+    await user.click(await drawer.findByRole('tab', { name: '联系住宿' }));
+    const address = drawer.getByText('校外居住地详细地址');
     const reason = drawer.getByText('校外住宿原因');
     expect(address.parentElement?.nextElementSibling).toBe(reason.parentElement);
     expect(reason.parentElement).toHaveClass('sm:col-span-2');
@@ -477,7 +490,7 @@ describe('工作空间学生信息', () => {
       renderWorkspace();
       await userEvent.click(await screen.findByRole('link', { name: '详情' }));
       const drawer = within(await screen.findByRole('dialog', { name: '学生详情' }));
-      await drawer.findByRole('heading', { name: '基本信息' });
+      await userEvent.click(await drawer.findByRole('tab', { name: '联系住宿' }));
       expect(drawer.queryByRole('button', { name: '编辑' })).not.toBeInTheDocument();
       if (type === 'off_campus') {
         expect(await drawer.findByText('虚构原因')).toBeVisible();
@@ -491,7 +504,8 @@ describe('工作空间学生信息', () => {
     mockAPI(['student.list', 'student.detail'], 'off_campus', false);
     renderWorkspace({ student_id: '1' });
     const drawer = within(await screen.findByRole('dialog', { name: '学生详情' }));
-    const section = within(await drawer.findByRole('region', { name: '住宿信息' }));
+    await userEvent.click(await drawer.findByRole('tab', { name: '联系住宿' }));
+    const section = within(drawer.getByRole('region', { name: '住宿信息' }));
     expect(section.getByText('校外住宿原因')).toBeVisible();
     expect(section.getByText('校外住宿开始日期').nextElementSibling).toHaveTextContent('-');
   });
@@ -505,7 +519,7 @@ describe('工作空间学生信息', () => {
     await user.click(screen.getByRole('button', { name: '搜索' }));
     await user.click(screen.getByRole('link', { name: '详情' }));
     const drawer = await screen.findByRole('dialog', { name: '学生详情' });
-    expect(await within(drawer).findByRole('heading', { name: '基本信息' })).toBeVisible();
+    expect(await within(drawer).findByRole('tabpanel', { name: '学籍资料' })).toBeVisible();
     expect(within(drawer).getByRole('img', { name: `${student.name}的头像` })).toHaveAttribute(
       'src',
       avatarURL,
@@ -545,6 +559,13 @@ describe('工作空间学生信息', () => {
     await userEvent.click(await screen.findByRole('button', { name: '编辑' }));
     const dialog = await screen.findByRole('dialog');
     const name = await within(dialog).findByLabelText('姓名 *');
+    const tabs = within(dialog).getByRole('tablist', { name: '学生信息分区' });
+    expect(tabs.closest('[data-slot="drawer-footer-navigation"]')).toBeInTheDocument();
+    expect(
+      within(tabs)
+        .getAllByRole('tab')
+        .map((tab) => tab.textContent),
+    ).toEqual(['学籍资料', '联系住宿', ...(allowed ? ['敏感信息'] : [])]);
     expect(within(dialog).getByText('2000-01-02')).toBeVisible();
     expect(within(dialog).getByText('由身份证号码生成')).toBeVisible();
     await userEvent.clear(name);

@@ -176,6 +176,11 @@ API 侧先在业务事务中保存任务所需状态和操作审计，由 app �
 并列分区通过 `DrawerTabs`、`footerNavigation` 接到底部，操作放入 `footer`，
 切换时保留原表单状态。导航修改同时连接 `features/*/navigation.ts`，并核对
 [cdn-urls.ts](src/web/scripts/cdn-urls.ts) 及其覆盖验证。
+取消按钮统一使用公共 `Button` 的 `outline` 样式。
+
+学生档案的编辑与详情通过 [studentRecordTabs](src/web/src/features/student/fields.ts)
+共用学籍资料、联系住宿、敏感信息三个分区。敏感分区仅向有处理权限的用户开放，
+进入详情的敏感分区时自动读取并展示原始值。
 
 下拉的排序、分组和置顶入口由 [select-options.ts](src/web/src/lib/select-options.ts) 处理；
 使用 `defaultValue` 连接字段重置目标。日期与日期时间共用
@@ -234,11 +239,16 @@ COS 和 STS 协议位于 [tencentcos](src/api/internal/apis/tencentcos/)。
 `projectTask/ranking.go` 和 `projectSvc/ranking.go`；失败通知位于 `ranking_notifications.go`。
 前端对应 `application-drawer.tsx`、`score-calculation-editor.tsx`、`score-calculation-detail.tsx`
 及 `application-content-versions.tsx`。修改时联动原事务、Task 和配置读取位置。
+[项目表单](src/web/src/features/project/project-editor.tsx)的新建和编辑共用底部分区，
+包含主要信息、申报设置和分数计算。
+项目详情的自行申报与总分计算共用状态标签，排名维度逐项展示为标签。
 
 党支部规则变更沿候选范围、人员归属和后台重排检查；时间线变更沿模板、人员节点、异常、
 筛选、导出及转移映射检查。转移预览、发起及审核仅以来源时间线异常阻断，目标异常在预览中
 展示并按实际状态保存。通知从业务事务连接 notification 模块，再由前端
 [notification/navigation.ts](src/web/src/features/notification/navigation.ts) 处理已读和对象定位。
+[时间线模板表单](src/web/src/features/cpc-timeline/template-editor.tsx)从底部切换节点配置与转移配置。
+模板名称和说明在节点配置中编辑。转移映射面板填满可用高度，并在并排布局中分别滚动两侧。
 
 ### 首页日历与节日
 

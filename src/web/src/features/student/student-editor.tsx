@@ -6,6 +6,7 @@ import { ErrorMessage } from '@/components/error-message';
 import { Button } from '@/components/ui/button';
 import { Drawer } from '@/components/ui/drawer';
 import { DrawerSteps } from '@/components/ui/drawer-steps';
+import { DrawerTabs } from '@/components/ui/drawer-tabs';
 import { FileUploadButton } from '@/components/ui/file-upload-button';
 import { personKey } from '@/features/cpc-person/api';
 import { graduationKey } from '@/features/graduation/api';
@@ -34,6 +35,7 @@ import {
   fieldLabel,
   type StudentField,
   studentFields,
+  studentRecordTabs,
   studentSections,
 } from '@/features/student/fields';
 import { StudentAvatar } from '@/features/student/student-avatar';
@@ -90,6 +92,7 @@ export function StudentEditor({
     enabled: student !== null && canDetail,
   });
   const retry = useApiAction();
+  if (!canBasic && !canSensitive) return null;
   const canReadOffCampus = canBasic && canDetail && student !== null;
   const needsOffCampus = canReadOffCampus && student.accommodation_type === 'off_campus';
   const pendingReads = [
@@ -175,31 +178,10 @@ function StudentEditorForm({
   const [invalidField, setInvalidField] = useState<StudentValidationError | null>(null);
   const tabsID = useId();
   const fieldset = useRef<HTMLFieldSetElement>(null);
-  const editingTabs: StudentEditorStep[] = [
-    ...(canBasic
-      ? [
-          {
-            value: 'basic',
-            label: '学籍资料',
-            group: 'basic' as const,
-            sections: ['academic', 'previous-education', 'advisor', 'personal'],
-          },
-          {
-            value: 'contact',
-            label: '联系住宿',
-            group: 'basic' as const,
-            sections: ['contact', 'guardians', 'accommodation'],
-          },
-        ]
-      : []),
-    ...(canSensitive
-      ? [{ value: 'sensitive', label: '敏感信息', group: 'sensitive' as const, sections: [] }]
-      : []),
-  ];
   const creating = originalStudent === null;
-  const tabs = creating
-    ? studentCreationSteps.filter((step) => (step.group === 'basic' ? canBasic : canSensitive))
-    : editingTabs;
+  const tabs: StudentEditorStep[] = (creating ? studentCreationSteps : studentRecordTabs).filter(
+    (step) => (step.group === 'basic' ? canBasic : canSensitive),
+  );
   const activeTab = tabs.some((item) => item.value === tab) ? tab : (tabs[0]?.value ?? 'basic');
   const activeIndex = tabs.findIndex((item) => item.value === activeTab);
   const finalStep = activeIndex === tabs.length - 1;
@@ -299,18 +281,32 @@ function StudentEditorForm({
       busy={busy}
       onClose={onClose}
       headerNavigation={
-        <DrawerSteps
-          id={tabsID}
-          label={creating ? '添加学生步骤' : '学生信息分区'}
-          value={activeTab}
-          items={tabs}
-          onChange={changeStep}
-          disabled={busy}
-        />
+        creating ? (
+          <DrawerSteps
+            id={tabsID}
+            label="添加学生步骤"
+            value={activeTab}
+            items={tabs}
+            onChange={changeStep}
+            disabled={busy}
+          />
+        ) : undefined
+      }
+      footerNavigation={
+        creating ? undefined : (
+          <DrawerTabs
+            id={tabsID}
+            label="学生信息分区"
+            value={activeTab}
+            items={tabs}
+            onChange={changeStep}
+            disabled={busy}
+          />
+        )
       }
       footer={
         <>
-          <Button type="button" variant="secondary" disabled={busy} onClick={onClose}>
+          <Button type="button" variant="outline" disabled={busy} onClick={onClose}>
             取消
           </Button>
           {creating && activeIndex > 0 ? (
@@ -432,16 +428,9 @@ function StudentEditorForm({
             className="space-y-5 py-5"
           >
             {step.group === 'sensitive' && !creating ? (
-              <div className="space-y-2">
-                <h2 className="text-base font-medium">敏感信息</h2>
-                <p className="text-xs text-muted-foreground">
-                  身份证号码必填；保存会更新全部敏感信息，其他字段留空会清除对应内容。
-                </p>
-              </div>
-            ) : !creating ? (
-              <h2 className="text-base font-medium">
-                {step.value === 'basic' ? '基本信息' : '联系与住宿'}
-              </h2>
+              <p className="text-xs text-muted-foreground">
+                身份证号码必填；保存会更新全部敏感信息，其他字段留空会清除对应内容。
+              </p>
             ) : null}
             <StudentFieldSections
               group={step.group}
@@ -552,7 +541,7 @@ export function DeleteStudent({
       onClose={onClose}
       footer={
         <>
-          <Button variant="secondary" disabled={mutation.isPending} onClick={onClose}>
+          <Button variant="outline" disabled={mutation.isPending} onClick={onClose}>
             取消
           </Button>
           <Button

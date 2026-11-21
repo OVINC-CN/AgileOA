@@ -192,7 +192,7 @@ export function UserAPITokenDrawer({ user, onClose }: { user: UserRow; onClose: 
           footer={
             <>
               <Button
-                variant="secondary"
+                variant="outline"
                 disabled={action.pending}
                 onClick={() => {
                   setConfirmation(null);

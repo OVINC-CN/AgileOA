@@ -59,7 +59,7 @@ export function TimelinePresetEditorDrawer({
       }}
       footer={
         <>
-          <Button type="button" variant="secondary" onClick={onClose}>
+          <Button type="button" variant="outline" onClick={onClose}>
             取消
           </Button>
           <Button type="submit">
@@ -195,7 +195,7 @@ export function TimelinePresetDeleteDrawer({
       onClose={onClose}
       footer={
         <>
-          <Button type="button" variant="secondary" onClick={onClose}>
+          <Button type="button" variant="outline" onClick={onClose}>
             取消
           </Button>
           <Button

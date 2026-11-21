@@ -200,7 +200,7 @@ export function UserEditor({
       }}
       footer={
         <>
-          <Button type="button" variant="secondary" disabled={mutation.isPending} onClick={onClose}>
+          <Button type="button" variant="outline" disabled={mutation.isPending} onClick={onClose}>
             取消
           </Button>
           <Button type="submit" loading={mutation.isPending}>

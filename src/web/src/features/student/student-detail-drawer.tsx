@@ -1,29 +1,19 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Eye, EyeOff, Pencil, RefreshCw } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { Pencil, RefreshCw } from 'lucide-react';
+import { useId, useLayoutEffect, useRef, useState } from 'react';
 
 import { ErrorMessage } from '@/components/error-message';
 import { Button } from '@/components/ui/button';
 import { Drawer } from '@/components/ui/drawer';
-import {
-  readStudentSensitive,
-  type SensitiveData,
-  studentDetailOptions,
-  studentKey,
-} from '@/features/student/api';
-import { sensitiveAction } from '@/features/student/fields';
-import { StudentDetail } from '@/features/student/student-detail';
+import { DrawerTabs } from '@/components/ui/drawer-tabs';
+import { studentDetailOptions, studentKey } from '@/features/student/api';
+import { sensitiveAction, studentRecordTabs } from '@/features/student/fields';
+import { StudentDetail, StudentSensitiveDetail } from '@/features/student/student-detail';
 import { StudentEditor } from '@/features/student/student-editor';
 import { ApiError } from '@/lib/api';
 import { useApiAction } from '@/lib/api-action';
 import { formatIdentity } from '@/lib/format';
 import { useLoadingDelay } from '@/lib/loading';
-
-function scrollToSection(section: HTMLElement | null) {
-  if (typeof section?.scrollIntoView === 'function') {
-    section.scrollIntoView({ block: 'start' });
-  }
-}
 
 export function StudentDetailDrawer({
   workspaceID,
@@ -48,26 +38,21 @@ export function StudentDetailDrawer({
     enabled: valid && canDetail,
   });
   const refresh = useApiAction();
-  const reveal = useApiAction();
   const loading = useLoadingDelay(valid && canDetail && detail.isPending);
   const client = useQueryClient();
   const [editing, setEditing] = useState(false);
-  const [sensitiveOpen, setSensitiveOpen] = useState(false);
-  const sensitiveRef = useRef<HTMLElement>(null);
+  const [tab, setTab] = useState('basic');
+  const tabsID = useId();
+  const panels = useRef<HTMLDivElement>(null);
+  const tabs = studentRecordTabs.filter((item) => item.group === 'basic' || canSensitive);
+  const activeTab = !canSensitive && tab === 'sensitive' ? 'basic' : tab;
+  useLayoutEffect(() => {
+    const content = panels.current?.parentElement;
+    if (content) content.scrollTop = 0;
+  }, [activeTab]);
   const denied = detail.error instanceof ApiError && [401, 403, 404].includes(detail.error.status);
-  const student = denied ? undefined : detail.data;
+  const student = valid && canDetail && !denied ? detail.data : undefined;
   const editingStudent = editing && Boolean(student) && (canBasic || canSensitive);
-  const detailKey = student
-    ? `${workspaceID}:${String(student.id)}:${String(student.revision)}`
-    : null;
-  const sensitiveKey = canSensitive ? detailKey : null;
-  const [sensitive, setSensitive] = useState<{ key: string | null; data: SensitiveData | null }>({
-    key: sensitiveKey,
-    data: null,
-  });
-  if (sensitive.key !== sensitiveKey) {
-    setSensitive({ key: sensitiveKey, data: null });
-  }
   return (
     <Drawer
       title="学生详情"
@@ -75,6 +60,17 @@ export function StudentDetailDrawer({
       description={student ? formatIdentity(student.name, student.student_no) : '查看学生档案'}
       busy={refresh.pending || editingStudent}
       onClose={onClose}
+      footerNavigation={
+        student && !loading ? (
+          <DrawerTabs
+            id={tabsID}
+            label="学生信息分区"
+            value={activeTab}
+            items={tabs}
+            onChange={setTab}
+          />
+        ) : undefined
+      }
       footer={
         <>
           <Button
@@ -90,35 +86,6 @@ export function StudentDetailDrawer({
             <RefreshCw aria-hidden="true" />
             刷新
           </Button>
-          {student && canSensitive ? (
-            <Button
-              variant="outline"
-              loading={reveal.pending}
-              onClick={() => {
-                if (sensitive.data) {
-                  setSensitive({ key: sensitiveKey, data: null });
-                  setSensitiveOpen(false);
-                  return;
-                }
-                setSensitiveOpen(true);
-                requestAnimationFrame(() => {
-                  scrollToSection(sensitiveRef.current);
-                });
-                void reveal
-                  .run('reveal', () => readStudentSensitive(workspaceID, student.id))
-                  .then((result) => {
-                    if (!result.ok) return;
-                    // 学生、版本或权限变化后，丢弃此前发出的请求结果。
-                    setSensitive((current) =>
-                      current === sensitive ? { key: sensitiveKey, data: result.data } : current,
-                    );
-                  });
-              }}
-            >
-              {sensitive.data ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
-              {sensitive.data ? '隐藏原始值' : '显示原始值'}
-            </Button>
-          ) : null}
           {student && (canBasic || canSensitive) ? (
             <Button
               onClick={() => {
@@ -145,13 +112,23 @@ export function StudentDetailDrawer({
           正在读取学生详情
         </p>
       ) : student ? (
-        <StudentDetail
-          student={student}
-          sensitive={sensitive.key === sensitiveKey ? sensitive.data : null}
-          sensitiveOpen={sensitiveOpen}
-          onSensitiveOpenChange={setSensitiveOpen}
-          sensitiveRef={sensitiveRef}
-        />
+        <div ref={panels} className="px-5">
+          {tabs.map((item) => (
+            <section
+              key={item.value}
+              role="tabpanel"
+              id={`${tabsID}-panel-${item.value}`}
+              aria-labelledby={`${tabsID}-tab-${item.value}`}
+              hidden={activeTab !== item.value}
+            >
+              {item.group === 'basic' ? (
+                <StudentDetail student={student} tab={item} />
+              ) : canSensitive && activeTab === item.value ? (
+                <StudentSensitiveDetail workspaceID={workspaceID} student={student} tab={item} />
+              ) : null}
+            </section>
+          ))}
+        </div>
       ) : null}
       {editingStudent && student ? (
         <StudentEditor

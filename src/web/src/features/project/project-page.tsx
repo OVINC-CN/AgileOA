@@ -39,7 +39,7 @@ import { ProjectChart } from '@/features/project/project-chart';
 import { ProjectDetail } from '@/features/project/project-detail';
 import { ProjectEditor } from '@/features/project/project-editor';
 import { ProjectNameYearFilters, ProjectStudentFilter } from '@/features/project/project-filters';
-import { ProjectSelfApplyBadge } from '@/features/project/project-status';
+import { ProjectEnabledBadge } from '@/features/project/project-status';
 import { ProjectTransfer } from '@/features/project/project-transfer';
 import type { WorkspaceContext } from '@/features/workspace/context';
 import { projectTabs } from '@/features/workspace/navigation';
@@ -117,7 +117,9 @@ function ProjectWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: W
     {
       accessorKey: 'allow_self_apply',
       header: '自行申报',
-      cell: ({ row }) => <ProjectSelfApplyBadge allowed={row.original.allow_self_apply} />,
+      cell: ({ row }) => (
+        <ProjectEnabledBadge enabled={row.original.allow_self_apply} enabledLabel="允许" />
+      ),
     },
     {
       accessorKey: 'self_apply_deadline',
@@ -689,7 +691,7 @@ function ProjectWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: W
           footer={
             <>
               <Button
-                variant="secondary"
+                variant="outline"
                 disabled={remove.pending}
                 onClick={() => {
                   setDeleting(null);

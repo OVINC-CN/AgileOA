@@ -542,7 +542,7 @@ function PersonWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
           footer={
             <>
               <Button
-                variant="secondary"
+                variant="outline"
                 disabled={remove.pending}
                 onClick={() => {
                   setDeleting(null);

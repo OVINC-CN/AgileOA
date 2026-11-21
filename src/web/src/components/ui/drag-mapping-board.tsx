@@ -372,13 +372,13 @@ export function DragMappingBoard({
   };
   return (
     <Context.Provider value={context}>
-      <div className="flex min-w-0 flex-col gap-2 md:h-[min(32rem,70dvh)] md:max-h-[32rem] md:min-h-80 lg:h-auto lg:min-h-0 lg:flex-1">
+      <div className="flex min-w-0 flex-1 flex-col gap-2 md:min-h-48">
         <p role="status" aria-live="polite" className="sr-only">
-          {announcement}
+          {dragging && activeLabel ? `正在拖拽：${activeLabel}。按 Esc 取消。` : announcement}
         </p>
         <div
           ref={root}
-          className="min-w-0 rounded-xl border border-border-subtle bg-background/50 md:min-h-0 md:flex-1 md:overflow-x-auto"
+          className="min-w-0 flex-1 rounded-xl border border-border-subtle bg-background/50 md:min-h-0 md:overflow-x-auto"
           onClickCapture={(event) => {
             if (!suppressClick.current) return;
             event.preventDefault();
@@ -547,11 +547,6 @@ export function DragMappingBoard({
         </div>
         <p className="min-h-4 shrink-0 text-xs wrap-anywhere text-muted-foreground md:hidden">
           选择来源及对应目标后建立映射；点击已配置的映射名称可定位对应节点或字段。
-        </p>
-        <p className="hidden min-h-4 shrink-0 text-xs wrap-anywhere text-muted-foreground md:block">
-          {dragging && activeLabel
-            ? `正在拖拽：${activeLabel}，放到右侧目标以建立映射；按 Esc 取消。`
-            : '拖动左侧节点或字段到右侧建立映射；点击映射名称定位另一侧，虚线表示一端在可视区域外。'}
         </p>
       </div>
       {cursor && activeLabel

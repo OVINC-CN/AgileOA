@@ -402,10 +402,27 @@ it('节点、字段和时间规则在切换配置及预览后保留草稿，保�
   await user.click(screen.getByRole('button', { name: '2. 材料审核' }));
   expect(screen.getByRole('textbox', { name: '字段 2 名称' })).toHaveValue('审核说明');
   expect(screen.getByRole('button', { name: '预览' })).toBeVisible();
+  const footerNavigation = screen
+    .getByRole('tablist', { name: '模板配置' })
+    .closest('[data-slot="drawer-footer-navigation"]');
+  expect(footerNavigation).toBeInTheDocument();
+  expect(footerNavigation?.nextElementSibling).toContainElement(
+    screen.getByRole('button', { name: '保存' }),
+  );
   await user.click(screen.getByRole('tab', { name: '转移配置' }));
+  const transferPanel = screen.getByRole('tabpanel', { name: '转移配置' });
+  expect(transferPanel).toBeVisible();
+  expect(
+    within(transferPanel).queryByText(/拖动左侧节点或字段到右侧建立映射/u),
+  ).not.toBeInTheDocument();
+  expect(screen.queryByRole('complementary', { name: '模板信息与节点' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('textbox', { name: '模板名称' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('textbox', { name: '模板说明' })).not.toBeInTheDocument();
   expect(screen.queryByRole('button', { name: '预览' })).not.toBeInTheDocument();
   const dialog = within(screen.getByRole('dialog'));
-  expect(dialog.getByRole('button', { name: '取消' })).toBeVisible();
+  const cancel = dialog.getByRole('button', { name: '取消' });
+  expect(cancel).toBeEnabled();
+  expect(cancel).toHaveAttribute('data-variant', 'outline');
   expect(dialog.getByRole('button', { name: '保存' })).toBeVisible();
   await user.click(screen.getByRole('tab', { name: '节点配置' }));
   expect(screen.getByRole('button', { name: '预览' })).toBeVisible();

@@ -62,7 +62,7 @@ export function TemplateTransferEditor({
   const activeIndex = Math.max(0, Math.min(selectedIndex, transfers.length - 1));
   const active = transfers[activeIndex] ?? { target_template_id: 0, node_mappings: [] };
   return (
-    <div className="flex min-w-0 flex-col gap-3 lg:h-full lg:min-h-0">
+    <div className="flex min-w-0 flex-1 flex-col gap-3 md:min-h-0">
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-3">
         <p className="text-xs leading-5 text-muted-foreground">
           节点可多对多映射，附件随节点转移；字段仅支持同类型的手动字段。
@@ -227,10 +227,7 @@ function TransferTargetEditor({
     });
   });
   return (
-    <section
-      aria-label="时间线拖拽映射"
-      className="flex min-w-0 flex-col gap-3 lg:min-h-0 lg:flex-1"
-    >
+    <section aria-label="时间线拖拽映射" className="flex min-w-0 flex-1 flex-col gap-3 md:min-h-0">
       <ErrorMessage>{choices.error?.message ?? selected.error?.message}</ErrorMessage>
       {target || onRemove ? (
         <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">

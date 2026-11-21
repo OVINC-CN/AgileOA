@@ -229,7 +229,7 @@ function ActionForm({
               取消全选
             </Button>
           </div>
-          <Button type="button" variant="secondary" disabled={mutation.isPending} onClick={onClose}>
+          <Button type="button" variant="outline" disabled={mutation.isPending} onClick={onClose}>
             取消
           </Button>
           <Button

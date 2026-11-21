@@ -73,7 +73,7 @@ function UserAction({
       }}
       footer={
         <>
-          <Button variant="secondary" disabled={mutation.isPending} onClick={onClose}>
+          <Button variant="outline" disabled={mutation.isPending} onClick={onClose}>
             取消
           </Button>
           {blocked ? (

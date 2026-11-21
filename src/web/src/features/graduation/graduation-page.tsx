@@ -463,7 +463,7 @@ function GraduationWorkspace({
           footer={
             <>
               <Button
-                variant="secondary"
+                variant="outline"
                 disabled={remove.pending}
                 onClick={() => {
                   setClearing(null);

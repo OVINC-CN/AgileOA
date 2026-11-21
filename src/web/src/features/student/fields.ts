@@ -447,6 +447,24 @@ interface StudentSection {
   fields: string[];
 }
 
+export const studentRecordTabs = [
+  {
+    value: 'basic',
+    label: '学籍资料',
+    group: 'basic',
+    sections: ['academic', 'previous-education', 'advisor', 'personal'],
+  },
+  {
+    value: 'contact',
+    label: '联系住宿',
+    group: 'basic',
+    sections: ['contact', 'guardians', 'accommodation'],
+  },
+  { value: 'sensitive', label: '敏感信息', group: 'sensitive', sections: [] },
+] as const;
+
+export type StudentRecordTab = (typeof studentRecordTabs)[number];
+
 // 展示类别仅组织详情与表单，不改变基本信息和敏感信息的权限边界。
 export const studentSections: Record<StudentField['group'], StudentSection[]> = {
   basic: [

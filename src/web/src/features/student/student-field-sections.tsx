@@ -17,16 +17,9 @@ export function StudentFieldSections({
   children: (field: StudentField) => ReactNode;
 }) {
   const id = useId();
-  // 编辑时将住宿信息放在基本信息末尾，紧邻后续的校外住宿信息。
-  const sections = studentSections[group].filter(
-    (section) => !sectionIDs || sectionIDs.includes(section.id),
-  );
-  if (form) {
-    sections.sort(
-      (first, second) =>
-        Number(first.id === 'accommodation') - Number(second.id === 'accommodation'),
-    );
-  }
+  const sections = sectionIDs
+    ? sectionIDs.flatMap((id) => studentSections[group].filter((section) => section.id === id))
+    : studentSections[group];
   return (
     <div className="divide-y divide-border">
       {sections.map((section) => {

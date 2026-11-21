@@ -22,6 +22,7 @@ import { NodeList } from '@/features/cpc-timeline/node-list';
 import { TemplatePreview } from '@/features/cpc-timeline/template-preview';
 import { TemplateTransferEditor } from '@/features/cpc-timeline/transfer-editor';
 import { useApiAction } from '@/lib/api-action';
+import { cn } from '@/lib/utils';
 
 export function TemplateEditor({
   workspaceID,
@@ -87,7 +88,7 @@ export function TemplateEditor({
       onClose={onClose}
       busy={busy}
       size="full"
-      contentClassName="lg:overflow-hidden"
+      contentClassName={section === 'transfers' ? 'flex flex-col' : 'lg:overflow-hidden'}
       form={{
         noValidate: true,
         onSubmit: (event) => {
@@ -97,6 +98,21 @@ export function TemplateEditor({
           else submit(false);
         },
       }}
+      footerNavigation={
+        <DrawerTabs
+          id={tabsID}
+          label="模板配置"
+          value={section}
+          items={[
+            { value: 'nodes', label: '节点配置' },
+            { value: 'transfers', label: '转移配置' },
+          ]}
+          disabled={busy}
+          onChange={(value) => {
+            if (value === 'nodes' || value === 'transfers') setSection(value);
+          }}
+        />
+      }
       footer={
         <>
           {section === 'nodes' ? (
@@ -112,7 +128,7 @@ export function TemplateEditor({
               {preview ? '继续编辑' : '预览'}
             </Button>
           ) : null}
-          <Button type="button" variant="secondary" disabled={busy} onClick={onClose}>
+          <Button type="button" variant="outline" disabled={busy} onClick={onClose}>
             取消
           </Button>
           <Button type="submit" loading={save.pending} disabled={checkingNode || attachmentBusy}>
@@ -124,112 +140,101 @@ export function TemplateEditor({
     >
       <fieldset
         disabled={busy}
-        className="flex min-h-full min-w-0 flex-col lg:grid lg:h-full lg:min-h-0 lg:grid-cols-[280px_minmax(0,1fr)] lg:grid-rows-[auto_minmax(0,1fr)]"
+        className={cn(
+          'flex min-h-full min-w-0 flex-col',
+          section === 'nodes'
+            ? 'lg:grid lg:h-full lg:min-h-0 lg:grid-cols-[280px_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)]'
+            : 'flex-1 md:min-h-0',
+        )}
       >
-        <div className="sticky top-0 z-10 shrink-0 border-b border-border-subtle bg-popover/95 px-4 py-2 backdrop-blur-xl sm:px-6 lg:static lg:col-start-2 lg:row-start-1">
-          <div className="mx-auto flex w-full max-w-6xl justify-center">
-            <DrawerTabs
-              id={tabsID}
-              label="模板配置"
-              value={section}
-              className="border-0 bg-transparent p-0 backdrop-blur-none"
-              items={[
-                { value: 'nodes', label: '节点配置' },
-                { value: 'transfers', label: '转移配置' },
-              ]}
-              disabled={busy}
-              onChange={(value) => {
-                if (value === 'nodes' || value === 'transfers') setSection(value);
-              }}
-            />
-          </div>
-        </div>
-        <aside
-          aria-label="模板信息与节点"
-          className="flex min-w-0 shrink-0 flex-col border-b border-border-subtle lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:min-h-0 lg:border-r lg:border-b-0"
-        >
-          <section aria-label="模板信息" className="shrink-0 p-4 sm:p-5">
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
-              <div className="space-y-2">
-                <Label htmlFor={`${tabsID}-name`} required className="leading-5">
-                  模板名称
-                </Label>
-                <Input
-                  id={`${tabsID}-name`}
-                  aria-label="模板名称"
-                  placeholder="例如：党员发展时间线"
-                  required
-                  maxLength={100}
-                  value={values.name}
-                  onChange={(event) => {
-                    setValues({ ...values, name: event.target.value });
-                  }}
-                />
+        {section === 'nodes' ? (
+          <aside
+            aria-label="模板信息与节点"
+            className="flex min-w-0 shrink-0 flex-col border-b border-border-subtle lg:min-h-0 lg:border-r lg:border-b-0"
+          >
+            <section aria-label="模板信息" className="shrink-0 p-4 sm:p-5">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
+                <div className="space-y-2">
+                  <Label htmlFor={`${tabsID}-name`} required className="leading-5">
+                    模板名称
+                  </Label>
+                  <Input
+                    id={`${tabsID}-name`}
+                    aria-label="模板名称"
+                    placeholder="例如：党员发展时间线"
+                    required
+                    maxLength={100}
+                    value={values.name}
+                    onChange={(event) => {
+                      setValues({ ...values, name: event.target.value });
+                    }}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor={`${tabsID}-description`} className="leading-5">
+                    模板说明
+                  </Label>
+                  <Textarea
+                    id={`${tabsID}-description`}
+                    aria-label="模板说明"
+                    placeholder="说明模板用途或适用范围"
+                    rows={3}
+                    className="min-h-20"
+                    maxLength={1000}
+                    value={values.description}
+                    onChange={(event) => {
+                      setValues({ ...values, description: event.target.value });
+                    }}
+                  />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor={`${tabsID}-description`} className="leading-5">
-                  模板说明
-                </Label>
-                <Textarea
-                  id={`${tabsID}-description`}
-                  aria-label="模板说明"
-                  placeholder="说明模板用途或适用范围"
-                  rows={3}
-                  className="min-h-20"
-                  maxLength={1000}
-                  value={values.description}
-                  onChange={(event) => {
-                    setValues({ ...values, description: event.target.value });
-                  }}
-                />
-              </div>
-            </div>
-          </section>
-          {section === 'nodes' && !preview ? (
-            <section
-              aria-label="时间线节点"
-              className="min-w-0 border-t border-border-subtle p-4 sm:p-5 lg:min-h-0 lg:flex-1"
-            >
-              <NodeList
-                nodes={nodes}
-                selectedID={selected?.id ?? ''}
-                onSelect={(id) => {
-                  setFocusNodeName(!nodes.some((node) => node.id === id));
-                  setSelectedID(id);
-                }}
-                disabled={busy}
-                beforeRemove={async (node) => {
-                  if (
-                    !original ||
-                    !saved(node.id) ||
-                    !actions.includes('cpc.timeline_template.attachment.read')
-                  )
-                    return;
-                  setCheckingNode(true);
-                  try {
-                    const attachments = await client.query({
-                      ...timelineAttachmentOptions(workspaceID, original.id, node.id, 1, 1),
-                      staleTime: 0,
-                    });
-                    if (attachments.total > 0) {
-                      throw new Error('节点仍有模板附件，请先删除该节点的模板附件');
-                    }
-                  } finally {
-                    setCheckingNode(false);
-                  }
-                }}
-                onChange={(next) => {
-                  setValues({ ...values, definition: { nodes: next } });
-                }}
-              />
             </section>
-          ) : null}
-        </aside>
+            {!preview ? (
+              <section
+                aria-label="时间线节点"
+                className="min-w-0 border-t border-border-subtle p-4 sm:p-5 lg:min-h-0 lg:flex-1"
+              >
+                <NodeList
+                  nodes={nodes}
+                  selectedID={selected?.id ?? ''}
+                  onSelect={(id) => {
+                    setFocusNodeName(!nodes.some((node) => node.id === id));
+                    setSelectedID(id);
+                  }}
+                  disabled={busy}
+                  beforeRemove={async (node) => {
+                    if (
+                      !original ||
+                      !saved(node.id) ||
+                      !actions.includes('cpc.timeline_template.attachment.read')
+                    )
+                      return;
+                    setCheckingNode(true);
+                    try {
+                      const attachments = await client.query({
+                        ...timelineAttachmentOptions(workspaceID, original.id, node.id, 1, 1),
+                        staleTime: 0,
+                      });
+                      if (attachments.total > 0) {
+                        throw new Error('节点仍有模板附件，请先删除该节点的模板附件');
+                      }
+                    } finally {
+                      setCheckingNode(false);
+                    }
+                  }}
+                  onChange={(next) => {
+                    setValues({ ...values, definition: { nodes: next } });
+                  }}
+                />
+              </section>
+            ) : null}
+          </aside>
+        ) : null}
         <div
           role="tabpanel"
           id={`${tabsID}-panel-${section}`}
           aria-labelledby={`${tabsID}-tab-${section}`}
-          className="flex min-w-0 flex-1 flex-col lg:col-start-2 lg:row-start-2 lg:min-h-0"
+          className="flex min-w-0 flex-1 flex-col md:min-h-0"
         >
           {removedNodes.length ? (
             <p className="m-4 shrink-0 rounded-lg border border-warning-border bg-warning p-3 text-sm font-medium text-warning-foreground sm:mx-6">
@@ -240,9 +245,9 @@ export function TemplateEditor({
           {section === 'transfers' ? (
             <section
               aria-label="模板转移配置"
-              className="min-w-0 p-4 sm:p-6 lg:min-h-0 lg:flex-1 lg:overflow-hidden"
+              className="flex min-w-0 flex-1 flex-col p-4 sm:p-6 md:min-h-0"
             >
-              <div className="mx-auto max-w-7xl min-w-0 lg:h-full lg:min-h-0">
+              <div className="mx-auto flex w-full max-w-7xl min-w-0 flex-1 flex-col md:min-h-0">
                 <TemplateTransferEditor
                   workspaceID={workspaceID}
                   templateID={original?.id}

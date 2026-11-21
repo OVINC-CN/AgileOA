@@ -429,7 +429,7 @@ describe('评奖评优', () => {
     },
   );
 
-  it('项目编辑使用标签维护子项，支持添加、去重及移除', async () => {
+  it('项目编辑使用底部分区，子项支持添加、去重及移除', async () => {
     const project: Project = {
       allow_self_apply: false,
       self_apply_deadline: null,
@@ -456,6 +456,12 @@ describe('评奖评优', () => {
       </QueryClientProvider>,
     );
     const user = userEvent.setup();
+    const tabs = screen.getByRole('tablist', { name: '项目内容分类' });
+    const navigation = tabs.closest('[data-slot="drawer-footer-navigation"]');
+    expect(navigation).toBeInTheDocument();
+    expect(navigation?.nextElementSibling).toContainElement(
+      screen.getByRole('button', { name: '保存' }),
+    );
     const names = screen.getByRole('textbox', { name: '可选子项名称' });
     expect(screen.queryByRole('checkbox', { name: '申报后允许新增子项' })).not.toBeInTheDocument();
     await user.click(screen.getByRole('tab', { name: '申报设置' }));
