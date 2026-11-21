@@ -56,7 +56,7 @@ it('下载复用预览窗口已读取的文件，关闭释放资源，再次打�
   const dialog = within(screen.getByRole('dialog', { name: '文件预览' }));
   const download = dialog.getByRole('button', { name: '下载' });
   const close = dialog.getByRole('button', { name: '关闭' });
-  expect(download.compareDocumentPosition(close) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
+  expect(close.compareDocumentPosition(download) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
   await user.click(download);
   await user.click(download);
   expect(downloadFile).toHaveBeenCalledTimes(2);

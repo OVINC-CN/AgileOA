@@ -87,11 +87,13 @@ export function UserAPITokenDrawer({ user, onClose }: { user: UserRow; onClose: 
       description={formatIdentity(user.display_name, user.username)}
       busy={action.pending}
       onClose={onClose}
+      footerDismiss={
+        <Button variant="cancel" disabled={action.pending} onClick={onClose}>
+          关闭
+        </Button>
+      }
       footer={
         <>
-          <Button variant="cancel" disabled={action.pending} onClick={onClose}>
-            关闭
-          </Button>
           {configured ? (
             <Button
               variant="outline"
@@ -189,32 +191,32 @@ export function UserAPITokenDrawer({ user, onClose }: { user: UserRow; onClose: 
           onClose={() => {
             setConfirmation(null);
           }}
+          footerDismiss={
+            <Button
+              variant="cancel"
+              disabled={action.pending}
+              onClick={() => {
+                setConfirmation(null);
+              }}
+            >
+              取消
+            </Button>
+          }
           footer={
-            <>
-              <Button
-                variant="cancel"
-                disabled={action.pending}
-                onClick={() => {
-                  setConfirmation(null);
-                }}
-              >
-                取消
-              </Button>
-              <Button
-                loading={action.isPending(confirmation)}
-                disabled={action.pending}
-                onClick={() => {
-                  void save(confirmation);
-                }}
-              >
-                {confirmation === 'reset' ? (
-                  <KeyRound aria-hidden="true" />
-                ) : (
-                  <Trash2 aria-hidden="true" />
-                )}
-                {confirmation === 'reset' ? '确认重置' : '确认撤销'}
-              </Button>
-            </>
+            <Button
+              loading={action.isPending(confirmation)}
+              disabled={action.pending}
+              onClick={() => {
+                void save(confirmation);
+              }}
+            >
+              {confirmation === 'reset' ? (
+                <KeyRound aria-hidden="true" />
+              ) : (
+                <Trash2 aria-hidden="true" />
+              )}
+              {confirmation === 'reset' ? '确认重置' : '确认撤销'}
+            </Button>
           }
         >
           <p className="p-6 text-sm leading-6">

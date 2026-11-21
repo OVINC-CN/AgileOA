@@ -114,16 +114,16 @@ export function ProjectEditor({
             onChange={setTab}
           />
         }
+        footerDismiss={
+          <Button type="button" variant="cancel" disabled={mutation.isPending} onClick={onClose}>
+            取消
+          </Button>
+        }
         footer={
-          <>
-            <Button type="button" variant="cancel" disabled={mutation.isPending} onClick={onClose}>
-              取消
-            </Button>
-            <Button type="submit" loading={mutation.isPending}>
-              <Save aria-hidden="true" />
-              保存
-            </Button>
-          </>
+          <Button type="submit" loading={mutation.isPending}>
+            <Save aria-hidden="true" />
+            保存
+          </Button>
         }
         form={{
           noValidate: true,

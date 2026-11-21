@@ -403,7 +403,8 @@ describe('个人通知', () => {
       expect(within(drawer).getByRole('button', { name: '全部通知' })).toBeEnabled();
     });
     await user.click(within(drawer).getByRole('button', { name: '全部通知' }));
-    expect(await within(drawer).findByText('已读', { exact: true })).toBeVisible();
+    expect(await within(drawer).findByRole('heading', { name: notice(1).title })).toBeVisible();
+    expect(within(drawer).queryByText('已读', { exact: true })).not.toBeInTheDocument();
     await user.click(within(drawer).getByRole('button', { name: '关闭抽屉' }));
     expect(await screen.findByRole('button', { name: '通知' })).not.toHaveTextContent(/\d/);
     const request = fetchMock.mock.calls.find(([url]) => url === '/v1/notifications/read');

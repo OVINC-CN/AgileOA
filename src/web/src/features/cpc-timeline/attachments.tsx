@@ -215,48 +215,48 @@ function AttachmentPanel({
           onClose={() => {
             setDeleting(null);
           }}
+          footerDismiss={
+            <Button
+              type="button"
+              variant="cancel"
+              disabled={remove.pending}
+              onClick={() => {
+                setDeleting(null);
+              }}
+            >
+              取消
+            </Button>
+          }
           footer={
-            <>
-              <Button
-                type="button"
-                variant="cancel"
-                disabled={remove.pending}
-                onClick={() => {
+            <Button
+              type="button"
+              variant="destructive"
+              loading={remove.pending}
+              onClick={() => {
+                void remove.run(String(deleting.id), async () => {
+                  const page = Math.max(
+                    1,
+                    Math.min(
+                      pagination.page,
+                      Math.ceil(((data?.total ?? 1) - 1) / pagination.pageSize),
+                    ),
+                  );
+                  let removed = false;
+                  try {
+                    await deleteTimelineAttachment(workspaceID, deleting);
+                    removed = true;
+                  } finally {
+                    const targetPage = removed ? page : pagination.page;
+                    pagination.setPage(targetPage);
+                    await invalidate(targetPage);
+                  }
                   setDeleting(null);
-                }}
-              >
-                取消
-              </Button>
-              <Button
-                type="button"
-                variant="destructive"
-                loading={remove.pending}
-                onClick={() => {
-                  void remove.run(String(deleting.id), async () => {
-                    const page = Math.max(
-                      1,
-                      Math.min(
-                        pagination.page,
-                        Math.ceil(((data?.total ?? 1) - 1) / pagination.pageSize),
-                      ),
-                    );
-                    let removed = false;
-                    try {
-                      await deleteTimelineAttachment(workspaceID, deleting);
-                      removed = true;
-                    } finally {
-                      const targetPage = removed ? page : pagination.page;
-                      pagination.setPage(targetPage);
-                      await invalidate(targetPage);
-                    }
-                    setDeleting(null);
-                  });
-                }}
-              >
-                <Trash2 aria-hidden="true" />
-                确认删除
-              </Button>
-            </>
+                });
+              }}
+            >
+              <Trash2 aria-hidden="true" />
+              确认删除
+            </Button>
           }
         >
           <p className="p-6 text-sm">将永久删除文件及附件记录，历史操作审计会保留。</p>

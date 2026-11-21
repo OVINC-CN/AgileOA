@@ -239,12 +239,12 @@ it('入口校验失败时保留当前人员时间线，不打开空白转移抽�
     </QueryClientProvider>,
   );
   const user = userEvent.setup();
-  await user.click(await screen.findByRole('button', { name: '转移时间线' }));
+  await user.click(await screen.findByRole('button', { name: '转移' }));
   await waitFor(() => {
     expect(
       fetch.mock.calls.some(([input]) => requestPath(input).endsWith('/transfer-options')),
     ).toBe(true);
-    expect(screen.getByRole('button', { name: '转移时间线' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: '转移' })).toBeEnabled();
   });
   expect(screen.getByRole('heading', { name: '目标模板' })).toBeVisible();
   expect(screen.queryByRole('heading', { name: '转移人员时间线' })).not.toBeInTheDocument();
@@ -284,7 +284,7 @@ it.each([false, true])('转移中禁止编辑节点，仅按审核权限显示�
   );
   await screen.findByText('时间线状态：转移中');
   expect(screen.getByRole('button', { name: '取消' })).toBeVisible();
-  expect(screen.queryByRole('button', { name: '转移时间线' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: '转移' })).not.toBeInTheDocument();
   expect(screen.queryByRole('button', { name: '编辑节点 目标节点' })).not.toBeInTheDocument();
   if (reviewing) {
     expect(screen.getByRole('button', { name: '审核' })).toBeVisible();
@@ -324,6 +324,6 @@ it.each([
     </QueryClientProvider>,
   );
   await screen.findByRole('heading', { name: '目标模板' });
-  if (visible) expect(screen.getByRole('button', { name: '转移时间线' })).toBeVisible();
-  else expect(screen.queryByRole('button', { name: '转移时间线' })).not.toBeInTheDocument();
+  if (visible) expect(screen.getByRole('button', { name: '转移' })).toBeVisible();
+  else expect(screen.queryByRole('button', { name: '转移' })).not.toBeInTheDocument();
 });

@@ -347,41 +347,41 @@ export function TimelinePage({
           onClose={() => {
             setDeleting(null);
           }}
+          footerDismiss={
+            <Button
+              variant="cancel"
+              disabled={remove.pending}
+              onClick={() => {
+                setDeleting(null);
+              }}
+            >
+              取消
+            </Button>
+          }
           footer={
-            <>
-              <Button
-                variant="cancel"
-                disabled={remove.pending}
-                onClick={() => {
+            <Button
+              variant="destructive"
+              loading={remove.pending}
+              onClick={() => {
+                void remove.run('delete', async () => {
+                  await deleteTimeline(workspaceID, deleting);
+                  const page = Math.max(
+                    1,
+                    Math.min(
+                      pagination.page,
+                      Math.ceil(((data?.total ?? 1) - 1) / pagination.pageSize),
+                    ),
+                  );
+                  pagination.setPage(page);
+                  await client.invalidateQueries({ queryKey: timelineKey(workspaceID) });
+                  await fetchPage(page, pagination.pageSize);
                   setDeleting(null);
-                }}
-              >
-                取消
-              </Button>
-              <Button
-                variant="destructive"
-                loading={remove.pending}
-                onClick={() => {
-                  void remove.run('delete', async () => {
-                    await deleteTimeline(workspaceID, deleting);
-                    const page = Math.max(
-                      1,
-                      Math.min(
-                        pagination.page,
-                        Math.ceil(((data?.total ?? 1) - 1) / pagination.pageSize),
-                      ),
-                    );
-                    pagination.setPage(page);
-                    await client.invalidateQueries({ queryKey: timelineKey(workspaceID) });
-                    await fetchPage(page, pagination.pageSize);
-                    setDeleting(null);
-                  });
-                }}
-              >
-                <Trash2 aria-hidden="true" />
-                确认删除
-              </Button>
-            </>
+                });
+              }}
+            >
+              <Trash2 aria-hidden="true" />
+              确认删除
+            </Button>
           }
         >
           <p className="p-6 text-sm text-muted-foreground">

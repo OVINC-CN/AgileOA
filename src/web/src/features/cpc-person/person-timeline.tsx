@@ -107,24 +107,26 @@ export function PersonTimelineDrawer({
       truncateDescription
       busy={busy || (editing !== null && !!canEdit) || transfer !== null || rejectRevision !== null}
       onClose={onClose}
+      footerRefresh={
+        <Button
+          variant="outline"
+          loading={refresh.pending || query.isPending}
+          disabled={busy}
+          onClick={() => {
+            void refresh.run('refresh', async () => {
+              await client.query({
+                ...options,
+                staleTime: 0,
+              });
+            });
+          }}
+        >
+          <RefreshCw aria-hidden="true" />
+          刷新
+        </Button>
+      }
       footer={
         <>
-          <Button
-            variant="outline"
-            loading={refresh.pending || query.isPending}
-            disabled={busy}
-            onClick={() => {
-              void refresh.run('refresh', async () => {
-                await client.query({
-                  ...options,
-                  staleTime: 0,
-                });
-              });
-            }}
-          >
-            <RefreshCw aria-hidden="true" />
-            刷新
-          </Button>
           {!data?.template_id && canEdit ? (
             <Button
               loading={bind.pending}
@@ -161,7 +163,7 @@ export function PersonTimelineDrawer({
               }}
             >
               <ArrowRightLeft aria-hidden="true" />
-              转移时间线
+              转移
             </Button>
           ) : null}
           {data?.status === 'transferring' && data.can_cancel_transfer && canUpdate ? (

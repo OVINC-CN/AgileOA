@@ -41,6 +41,7 @@ interface Props<T> {
   title?: string;
   rowID?: (record: T) => string;
   pinnedColumn?: string;
+  pinnedEndColumn?: string;
   primaryColumn?:
     { id: string; getAction: (record: T) => PrimaryColumnAction | undefined } | undefined;
 }
@@ -119,9 +120,11 @@ export function ManagementTable<T>({
   title,
   rowID,
   pinnedColumn,
+  pinnedEndColumn,
   primaryColumn,
 }: Props<T>) {
   const settings = useTableColumns(tableID, columnOptions(columns));
+  const endPinnedColumns = pinnedEndColumn ? [pinnedEndColumn] : ['actions', 'operations'];
   const table = useReactTable({
     data,
     columns,
@@ -163,8 +166,7 @@ export function ManagementTable<T>({
                   className={cn(
                     'h-8 px-4 py-1 text-xs font-medium text-muted-foreground',
                     header.column.id === pinnedColumn && 'table-pinned left-0',
-                    ['actions', 'operations'].includes(header.column.id) &&
-                      'table-pinned-end right-0',
+                    endPinnedColumns.includes(header.column.id) && 'table-pinned-end right-0',
                   )}
                 >
                   {flexRender(header.column.columnDef.header, header.getContext())}
@@ -183,8 +185,7 @@ export function ManagementTable<T>({
                     className={cn(
                       'h-12 px-4 py-2',
                       cell.column.id === pinnedColumn && 'table-pinned left-0',
-                      ['actions', 'operations'].includes(cell.column.id) &&
-                        'table-pinned-end right-0',
+                      endPinnedColumns.includes(cell.column.id) && 'table-pinned-end right-0',
                     )}
                   >
                     {primaryColumn?.id === cell.column.id ? (

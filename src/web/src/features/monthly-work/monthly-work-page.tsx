@@ -510,33 +510,33 @@ function MonthlyWorkWorkspace({
           onClose={() => {
             setDeleting(null);
           }}
+          footerDismiss={
+            <Button
+              variant="cancel"
+              disabled={remove.pending}
+              onClick={() => {
+                setDeleting(null);
+              }}
+            >
+              取消
+            </Button>
+          }
           footer={
-            <>
-              <Button
-                variant="cancel"
-                disabled={remove.pending}
-                onClick={() => {
-                  setDeleting(null);
-                }}
-              >
-                取消
-              </Button>
-              <Button
-                loading={remove.pending}
-                onClick={() => {
-                  void (async () => {
-                    const result = await remove.run(String(deleting.id), async () => {
-                      await deleteWork(workspaceID, deleting, category);
-                      await client.invalidateQueries({ queryKey: workKey(workspaceID, category) });
-                    });
-                    if (result.ok) setDeleting(null);
-                  })();
-                }}
-              >
-                <Trash2 aria-hidden="true" />
-                确认删除
-              </Button>
-            </>
+            <Button
+              loading={remove.pending}
+              onClick={() => {
+                void (async () => {
+                  const result = await remove.run(String(deleting.id), async () => {
+                    await deleteWork(workspaceID, deleting, category);
+                    await client.invalidateQueries({ queryKey: workKey(workspaceID, category) });
+                  });
+                  if (result.ok) setDeleting(null);
+                })();
+              }}
+            >
+              <Trash2 aria-hidden="true" />
+              确认删除
+            </Button>
           }
         >
           <p className="p-6 text-sm leading-6">

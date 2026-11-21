@@ -71,25 +71,25 @@ function UserAction({
           onClose();
         }
       }}
+      footerDismiss={
+        <Button variant="cancel" disabled={mutation.isPending} onClick={onClose}>
+          取消
+        </Button>
+      }
       footer={
-        <>
-          <Button variant="cancel" disabled={mutation.isPending} onClick={onClose}>
-            取消
+        blocked ? (
+          <Button onClick={onSwitch}>撤销会话</Button>
+        ) : (
+          <Button
+            loading={mutation.isPending}
+            onClick={() => {
+              mutation.mutate();
+            }}
+          >
+            {kind === 'delete' ? <Trash2 aria-hidden="true" /> : <Unplug aria-hidden="true" />}
+            {kind === 'delete' ? '确认删除' : '确认撤销'}
           </Button>
-          {blocked ? (
-            <Button onClick={onSwitch}>撤销会话</Button>
-          ) : (
-            <Button
-              loading={mutation.isPending}
-              onClick={() => {
-                mutation.mutate();
-              }}
-            >
-              {kind === 'delete' ? <Trash2 aria-hidden="true" /> : <Unplug aria-hidden="true" />}
-              {kind === 'delete' ? '确认删除' : '确认撤销'}
-            </Button>
-          )}
-        </>
+        )
       }
     >
       <div className="space-y-4 p-6">

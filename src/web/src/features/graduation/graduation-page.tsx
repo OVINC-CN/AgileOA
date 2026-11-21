@@ -479,35 +479,35 @@ function GraduationWorkspace({
           onClose={() => {
             setClearing(null);
           }}
+          footerDismiss={
+            <Button
+              variant="cancel"
+              disabled={remove.pending}
+              onClick={() => {
+                setClearing(null);
+              }}
+            >
+              取消
+            </Button>
+          }
           footer={
-            <>
-              <Button
-                variant="cancel"
-                disabled={remove.pending}
-                onClick={() => {
+            <Button
+              variant="destructive"
+              loading={remove.pending}
+              onClick={() => {
+                void remove.run('clear', async () => {
+                  await clearGraduation(workspaceID, clearing);
+                  await Promise.all([
+                    client.invalidateQueries({ queryKey: graduationKey(workspaceID) }),
+                    client.invalidateQueries({ queryKey: studentKey(workspaceID) }),
+                  ]);
                   setClearing(null);
-                }}
-              >
-                取消
-              </Button>
-              <Button
-                variant="destructive"
-                loading={remove.pending}
-                onClick={() => {
-                  void remove.run('clear', async () => {
-                    await clearGraduation(workspaceID, clearing);
-                    await Promise.all([
-                      client.invalidateQueries({ queryKey: graduationKey(workspaceID) }),
-                      client.invalidateQueries({ queryKey: studentKey(workspaceID) }),
-                    ]);
-                    setClearing(null);
-                  });
-                }}
-              >
-                <Trash2 aria-hidden="true" />
-                清除
-              </Button>
-            </>
+                });
+              }}
+            >
+              <Trash2 aria-hidden="true" />
+              清除
+            </Button>
           }
         >
           <p className="p-6 text-sm">清除该学生的类型和毕业去向后，该学生继续计入待就业。</p>

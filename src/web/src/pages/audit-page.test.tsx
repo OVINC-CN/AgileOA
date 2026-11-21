@@ -288,9 +288,17 @@ describe('审计操作筛选', () => {
     expect(table.getByText(`示例空间（${workspaceID}）`)).toBeInTheDocument();
     expect(table.getByText('Web')).toBeInTheDocument();
     expect(table.getByText('虚构用户(fixture)')).toBeInTheDocument();
-    const headers = table.getAllByRole('columnheader').map((header) => header.textContent);
-    expect(headers[headers.indexOf('操作结果') + 1]).toBe('操作来源');
-    await user.click(screen.getByRole('button', { name: '查看编辑党建人员详情' }));
+    const headers = table.getAllByRole('columnheader');
+    const headerNames = headers.map((header) => header.textContent);
+    expect(headerNames[headerNames.indexOf('操作结果') + 1]).toBe('操作来源');
+    expect(headers[0]).toHaveTextContent('ID');
+    expect(headers[0]).toHaveClass('table-pinned');
+    expect(headers.at(-1)).toHaveClass('table-pinned-end', 'right-0');
+    const idButton = table.getByRole('button', { name: row.id });
+    expect(idButton.closest('td')).toHaveClass('table-pinned');
+    const detailButton = table.getByRole('button', { name: '查看编辑党建人员详情' });
+    expect(detailButton.closest('td')).toHaveClass('table-pinned-end', 'right-0');
+    await user.click(idButton);
     const detail = within(await screen.findByRole('dialog', { name: '审计详情' }));
     expect(await detail.findByRole('tabpanel', { name: 'JSON 差异' })).toHaveTextContent(
       '"party_position": "书记"',

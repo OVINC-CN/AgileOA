@@ -198,16 +198,16 @@ export function UserEditor({
           onClose();
         }
       }}
+      footerDismiss={
+        <Button type="button" variant="cancel" disabled={mutation.isPending} onClick={onClose}>
+          取消
+        </Button>
+      }
       footer={
-        <>
-          <Button type="button" variant="cancel" disabled={mutation.isPending} onClick={onClose}>
-            取消
-          </Button>
-          <Button type="submit" loading={mutation.isPending}>
-            {user ? <Save aria-hidden="true" /> : <Plus aria-hidden="true" />}
-            {user ? '保存更改' : '添加用户'}
-          </Button>
-        </>
+        <Button type="submit" loading={mutation.isPending}>
+          {user ? <Save aria-hidden="true" /> : <Plus aria-hidden="true" />}
+          {user ? '保存更改' : '添加用户'}
+        </Button>
       }
       form={{
         noValidate: true,

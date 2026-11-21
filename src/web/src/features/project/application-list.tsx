@@ -359,45 +359,44 @@ export function ApplicationList({
           onClose={() => {
             setDeleting(null);
           }}
+          footerDismiss={
+            <Button
+              variant="cancel"
+              disabled={remove.pending}
+              onClick={() => {
+                setDeleting(null);
+              }}
+            >
+              取消
+            </Button>
+          }
           footer={
-            <>
-              <Button
-                variant="cancel"
-                disabled={remove.pending}
-                onClick={() => {
-                  setDeleting(null);
-                }}
-              >
-                取消
-              </Button>
-              <Button
-                loading={remove.pending}
-                onClick={() => {
-                  void (async () => {
-                    const result = await remove.run('delete', async () => {
-                      await deleteApplication(workspaceID, deleting);
-                      client.removeQueries({
-                        queryKey: applicationDetailOptions(workspaceID, scope, deleting.id)
-                          .queryKey,
-                      });
-                      await client.invalidateQueries({ queryKey: projectKey(workspaceID) });
-                      const lastPage = Math.max(
-                        1,
-                        Math.ceil(((data?.total ?? 1) - 1) / pagination.pageSize),
-                      );
-                      if (pagination.page > lastPage) {
-                        pagination.setPage(lastPage);
-                        await fetchPage(lastPage, pagination.pageSize);
-                      }
+            <Button
+              loading={remove.pending}
+              onClick={() => {
+                void (async () => {
+                  const result = await remove.run('delete', async () => {
+                    await deleteApplication(workspaceID, deleting);
+                    client.removeQueries({
+                      queryKey: applicationDetailOptions(workspaceID, scope, deleting.id).queryKey,
                     });
-                    if (result.ok) setDeleting(null);
-                  })();
-                }}
-              >
-                <Trash2 aria-hidden="true" />
-                确认删除
-              </Button>
-            </>
+                    await client.invalidateQueries({ queryKey: projectKey(workspaceID) });
+                    const lastPage = Math.max(
+                      1,
+                      Math.ceil(((data?.total ?? 1) - 1) / pagination.pageSize),
+                    );
+                    if (pagination.page > lastPage) {
+                      pagination.setPage(lastPage);
+                      await fetchPage(lastPage, pagination.pageSize);
+                    }
+                  });
+                  if (result.ok) setDeleting(null);
+                })();
+              }}
+            >
+              <Trash2 aria-hidden="true" />
+              确认删除
+            </Button>
           }
         >
           <p className="p-6 text-sm">

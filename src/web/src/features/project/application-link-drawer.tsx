@@ -41,7 +41,7 @@ export function ApplicationLinkDrawer({
       title="申报详情"
       description="查看申报内容及审批流程"
       onClose={onClose}
-      footer={
+      footerDismiss={
         <Button variant="cancel" onClick={onClose}>
           关闭
         </Button>

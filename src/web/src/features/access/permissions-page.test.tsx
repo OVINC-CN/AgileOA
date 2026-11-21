@@ -167,7 +167,12 @@ describe('工作空间权限列表与独立授权入口', () => {
 
     const row = screen.getByText('虚构用户2(fixture.2)').closest('tr');
     if (!row) throw new Error('未找到新增用户行');
-    await userEvent.click(within(row).getByRole('button', { name: '配置权限' }));
+    expect(screen.getByRole('columnheader', { name: '用户' })).toHaveClass('table-pinned');
+    const userCell = within(row).getAllByRole('cell')[0];
+    const userButton = within(row).getByRole('button', { name: '虚构用户2(fixture.2)' });
+    expect(userCell).toHaveClass('table-pinned');
+    expect(userButton.closest('td')).toBe(userCell);
+    await userEvent.click(userButton);
     dialog = await screen.findByRole('dialog', { name: '配置操作权限' });
     await userEvent.click(within(dialog).getByRole('button', { name: '取消全选' }));
     await userEvent.click(within(dialog).getByRole('button', { name: '保存权限' }));

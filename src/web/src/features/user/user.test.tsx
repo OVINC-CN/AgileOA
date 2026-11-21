@@ -34,6 +34,7 @@ import { OverviewPage } from '@/pages/overview-page';
 import { StudentProfilePage } from '@/pages/student-profile-page';
 import { StudentServicePage } from '@/pages/student-service-page';
 import { UsersPage } from '@/pages/users-page';
+import { WorkspacesPage } from '@/pages/workspaces-page';
 
 // 交互测试聚焦真实页面状态，图表在浏览器中验证尺寸和真实接口数据。
 vi.mock('@/components/management-charts', () => ({
@@ -75,6 +76,15 @@ const studentProfile = {
   class_name: '2026级一班',
   class_position: '',
 } satisfies StudentProfile;
+const workspace = {
+  id: studentAccount.workspace_id,
+  name: studentAccount.workspace_name,
+  description: '工作空间描述用于介绍该空间的用途和适用范围。'.repeat(5),
+  is_enabled: true,
+  revision: 1,
+  created_at: '2026-11-03T00:00:00Z',
+  updated_at: '2026-11-03T00:00:00Z',
+};
 const password = 'Fictional-password-2026';
 const second = {
   id: 2,
@@ -334,6 +344,9 @@ function setup(
         users = users.filter((item) => item.id !== id);
         return Promise.resolve(respond(null));
       }
+      if (path === '/v1/system/workspaces' && options.method === 'GET') {
+        return Promise.resolve(respond({ items: [workspace], total: 1, page: 1, page_size: 5 }));
+      }
       if (path === '/v1/system/audit/logs') {
         const items = address.searchParams.get('result_code') === '403' ? [] : [record];
         return Promise.resolve(
@@ -416,6 +429,7 @@ function setup(
                 Component: SystemLayout,
                 children: [
                   { path: 'users', Component: UsersPage },
+                  { path: 'workspaces', Component: WorkspacesPage },
                   { path: 'audit', Component: AuditPage },
                 ],
               },
@@ -1265,10 +1279,17 @@ describe('登录与系统管理', () => {
       }
     },
   );
-  it('编辑保留不可变用户名，保存信息并通过确认弹窗删除用户', async () => {
+  it('从固定 ID 列打开编辑，保存信息并通过确认弹窗删除用户', async () => {
     const { user, fetchMock } = setup();
     const row = await screen.findByRole('row', { name: /fixture.user/ });
-    await user.click(within(row).getByRole('button', { name: '编辑' }));
+    const idCell = within(row).getAllByRole('cell')[0];
+    const idButton = within(row).getByRole('button', { name: String(second.id) });
+    expect(screen.getByRole('columnheader', { name: 'ID' })).toHaveClass('table-pinned');
+    expect(idCell).toHaveClass('table-pinned');
+    expect(idButton.closest('td')).toBe(idCell);
+    expect(within(row).getByRole('button', { name: '编辑' })).toBeEnabled();
+    expect(within(row).queryByRole('button', { name: /撤销|删除/ })).not.toBeInTheDocument();
+    await user.click(idButton);
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByLabelText('用户名')).toHaveAttribute('readonly');
     const passwordEnabled = within(dialog).getByRole('checkbox', { name: '允许密码登录' });
@@ -1294,12 +1315,41 @@ describe('登录与系统管理', () => {
       }),
     );
     expect(screen.queryByText(second.email)).not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: '删除用户 fixture.user' }));
+    await user.click(screen.getByRole('button', { name: '更多操作 fixture.user' }));
+    expect(screen.getAllByRole('menuitem').map((item) => item.textContent)).toEqual([
+      '撤销会话',
+      '删除',
+    ]);
+    await user.click(screen.getByRole('menuitem', { name: '撤销会话' }));
+    const revoke = await screen.findByRole('dialog', { name: '撤销用户会话' });
+    await user.click(within(revoke).getByRole('button', { name: '取消' }));
+    await user.click(screen.getByRole('button', { name: '更多操作 fixture.user' }));
+    await user.click(screen.getByRole('menuitem', { name: '删除' }));
     const confirm = await screen.findByRole('dialog');
     expect(within(confirm).getByText(/永久删除/)).toBeVisible();
     await user.click(within(confirm).getByRole('button', { name: '确认删除' }));
     expect(await screen.findByText('已删除用户 fixture.user')).toBeVisible();
     expect(screen.queryByText('fixture.user')).not.toBeInTheDocument();
+  });
+  it('工作空间名称固定在首列并打开编辑，描述单独限宽，删除从更多操作打开', async () => {
+    const { user } = setup('/system/workspaces');
+    const row = await screen.findByRole('row', { name: new RegExp(workspace.name) });
+    const cells = within(row).getAllByRole('cell');
+    const nameButton = within(row).getByRole('button', { name: workspace.name });
+    const description = within(row).getByText(workspace.description);
+    expect(cells[0]).toHaveClass('table-pinned');
+    expect(nameButton.closest('td')).toBe(cells[0]);
+    expect(screen.getByRole('columnheader', { name: '描述' })).toBeVisible();
+    expect(description.closest('td')).toBe(cells[1]);
+    expect(description).toHaveClass('truncate', 'max-w-36');
+    await user.click(nameButton);
+    const editor = await screen.findByRole('dialog', { name: '编辑工作空间' });
+    expect(within(editor).getByLabelText('说明')).toHaveValue(workspace.description);
+    await user.click(within(editor).getByRole('button', { name: '取消' }));
+    expect(within(row).queryByRole('button', { name: '删除' })).not.toBeInTheDocument();
+    await user.click(within(row).getByRole('button', { name: `更多操作 ${workspace.name}` }));
+    await user.click(screen.getByRole('menuitem', { name: '删除' }));
+    expect(await screen.findByRole('dialog', { name: '删除工作空间' })).toBeVisible();
   });
   it('审计筛选和详情使用实际接口，展示快照差异与请求信息', async () => {
     const { user, fetchMock } = setup('/system/audit');

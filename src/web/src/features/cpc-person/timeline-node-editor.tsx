@@ -90,11 +90,13 @@ export function PersonTimelineNodeEditor({
           });
         },
       }}
+      footerDismiss={
+        <Button type="button" variant="cancel" disabled={busy} onClick={onClose}>
+          取消
+        </Button>
+      }
       footer={
         <>
-          <Button type="button" variant="cancel" disabled={busy} onClick={onClose}>
-            取消
-          </Button>
           <Button
             type="button"
             variant="outline"
@@ -122,7 +124,7 @@ export function PersonTimelineNodeEditor({
             }}
           >
             <SkipForward aria-hidden="true" />
-            跳过节点
+            跳过
           </Button>
           <Button
             type="button"
@@ -135,7 +137,7 @@ export function PersonTimelineNodeEditor({
             }}
           >
             <RotateCcw aria-hidden="true" />
-            重置节点
+            重置
           </Button>
           <Button
             type="submit"
@@ -143,7 +145,7 @@ export function PersonTimelineNodeEditor({
             disabled={reset.pending || skip.pending || upload.pending || remove.pending}
           >
             <Save aria-hidden="true" />
-            保存并完成
+            提交
           </Button>
         </>
       }
@@ -279,44 +281,44 @@ export function PersonTimelineNodeEditor({
           onClose={() => {
             setConfirmingReset(false);
           }}
+          footerDismiss={
+            <Button
+              type="button"
+              variant="cancel"
+              disabled={reset.pending}
+              onClick={() => {
+                setConfirmingReset(false);
+              }}
+            >
+              取消
+            </Button>
+          }
           footer={
-            <>
-              <Button
-                type="button"
-                variant="cancel"
-                disabled={reset.pending}
-                onClick={() => {
-                  setConfirmingReset(false);
-                }}
-              >
-                取消
-              </Button>
-              <Button
-                type="button"
-                variant="destructive"
-                loading={reset.pending}
-                onClick={() => {
-                  if (busy) return;
-                  void reset.run('reset', async () => {
-                    try {
-                      await resetPersonTimelineNode(
-                        workspaceID,
-                        personID,
-                        original.id,
-                        original.revision,
-                        templateRevision,
-                      );
-                    } finally {
-                      await invalidate();
-                    }
-                    onClose();
-                  });
-                }}
-              >
-                <RotateCcw aria-hidden="true" />
-                确认重置
-              </Button>
-            </>
+            <Button
+              type="button"
+              variant="destructive"
+              loading={reset.pending}
+              onClick={() => {
+                if (busy) return;
+                void reset.run('reset', async () => {
+                  try {
+                    await resetPersonTimelineNode(
+                      workspaceID,
+                      personID,
+                      original.id,
+                      original.revision,
+                      templateRevision,
+                    );
+                  } finally {
+                    await invalidate();
+                  }
+                  onClose();
+                });
+              }}
+            >
+              <RotateCcw aria-hidden="true" />
+              确认重置
+            </Button>
           }
         >
           <p className="p-6 text-sm">
@@ -335,37 +337,37 @@ export function PersonTimelineNodeEditor({
           onClose={() => {
             setDeleting(null);
           }}
+          footerDismiss={
+            <Button
+              type="button"
+              variant="cancel"
+              disabled={remove.pending}
+              onClick={() => {
+                setDeleting(null);
+              }}
+            >
+              取消
+            </Button>
+          }
           footer={
-            <>
-              <Button
-                type="button"
-                variant="cancel"
-                disabled={remove.pending}
-                onClick={() => {
-                  setDeleting(null);
-                }}
-              >
-                取消
-              </Button>
-              <Button
-                type="button"
-                variant="destructive"
-                loading={remove.pending}
-                onClick={() => {
-                  void remove.run('delete', async () => {
-                    try {
-                      await deletePersonTimelineAttachment(workspaceID, deleting);
-                      setDeleting(null);
-                    } finally {
-                      await invalidate();
-                    }
-                  });
-                }}
-              >
-                <Trash2 aria-hidden="true" />
-                确认删除
-              </Button>
-            </>
+            <Button
+              type="button"
+              variant="destructive"
+              loading={remove.pending}
+              onClick={() => {
+                void remove.run('delete', async () => {
+                  try {
+                    await deletePersonTimelineAttachment(workspaceID, deleting);
+                    setDeleting(null);
+                  } finally {
+                    await invalidate();
+                  }
+                });
+              }}
+            >
+              <Trash2 aria-hidden="true" />
+              确认删除
+            </Button>
           }
         >
           <p className="p-6 text-sm">将永久删除此节点的附件。</p>

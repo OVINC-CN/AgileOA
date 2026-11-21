@@ -509,12 +509,13 @@ it('填报管理的姓名和学号位于前两列，点击姓名打开对应申�
   );
 });
 
-it('我的申报和我的审核通过各自首列打开详情，只有我的申报提供新建入口', async () => {
+it('我的申报和我的审核通过各自首列打开详情，新建申报使用底部分区', async () => {
   const record = { ...rejectedApplication, can_edit: false, can_approve: false };
   const mineDetail = `/v1/workspaces/${workspaceID}/student-service/project-applications/${String(record.id)}`;
   const reviewDetail = `/v1/workspaces/${workspaceID}/student-service/project-reviews/${String(record.id)}`;
   const request = vi.fn((path: string) => {
     if (path === mineDetail || path === reviewDetail) return respond(record);
+    if (path.includes('/student-service/projects?')) return respond(list);
     if (path.includes('/filter-options')) return respond(filters);
     return respond({ ...list, items: [record], total: 1 });
   });
@@ -557,6 +558,26 @@ it('我的申报和我的审核通过各自首列打开详情，只有我的申�
   expect(screen.getByRole('combobox', { name: '归属年份' })).toBeVisible();
 
   const user = userEvent.setup();
+  await user.click(screen.getByRole('button', { name: '新建申报' }));
+  const create = within(await screen.findByRole('dialog', { name: '新建申报' }));
+  const tabs = create.getByRole('tablist', { name: '申报内容分类' });
+  expect(tabs.closest('[data-slot="drawer-footer-navigation"]')).toBeInTheDocument();
+  expect(
+    within(tabs)
+      .getAllByRole('tab')
+      .map((tab) => tab.textContent),
+  ).toEqual(['主要信息', '审批流程', '流转记录']);
+  const statement = create.getByRole('textbox', { name: '申报说明' });
+  await user.type(statement, '未保存的申报说明');
+  await user.click(within(tabs).getByRole('tab', { name: '审批流程' }));
+  expect(create.getByRole('tabpanel', { name: '审批流程' })).toBeVisible();
+  await user.keyboard('{ArrowRight}');
+  expect(create.getByRole('tabpanel', { name: '流转记录' })).toBeVisible();
+  await user.keyboard('{Home}');
+  expect(statement).toBeVisible();
+  expect(statement).toHaveValue('未保存的申报说明');
+  await user.click(create.getByRole('button', { name: '取消' }));
+
   await user.click(project);
   const mine = within(await screen.findByRole('dialog', { name: '申报详情' }));
   expect(mine.getByText(record.statement)).toBeVisible();
@@ -586,7 +607,7 @@ it('我的申报和我的审核通过各自首列打开详情，只有我的申�
   expect(request.mock.calls.some(([path]) => path === reviewDetail)).toBe(true);
 });
 
-it('驳回详情仅保留重新申报入口，进入编辑不请求接口且切换 Tab 保留草稿', async () => {
+it('驳回详情提供关闭和重新申报，进入编辑不请求接口且切换 Tab 保留草稿', async () => {
   const request = vi.fn();
   stubApplicationFetch(request);
   render(
@@ -600,7 +621,7 @@ it('驳回详情仅保留重新申报入口，进入编辑不请求接口且切�
     </QueryClientProvider>,
   );
   expect(screen.getByRole('button', { name: '重新申报' })).toBeEnabled();
-  expect(screen.queryByRole('button', { name: '关闭' })).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '关闭' })).toBeEnabled();
   expect(screen.queryByRole('button', { name: '编辑' })).not.toBeInTheDocument();
   expect(screen.queryByRole('button', { name: '重新提交' })).not.toBeInTheDocument();
   expect(screen.queryByRole('textbox', { name: '申报说明' })).not.toBeInTheDocument();
@@ -609,7 +630,7 @@ it('驳回详情仅保留重新申报入口，进入编辑不请求接口且切�
   await user.click(screen.getByRole('button', { name: '重新申报' }));
   expect(screen.getByRole('dialog', { name: '编辑申报' })).toBeVisible();
   expect(screen.getByRole('button', { name: '保存' })).toBeVisible();
-  expect(screen.getByRole('button', { name: '提交申报' })).toBeVisible();
+  expect(screen.getByRole('button', { name: '提交' })).toBeVisible();
   expect(screen.queryByRole('button', { name: '重新申报' })).not.toBeInTheDocument();
   await user.type(screen.getByLabelText('申报说明'), '补充说明');
   await user.click(screen.getByRole('tab', { name: '审批流程' }));
@@ -891,7 +912,7 @@ it.each(['draft', 'rejected'] as const)('关闭申报后，已有 $0 单据仍�
     expect(requests).toHaveLength(0);
     await user.type(screen.getByLabelText('申报说明'), '补充说明');
   }
-  await user.click(screen.getByRole('button', { name: '提交申报' }));
+  await user.click(screen.getByRole('button', { name: '提交' }));
   await waitFor(() => {
     expect(requests).toHaveLength(1);
     expect(requests[0]?.path).toContain(`/project-applications/${String(record.id)}/submit`);
@@ -900,7 +921,7 @@ it.each(['draft', 'rejected'] as const)('关闭申报后，已有 $0 单据仍�
       revision: record.revision,
     });
     expect(screen.getByRole('dialog', { name: '申报详情' })).toBeVisible();
-    expect(screen.queryByRole('button', { name: '提交申报' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '提交' })).not.toBeInTheDocument();
   });
 });
 

@@ -88,7 +88,7 @@ export function UserGrantPicker({
       description={workspaceName}
       busy={selection.pending}
       onClose={onClose}
-      footer={
+      footerDismiss={
         <Button variant="cancel" disabled={selection.pending} onClick={onClose}>
           取消
         </Button>

@@ -182,17 +182,16 @@ function NotificationDrawer({
       description={`共 ${formatNumber(data?.unread_count ?? 0)} 条未读通知`}
       busy={mark.pending}
       onClose={onClose}
-      footer={
-        <div className="-mx-6 -my-3 w-[calc(100%+3rem)]">
-          <ManagementPagination
-            total={data?.total ?? 0}
-            page={pagination.page}
-            pageSize={pagination.pageSize}
-            loading={query.isPending || mark.pending || filter.pending}
-            onPage={(page) => fetchPage(page, pagination.pageSize)}
-            onPageSize={(size) => fetchPage(1, size)}
-          />
-        </div>
+      footerNavigation={
+        <ManagementPagination
+          className="border-0 p-0"
+          total={data?.total ?? 0}
+          page={pagination.page}
+          pageSize={pagination.pageSize}
+          loading={query.isPending || mark.pending || filter.pending}
+          onPage={(page) => fetchPage(page, pagination.pageSize)}
+          onPageSize={(size) => fetchPage(1, size)}
+        />
       }
     >
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border-subtle px-6 py-3">
@@ -305,9 +304,7 @@ function NotificationDrawer({
                       <Check aria-hidden="true" />
                       标为已读
                     </Button>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">已读</span>
-                  )}
+                  ) : null}
                 </div>
               </div>
             </li>

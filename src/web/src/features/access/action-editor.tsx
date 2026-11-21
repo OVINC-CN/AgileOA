@@ -205,6 +205,11 @@ function ActionForm({
           mutation.mutate();
         },
       }}
+      footerDismiss={
+        <Button type="button" variant="cancel" disabled={mutation.isPending} onClick={onClose}>
+          取消
+        </Button>
+      }
       footer={
         <>
           <div className="mr-auto flex flex-wrap items-center gap-3">
@@ -229,9 +234,7 @@ function ActionForm({
               取消全选
             </Button>
           </div>
-          <Button type="button" variant="cancel" disabled={mutation.isPending} onClick={onClose}>
-            取消
-          </Button>
+
           <Button
             type="submit"
             loading={mutation.isPending}
@@ -313,7 +316,7 @@ export function ActionEditor({
       truncateDescription
       description={`${workspaceName} · ${formatIdentity(user.display_name, user.username)}`}
       onClose={onClose}
-      footer={
+      footerRefresh={
         retry.pending || catalog.error || permissions.error ? (
           <Button
             variant="outline"

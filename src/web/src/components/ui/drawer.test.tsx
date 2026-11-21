@@ -1,10 +1,78 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { RefreshCw, Save } from 'lucide-react';
 import { afterEach, expect, it, vi } from 'vitest';
 
+import { Button } from '@/components/ui/button';
 import { Drawer } from '@/components/ui/drawer';
 
 afterEach(() => {
   vi.unstubAllGlobals();
+});
+
+it('无自定义底部操作也显示关闭，忙碌时禁用', () => {
+  const onClose = vi.fn();
+  const view = render(
+    <Drawer title="详情" onClose={onClose} busy>
+      正文
+    </Drawer>,
+  );
+  const close = screen.getByRole('button', { name: '关闭' });
+  const headerClose = screen.getByRole('button', { name: '关闭抽屉' });
+  expect(close.closest('[data-slot="drawer-footer"]')).toBeInTheDocument();
+  expect(headerClose).toHaveTextContent('关闭');
+  expect(headerClose.querySelector('svg')).toBeNull();
+  expect(close.querySelector('svg')).toBeNull();
+  expect(close).toBeDisabled();
+  fireEvent.click(close);
+  expect(onClose).not.toHaveBeenCalled();
+  view.rerender(
+    <Drawer title="详情" onClose={onClose}>
+      正文
+    </Drawer>,
+  );
+  fireEvent.click(close);
+  expect(onClose).toHaveBeenCalledOnce();
+});
+
+it('底部按钮按退出、刷新、业务操作排列', () => {
+  const onCancel = vi.fn();
+  render(
+    <Drawer
+      title="编辑记录"
+      onClose={vi.fn()}
+      footerDismiss={
+        <Button variant="cancel" onClick={onCancel}>
+          取消
+        </Button>
+      }
+      footerRefresh={
+        <Button variant="outline">
+          <RefreshCw aria-hidden="true" />
+          刷新
+        </Button>
+      }
+      footer={
+        <Button>
+          <Save aria-hidden="true" />
+          保存
+        </Button>
+      }
+    >
+      正文
+    </Drawer>,
+  );
+  const cancel = screen.getByRole('button', { name: '取消' });
+  const footer = cancel.closest<HTMLElement>('[data-slot="drawer-footer"]');
+  if (!footer) throw new Error('缺少抽屉底部操作区');
+  expect(
+    within(footer)
+      .getAllByRole('button')
+      .map((button) => button.textContent),
+  ).toEqual(['取消', '刷新', '保存']);
+  expect(within(footer).getByRole('button', { name: '刷新' }).querySelector('svg')).toBeVisible();
+  expect(within(footer).getByRole('button', { name: '保存' }).querySelector('svg')).toBeVisible();
+  fireEvent.click(cancel);
+  expect(onCancel).toHaveBeenCalledOnce();
 });
 
 it('可见视口缩小时同步收缩滚动区域，并跟随可见区域偏移', () => {

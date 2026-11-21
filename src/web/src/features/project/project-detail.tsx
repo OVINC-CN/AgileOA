@@ -45,7 +45,7 @@ export function ProjectDetail({
           onChange={setTab}
         />
       }
-      footer={
+      footerDismiss={
         <Button variant="cancel" onClick={onClose}>
           关闭
         </Button>

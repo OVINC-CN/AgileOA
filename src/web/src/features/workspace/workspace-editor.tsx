@@ -59,16 +59,16 @@ export function WorkspaceEditor({
       onClose={() => {
         if (!mutation.isPending) onClose();
       }}
+      footerDismiss={
+        <Button type="button" variant="cancel" disabled={mutation.isPending} onClick={onClose}>
+          取消
+        </Button>
+      }
       footer={
-        <>
-          <Button type="button" variant="cancel" disabled={mutation.isPending} onClick={onClose}>
-            取消
-          </Button>
-          <Button type="submit" loading={mutation.isPending}>
-            {workspace ? <Save aria-hidden="true" /> : <Plus aria-hidden="true" />}
-            {workspace ? '保存' : '创建工作空间'}
-          </Button>
-        </>
+        <Button type="submit" loading={mutation.isPending}>
+          {workspace ? <Save aria-hidden="true" /> : <Plus aria-hidden="true" />}
+          {workspace ? '保存' : '创建工作空间'}
+        </Button>
       }
       form={{
         onSubmit: (event) => {
