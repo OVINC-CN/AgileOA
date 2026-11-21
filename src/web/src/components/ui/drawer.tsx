@@ -1,3 +1,4 @@
+import { X } from 'lucide-react';
 import { Dialog } from 'radix-ui';
 import {
   type ComponentProps,
@@ -146,12 +147,11 @@ export function Drawer({
           <Button
             type="button"
             variant="cancel"
-            size="sm"
+            size="icon-sm"
             aria-label={closeLabel}
-            className="shrink-0"
             disabled={busy}
           >
-            关闭
+            <X aria-hidden="true" />
           </Button>
         </Dialog.Close>
       </div>

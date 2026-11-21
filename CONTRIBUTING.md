@@ -175,7 +175,7 @@ API 侧先在业务事务中保存任务所需状态和操作审计，由 app �
 `truncateDescription` 启用同样的行为。
 Drawer 默认在底部提供「关闭」。通过 `footerDismiss` 自定义取消或返回操作，
 刷新和重试放入 `footerRefresh`，业务操作放入 `footer`，组件按此顺序渲染。
-顶部和底部的关闭按钮使用纯文字。
+右上角使用 X 图标关闭按钮，可通过 `closeLabel` 自定义无障碍名称。底部关闭按钮使用纯文字。
 并列分区通过 `DrawerTabs`、`footerNavigation` 接到底部，
 切换时保留原表单状态。导航修改同时连接 `features/*/navigation.ts`，并核对
 [cdn-urls.ts](src/web/scripts/cdn-urls.ts) 及其覆盖验证。

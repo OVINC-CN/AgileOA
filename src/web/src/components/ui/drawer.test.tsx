@@ -9,7 +9,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-it('无自定义底部操作也显示关闭，忙碌时禁用', () => {
+it('右上角显示关闭图标，底部默认显示关闭文字，忙碌时均禁用', () => {
   const onClose = vi.fn();
   const view = render(
     <Drawer title="详情" onClose={onClose} busy>
@@ -19,10 +19,12 @@ it('无自定义底部操作也显示关闭，忙碌时禁用', () => {
   const close = screen.getByRole('button', { name: '关闭' });
   const headerClose = screen.getByRole('button', { name: '关闭抽屉' });
   expect(close.closest('[data-slot="drawer-footer"]')).toBeInTheDocument();
-  expect(headerClose).toHaveTextContent('关闭');
-  expect(headerClose.querySelector('svg')).toBeNull();
+  expect(headerClose.textContent).toBe('');
+  expect(headerClose.querySelector('svg')).toBeVisible();
   expect(close.querySelector('svg')).toBeNull();
+  expect(headerClose).toBeDisabled();
   expect(close).toBeDisabled();
+  fireEvent.click(headerClose);
   fireEvent.click(close);
   expect(onClose).not.toHaveBeenCalled();
   view.rerender(
@@ -32,6 +34,8 @@ it('无自定义底部操作也显示关闭，忙碌时禁用', () => {
   );
   fireEvent.click(close);
   expect(onClose).toHaveBeenCalledOnce();
+  fireEvent.click(headerClose);
+  expect(onClose).toHaveBeenCalledTimes(2);
 });
 
 it('底部按钮按退出、刷新、业务操作排列', () => {
