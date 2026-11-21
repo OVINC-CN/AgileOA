@@ -139,7 +139,7 @@ function PreviewWindow({
             <Download aria-hidden="true" />
             下载
           </Button>
-          <Button type="button" variant="secondary" onClick={onClose}>
+          <Button type="button" variant="cancel" onClick={onClose}>
             关闭
           </Button>
         </>

@@ -128,7 +128,7 @@ export function TemplateEditor({
               {preview ? '继续编辑' : '预览'}
             </Button>
           ) : null}
-          <Button type="button" variant="outline" disabled={busy} onClick={onClose}>
+          <Button type="button" variant="cancel" disabled={busy} onClick={onClose}>
             取消
           </Button>
           <Button type="submit" loading={save.pending} disabled={checkingNode || attachmentBusy}>

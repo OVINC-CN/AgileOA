@@ -239,7 +239,7 @@ export function AttachmentManager({
             <>
               <Button
                 type="button"
-                variant="outline"
+                variant="cancel"
                 disabled={remove.pending}
                 onClick={() => {
                   setDeleting(null);

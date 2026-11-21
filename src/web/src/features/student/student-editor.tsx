@@ -306,7 +306,7 @@ function StudentEditorForm({
       }
       footer={
         <>
-          <Button type="button" variant="outline" disabled={busy} onClick={onClose}>
+          <Button type="button" variant="cancel" disabled={busy} onClick={onClose}>
             取消
           </Button>
           {creating && activeIndex > 0 ? (
@@ -541,7 +541,7 @@ export function DeleteStudent({
       onClose={onClose}
       footer={
         <>
-          <Button variant="outline" disabled={mutation.isPending} onClick={onClose}>
+          <Button variant="cancel" disabled={mutation.isPending} onClick={onClose}>
             取消
           </Button>
           <Button

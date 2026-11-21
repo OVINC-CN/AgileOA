@@ -337,7 +337,7 @@ export function ApplicationDrawer({
         footer={
           editing ? (
             <>
-              <Button type="button" variant="outline" disabled={busy} onClick={cancelEdit}>
+              <Button type="button" variant="cancel" disabled={busy} onClick={cancelEdit}>
                 取消
               </Button>
               <Button
@@ -378,7 +378,7 @@ export function ApplicationDrawer({
             </Button>
           ) : (
             <>
-              <Button type="button" variant="secondary" disabled={busy} onClick={onClose}>
+              <Button type="button" variant="cancel" disabled={busy} onClick={onClose}>
                 关闭
               </Button>
               {record?.can_edit ? (
@@ -561,7 +561,7 @@ export function ApplicationDrawer({
           footer={
             <>
               <Button
-                variant="outline"
+                variant="cancel"
                 disabled={files.pending}
                 onClick={() => {
                   setUploadTarget(null);
@@ -603,7 +603,7 @@ export function ApplicationDrawer({
           footer={
             <>
               <Button
-                variant="outline"
+                variant="cancel"
                 disabled={action.pending}
                 onClick={() => {
                   setDecision(null);
@@ -654,7 +654,7 @@ export function ApplicationDrawer({
           footer={
             <>
               <Button
-                variant="outline"
+                variant="cancel"
                 disabled={files.pending}
                 onClick={() => {
                   setDeleting(null);

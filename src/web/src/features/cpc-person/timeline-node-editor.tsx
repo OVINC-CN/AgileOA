@@ -92,7 +92,7 @@ export function PersonTimelineNodeEditor({
       }}
       footer={
         <>
-          <Button type="button" variant="outline" disabled={busy} onClick={onClose}>
+          <Button type="button" variant="cancel" disabled={busy} onClick={onClose}>
             取消
           </Button>
           <Button
@@ -283,7 +283,7 @@ export function PersonTimelineNodeEditor({
             <>
               <Button
                 type="button"
-                variant="outline"
+                variant="cancel"
                 disabled={reset.pending}
                 onClick={() => {
                   setConfirmingReset(false);
@@ -339,7 +339,7 @@ export function PersonTimelineNodeEditor({
             <>
               <Button
                 type="button"
-                variant="outline"
+                variant="cancel"
                 disabled={remove.pending}
                 onClick={() => {
                   setDeleting(null);

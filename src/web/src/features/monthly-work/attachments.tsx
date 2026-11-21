@@ -219,7 +219,7 @@ function AttachmentPanel({
             <>
               <Button
                 type="button"
-                variant="outline"
+                variant="cancel"
                 disabled={remove.pending}
                 onClick={() => {
                   setDeleting(null);

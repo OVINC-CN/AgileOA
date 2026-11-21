@@ -269,7 +269,7 @@ export function DateTimePicker({
             <div className="flex gap-2">
               <Button
                 type="button"
-                variant="outline"
+                variant="cancel"
                 onClick={() => {
                   setOpen(false);
                 }}

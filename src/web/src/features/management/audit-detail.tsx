@@ -74,7 +74,7 @@ export function AuditDetail({
         ) : null
       }
       footer={
-        <Button variant="outline" onClick={onClose}>
+        <Button variant="cancel" onClick={onClose}>
           关闭
         </Button>
       }

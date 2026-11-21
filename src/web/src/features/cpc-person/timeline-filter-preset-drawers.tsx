@@ -59,7 +59,7 @@ export function TimelinePresetEditorDrawer({
       }}
       footer={
         <>
-          <Button type="button" variant="outline" onClick={onClose}>
+          <Button type="button" variant="cancel" onClick={onClose}>
             取消
           </Button>
           <Button type="submit">
@@ -122,7 +122,7 @@ export function TimelinePresetManagerDrawer({
       description="方案仅保存在当前浏览器，清除浏览器数据后需要重新保存"
       onClose={onClose}
       footer={
-        <Button type="button" variant="secondary" onClick={onClose}>
+        <Button type="button" variant="cancel" onClick={onClose}>
           关闭
         </Button>
       }
@@ -195,7 +195,7 @@ export function TimelinePresetDeleteDrawer({
       onClose={onClose}
       footer={
         <>
-          <Button type="button" variant="outline" onClick={onClose}>
+          <Button type="button" variant="cancel" onClick={onClose}>
             取消
           </Button>
           <Button

@@ -513,7 +513,7 @@ function MonthlyWorkWorkspace({
           footer={
             <>
               <Button
-                variant="outline"
+                variant="cancel"
                 disabled={remove.pending}
                 onClick={() => {
                   setDeleting(null);

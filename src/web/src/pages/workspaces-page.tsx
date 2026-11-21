@@ -66,7 +66,7 @@ function DeleteWorkspace({
       }}
       footer={
         <>
-          <Button variant="outline" disabled={mutation.isPending} onClick={onClose}>
+          <Button variant="cancel" disabled={mutation.isPending} onClick={onClose}>
             取消
           </Button>
           <Button

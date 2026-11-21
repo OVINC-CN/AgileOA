@@ -75,7 +75,7 @@ export function GraduationEditor({
       }}
       footer={
         <>
-          <Button type="button" variant="outline" disabled={mutation.isPending} onClick={onClose}>
+          <Button type="button" variant="cancel" disabled={mutation.isPending} onClick={onClose}>
             取消
           </Button>
           <Button type="submit" loading={mutation.isPending}>

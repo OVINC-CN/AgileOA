@@ -71,7 +71,7 @@ export function LoginAgreements({ checked, onCheckedChange, disabled = false }: 
           footer={
             <Button
               type="button"
-              variant="outline"
+              variant="cancel"
               onClick={() => {
                 setOpened(null);
               }}

@@ -100,7 +100,10 @@ it('标题与标识行仅在实际溢出时各自提示完整文本', () => {
       vi.advanceTimersByTime(350);
     });
     expect(screen.getByRole('tooltip', { hidden: true })).toHaveTextContent(description);
-    expect(screen.getByRole('button', { name: '关闭抽屉' })).toBeVisible();
+    const close = screen.getByRole('button', { name: '关闭抽屉' });
+    expect(close).toBeVisible();
+    expect(close).toHaveAttribute('data-variant', 'cancel');
+    expect(close).toHaveClass('bg-transparent', 'disabled:bg-muted');
   } finally {
     vi.useRealTimers();
   }

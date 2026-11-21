@@ -52,7 +52,9 @@ describe('日期时间选择器', () => {
       if (dismiss === 'Escape') {
         await user.keyboard('{Escape}');
       } else {
-        await user.click(screen.getByRole('button', { name: dismiss }));
+        const button = screen.getByRole('button', { name: dismiss });
+        if (dismiss === '取消') expect(button).toHaveAttribute('data-variant', 'cancel');
+        await user.click(button);
       }
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
       expect(change).not.toHaveBeenCalled();

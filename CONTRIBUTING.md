@@ -176,7 +176,7 @@ API 侧先在业务事务中保存任务所需状态和操作审计，由 app �
 并列分区通过 `DrawerTabs`、`footerNavigation` 接到底部，操作放入 `footer`，
 切换时保留原表单状态。导航修改同时连接 `features/*/navigation.ts`，并核对
 [cdn-urls.ts](src/web/scripts/cdn-urls.ts) 及其覆盖验证。
-取消按钮统一使用公共 `Button` 的 `outline` 样式。
+关闭和取消按钮统一使用公共 `Button` 的 `cancel` 样式，启用及悬停时背景透明。
 
 学生信息列表将姓名固定在左侧首列，学号紧随其后。有详情权限时，点击姓名打开学生详情抽屉。
 学生档案的编辑与详情通过 [studentRecordTabs](src/web/src/features/student/fields.ts)

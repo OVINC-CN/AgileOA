@@ -166,7 +166,7 @@ export function PersonTimelineDrawer({
           ) : null}
           {data?.status === 'transferring' && data.can_cancel_transfer && canUpdate ? (
             <Button
-              variant="outline"
+              variant="cancel"
               loading={cancelTransfer.pending}
               disabled={busy}
               onClick={() => {

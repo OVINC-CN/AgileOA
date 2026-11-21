@@ -46,7 +46,7 @@ export function ProjectDetail({
         />
       }
       footer={
-        <Button variant="secondary" onClick={onClose}>
+        <Button variant="cancel" onClick={onClose}>
           关闭
         </Button>
       }

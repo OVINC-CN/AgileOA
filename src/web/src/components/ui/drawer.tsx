@@ -141,7 +141,7 @@ export function Drawer({
         <Dialog.Close asChild>
           <Button
             type="button"
-            variant="ghost"
+            variant="cancel"
             size="icon-sm"
             aria-label={closeLabel}
             className="shrink-0"

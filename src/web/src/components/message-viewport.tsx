@@ -59,7 +59,7 @@ function MessageItem({
       {message.dismissible ? (
         <Button
           type="button"
-          variant="ghost"
+          variant="cancel"
           size="icon-xs"
           aria-label="关闭消息"
           onClick={() => {

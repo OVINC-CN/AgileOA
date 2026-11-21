@@ -65,7 +65,7 @@ export function TimelineTransferDrawer({
       busy={busy}
       footer={
         <>
-          <Button variant="outline" disabled={busy} onClick={onClose}>
+          <Button variant="cancel" disabled={busy} onClick={onClose}>
             取消
           </Button>
           <Button

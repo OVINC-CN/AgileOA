@@ -350,7 +350,7 @@ export function TimelinePage({
           footer={
             <>
               <Button
-                variant="outline"
+                variant="cancel"
                 disabled={remove.pending}
                 onClick={() => {
                   setDeleting(null);
