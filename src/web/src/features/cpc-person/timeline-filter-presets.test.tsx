@@ -14,6 +14,7 @@ import {
   writeTimelinePresets,
 } from '@/features/cpc-person/timeline-filter-preset-store';
 import { currentUserKey } from '@/features/user/api';
+import { useFilterForm } from '@/lib/filter-form';
 
 const workspaceID = 'workspace-one';
 const userID = 7;
@@ -66,23 +67,27 @@ function setup(initial = filters, available = fields) {
     ),
   );
   function Form() {
-    const [draft, setDraft] = useState<PersonFilters>({
-      ...defaultFilters,
-      keyword: '原关键词',
-      timeline_filters: initial,
-    });
+    const [applied, setApplied] = useState(defaultFilters);
+    const onApply = (values: PersonFilters) => {
+      personFilterParams(values);
+      setApplied(values);
+      return apply(values);
+    };
+    const { draft, setDraft, changeFilters, applyChanges, hasUnappliedChanges } = useFilterForm(
+      { ...defaultFilters, keyword: '原关键词', timeline_filters: initial },
+      onApply,
+      applied,
+    );
     return (
       <PersonFilterPanel
         workspaceID={workspaceID}
+        applied={applied}
         draft={draft}
         setDraft={setDraft}
-        changeFilters={(changes) => {
-          setDraft((current) => ({ ...current, ...changes }));
-        }}
-        onApply={(values) => {
-          personFilterParams(values);
-          return apply(values);
-        }}
+        changeFilters={changeFilters}
+        applyChanges={applyChanges}
+        hasUnappliedChanges={hasUnappliedChanges}
+        onApply={onApply}
       />
     );
   }
@@ -96,7 +101,7 @@ function setup(initial = filters, available = fields) {
 
 it('保存、恢复、重命名、覆盖与确认删除共用本地方案，重置不删除且恢复只修改时间线草稿', async () => {
   const { apply, user } = setup();
-  await user.click(screen.getByRole('button', { name: '更多筛选' }));
+  await user.click(screen.getByRole('button', { name: '更多筛选（1）' }));
   await user.click(screen.getByRole('button', { name: '保存当前' }));
   let editor = within(screen.getByRole('dialog', { name: '保存常用筛选方案' }));
   await user.type(editor.getByLabelText(/方案名称/), '日常核对');
@@ -167,7 +172,7 @@ it('失效字段保留并阻断搜索，不能通过重复选择旧选项清除�
   };
   writeTimelinePresets(storageKey, [preset]);
   const { apply, user } = setup([], []);
-  await user.click(screen.getByRole('button', { name: '更多筛选' }));
+  await user.click(screen.getByRole('button', { name: '更多筛选（1）' }));
   await user.click(screen.getByRole('combobox', { name: '常用筛选方案' }));
   await user.click(screen.getByRole('option', { name: '旧方案' }));
   await waitFor(() => {
@@ -185,4 +190,22 @@ it('失效字段保留并阻断搜索，不能通过重复选择旧选项清除�
   await waitFor(() => {
     expect(apply).toHaveBeenCalledTimes(1);
   });
+});
+
+it('移除已应用的时间线条件只更新该条件，保留其他时间线草稿', async () => {
+  const { apply, user } = setup();
+  await user.click(screen.getByRole('button', { name: '更多筛选（1）' }));
+  await user.click(screen.getByRole('button', { name: '搜索' }));
+  const applied = within(screen.getByLabelText('已应用筛选'));
+  expect(applied.getByRole('button', { name: '移除筛选 虚构节点 / 分数：等于 0' })).toBeVisible();
+  const confirmed = applied.getByRole('button', { name: '移除筛选 虚构节点 / 已确认：等于 否' });
+  await user.clear(screen.getByRole('textbox', { name: '筛选值 1' }));
+  await user.type(screen.getByRole('textbox', { name: '筛选值 1' }), '25');
+  await user.click(screen.getByRole('button', { name: '更多筛选（3）' }));
+  await user.click(confirmed);
+  expect(apply.mock.lastCall?.[0].timeline_filters).toEqual([filters[0]]);
+  expect(applied.getByRole('button', { name: '移除筛选 虚构节点 / 分数：等于 0' })).toBeVisible();
+  await user.click(screen.getByRole('button', { name: '更多筛选（2）' }));
+  expect(screen.getByRole('textbox', { name: '筛选值 1' })).toHaveValue('25');
+  expect(screen.getByRole('status', { name: '筛选生效提示' })).toBeVisible();
 });

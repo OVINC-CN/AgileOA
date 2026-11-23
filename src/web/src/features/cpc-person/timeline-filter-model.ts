@@ -17,6 +17,13 @@ export interface TimelineFilterDraft {
   invalid?: boolean;
 }
 
+interface TimelineFilterCondition {
+  node_id: number;
+  field_id: string;
+  operator: string;
+  value?: string;
+}
+
 const emptyOperators = [
   { value: 'empty', label: '为空' },
   { value: 'not_empty', label: '不为空' },
@@ -45,7 +52,9 @@ export function timelineFilterOperators(type: TimelineFilterField['type']) {
 export const isEmptyTimelineOperator = (operator: string) =>
   operator === 'empty' || operator === 'not_empty';
 
-export function serializeTimelineFilters(filters: TimelineFilterDraft[]) {
+export function serializeTimelineFilters(
+  filters: TimelineFilterDraft[],
+): TimelineFilterCondition[] {
   // 未选择字段或未填写比较值时不限制结果，空值判断通过独立运算符表达。
   return filters.flatMap(({ field, operator, value, invalid }) => {
     if (invalid) throw new Error('常用方案中的时间线字段已失效，请重新选择字段或删除该条件');

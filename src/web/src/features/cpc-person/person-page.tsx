@@ -130,7 +130,7 @@ function PersonWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
         : []),
     ]);
   };
-  const { draft, setDraft, changeFilters, hasUnappliedChanges } = useFilterForm(
+  const { draft, setDraft, changeFilters, applyChanges, hasUnappliedChanges } = useFilterForm(
     defaultFilters,
     apply,
     filters,
@@ -303,10 +303,12 @@ function PersonWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
   const filterPanel = (
     <PersonFilterPanel
       workspaceID={workspaceID}
+      applied={filters}
       draft={draft}
       hasUnappliedChanges={hasUnappliedChanges}
       setDraft={setDraft}
       changeFilters={changeFilters}
+      applyChanges={applyChanges}
       onApply={apply}
       nodeView={isTimeline}
     />

@@ -811,7 +811,7 @@ describe('工作空间学生信息', () => {
     expect(screen.getByRole('navigation', { name: '学生工作导航' })).toBeVisible();
   });
 
-  it('学生信息保留三行常用筛选，默认状态不重复展示，展开后可修改', async () => {
+  it('学生信息保留三行常用筛选，默认状态始终可见，展开后可修改', async () => {
     mockAPI(['student.list']);
     renderWorkspace();
     await screen.findByText(student.name);
@@ -835,8 +835,8 @@ describe('工作空间学生信息', () => {
     });
     expect(screen.queryByRole('combobox', { name: '状态' })).not.toBeInTheDocument();
     expect(screen.queryByRole('combobox', { name: '专业' })).not.toBeInTheDocument();
-    expect(screen.queryByLabelText('已应用筛选')).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: /更多筛选/u }));
+    expect(screen.getByRole('button', { name: '移除筛选 状态：在籍' })).toBeVisible();
+    await userEvent.click(screen.getByRole('button', { name: '更多筛选（1）' }));
     expect(screen.getAllByRole('combobox', { name: '状态' })).toHaveLength(1);
     expect(screen.getByRole('combobox', { name: '专业' })).toBeVisible();
     expect(screen.getByRole('combobox', { name: '入学政治面貌' })).toBeVisible();
@@ -846,7 +846,7 @@ describe('工作空间学生信息', () => {
     const calls = mockAPI(['student.list', sensitiveAction]);
     renderWorkspace();
     await screen.findByText(student.name);
-    expect(screen.queryByLabelText('已应用筛选')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('已应用筛选')).toHaveTextContent('状态：在籍');
     const initialList = calls.find(({ url }) =>
       url.startsWith(`/v1/workspaces/${first}/students?`),
     );
@@ -902,9 +902,11 @@ describe('工作空间学生信息', () => {
     await user.click(screen.getByRole('combobox', { name: '班内任职状态' }));
     await user.click(screen.getByRole('option', { name: '有任职' }));
     await user.keyboard('{Escape}');
-    await user.click(screen.getByRole('button', { name: '更多筛选（1）' }));
+    await user.click(screen.getByRole('button', { name: '更多筛选（2）' }));
     expect(screen.queryByRole('combobox', { name: '班内任职状态' })).not.toBeInTheDocument();
-    expect(screen.getByLabelText('已应用筛选')).toHaveTextContent('班内任职状态：有任职');
+    const applied = screen.getByLabelText('已应用筛选');
+    expect(applied).toHaveTextContent('状态：在籍');
+    expect(applied).toHaveTextContent('班内任职状态：有任职');
     expect(calls.filter(({ url }) => url.includes('/students?')).at(-1)?.url).toContain(
       'position_status=assigned',
     );
@@ -916,12 +918,8 @@ describe('工作空间学生信息', () => {
     await screen.findByText(student.name);
     const user = userEvent.setup();
     const keyword = screen.getByRole('searchbox', { name: '学号或姓名' });
-    await user.click(screen.getByRole('button', { name: /更多筛选/u }));
-    await user.click(screen.getByRole('combobox', { name: '状态' }));
-    await user.click(await screen.findByRole('option', { name: student.status }));
-    await user.keyboard('{Escape}');
     await user.type(keyword, '待搜索文字');
-    await user.click(screen.getByRole('button', { name: /^移除筛选 状态：/u }));
+    await user.click(screen.getByRole('button', { name: '移除筛选 状态：在籍' }));
     expect(keyword).toHaveValue('待搜索文字');
     let url = new URL(
       calls.filter(({ url }) => url.includes('/students?')).at(-1)?.url ?? '',
@@ -934,7 +932,7 @@ describe('工作空间学生信息', () => {
     expect(screen.queryByRole('button', { name: '清除筛选' })).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '重置' }));
     expect(keyword).toHaveValue('');
-    expect(screen.queryByLabelText('已应用筛选')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('已应用筛选')).toHaveTextContent('状态：在籍');
     url = new URL(
       calls.filter(({ url }) => url.includes('/students?')).at(-1)?.url ?? '',
       'https://fixture.example',

@@ -416,6 +416,9 @@ describe('党建人员', () => {
       vi.fn((input: string) => {
         const url = new URL(input, 'https://example.com');
         calls.push(url);
+        if (url.pathname.endsWith('/branches')) {
+          return Promise.resolve(respond([{ value: '2', label: '虚构支部' }]));
+        }
         const data = url.pathname.endsWith('/options')
           ? [
               { value: '在编', label: '在编' },
@@ -455,7 +458,8 @@ describe('党建人员', () => {
     expect(latest('/statistics')?.getAll('status')).toEqual(['在编']);
     expect(screen.getByRole('columnheader', { name: '状态' })).toBeVisible();
     expect(screen.queryByRole('columnheader', { name: '学生状态' })).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: '更多筛选' }));
+    expect(screen.getByLabelText('已应用筛选')).toHaveTextContent('状态：在编');
+    await userEvent.click(screen.getByRole('button', { name: '更多筛选（1）' }));
     const status = screen.getByRole('combobox', { name: '状态' });
     expect(status).toHaveTextContent('在编');
     expect(screen.queryByRole('combobox', { name: '学生状态' })).not.toBeInTheDocument();
@@ -471,11 +475,35 @@ describe('党建人员', () => {
     });
     expect(latest('/statistics')?.getAll('status')).toEqual(['转出']);
     await userEvent.click(status);
+    await userEvent.click(screen.getByRole('button', { name: '更多筛选（1）' }));
+    const keyword = screen.getByRole('searchbox', { name: '学号或姓名' });
+    await userEvent.type(keyword, '待搜索');
+    const branch = screen.getByRole('combobox', { name: '所属党支部' });
+    await userEvent.click(branch);
+    await userEvent.click(await screen.findByRole('option', { name: '虚构支部' }));
+    await userEvent.click(branch);
+    const applied = within(screen.getByLabelText('已应用筛选'));
+    expect(applied.getByRole('button', { name: '移除筛选 所属党支部：虚构支部' })).toBeVisible();
+    expect(applied.queryByText('待搜索', { exact: false })).not.toBeInTheDocument();
+    await userEvent.click(applied.getByRole('button', { name: '移除筛选 状态：转出' }));
+    await waitFor(() => {
+      for (const path of ['/cpc-people', '/statistics']) {
+        expect(latest(path)?.getAll('status')).toEqual([]);
+        expect(latest(path)?.getAll('party_branch_id')).toEqual(['2']);
+        expect(latest(path)?.has('keyword')).toBe(false);
+      }
+    });
+    expect(keyword).toHaveValue('待搜索');
+    expect(screen.getByRole('button', { name: '更多筛选' })).toBeVisible();
+    await userEvent.click(screen.getByRole('button', { name: '搜索' }));
+    expect(applied.getByRole('button', { name: '移除筛选 学号或姓名：待搜索' })).toBeVisible();
     await userEvent.click(screen.getByRole('button', { name: '重置' }));
     await waitFor(() => {
       expect(latest('/cpc-people')?.getAll('status')).toEqual(['在编']);
     });
     expect(latest('/statistics')?.getAll('status')).toEqual(['在编']);
+    expect(applied.getAllByRole('button')).toHaveLength(1);
+    expect(applied.getByRole('button', { name: '移除筛选 状态：在编' })).toBeVisible();
     expect(calls.some((url) => url.searchParams.has('student_status'))).toBe(false);
   });
 
@@ -773,6 +801,7 @@ describe('党建人员', () => {
       }
     });
     await userEvent.click(statusFilter);
+    expect(screen.getByLabelText('已应用筛选')).toHaveTextContent('节点状态：已完成、已跳过');
 
     // 点击姓名读取当前节点详情，编辑读取独立的编辑入口。
     await userEvent.click(within(row).getByRole('button', { name: person.name }));
@@ -824,6 +853,7 @@ describe('党建人员', () => {
     expect(screen.getByRole('searchbox', { name: '学号或姓名' })).toHaveValue('虚构草稿');
     expect(screen.queryByRole('combobox', { name: '节点状态' })).not.toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: '时间线状态' })).toBeVisible();
+    expect(screen.getByLabelText('已应用筛选')).not.toHaveTextContent('节点状态');
     expect(
       calls
         .findLast((url) => url.pathname.endsWith('/cpc-people'))

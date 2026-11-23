@@ -47,19 +47,15 @@ export function useFilterForm<T extends object>(
     sequence.current += 1;
     updateDraft(next);
   };
-  const applyChanges = async (changes: Partial<T>) => {
-    // 相同选项不重复请求，清空多选同样视为条件变化。
-    const changed = Object.entries(changes).some(
-      ([key, value]) =>
-        !sameValue(current.current[key as keyof T], value) ||
-        !sameValue(submitted.current[key as keyof T], value),
-    );
-    if (!changed) return;
+  const applyChanges = async (changes: Partial<T>, draftChanges = changes) => {
+    // 移除已应用的组合条件时，草稿可保留同一字段中的其他修改。
+    const nextDraft = { ...current.current, ...draftChanges };
+    const next = { ...submitted.current, ...changes };
+    if (sameValue(current.current, nextDraft) && sameValue(submitted.current, next)) return;
 
     // 选项请求独立执行，避免搜索按钮的提交锁丢弃后续变化。
-    const next = { ...submitted.current, ...changes };
     submitted.current = next;
-    setDraft({ ...current.current, ...changes });
+    setDraft(nextDraft);
     const request = sequence.current;
     await onApply(next).catch((cause: unknown) => {
       if (request !== sequence.current) return;
