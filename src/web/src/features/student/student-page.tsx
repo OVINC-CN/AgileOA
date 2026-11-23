@@ -206,10 +206,6 @@ export function StudentPage({
     },
   ];
   const selectors = studentFields.filter((field) => field.enumerable);
-  const defaultStatusApplied =
-    Array.isArray(filters['status']) &&
-    filters['status'].length === 1 &&
-    filters['status'][0] === enrolledStatus.value;
   const selectedValues = (key: string) => {
     const values = draft[key];
     return Array.isArray(values) ? values : [];
@@ -219,7 +215,6 @@ export function StudentPage({
     if (
       !Array.isArray(values) ||
       values.length === 0 ||
-      (field.key === 'status' && defaultStatusApplied) ||
       (field.group === 'sensitive' && !can(sensitiveAction))
     )
       return [];
