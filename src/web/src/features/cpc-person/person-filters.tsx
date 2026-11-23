@@ -3,7 +3,7 @@ import { Search } from 'lucide-react';
 import { type SetStateAction, useState } from 'react';
 
 import { ErrorMessage } from '@/components/error-message';
-import { FilterPanel } from '@/components/filter-panel';
+import { type AppliedFilter, FilterPanel } from '@/components/filter-panel';
 import { SearchResetButton } from '@/components/search-reset-button';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,12 +19,17 @@ import {
   stages,
   timelineStatuses,
 } from '@/features/cpc-person/api';
+import {
+  serializeTimelineFilters,
+  timelineFilterOperators,
+} from '@/features/cpc-person/timeline-filter-model';
 import { PersonTimelineFilters } from '@/features/cpc-person/timeline-filters';
 import { TimelineTemplateSelect } from '@/features/cpc-person/timeline-template-select';
+import { timelineValueLabel } from '@/features/cpc-person/timeline-values';
 import { ApiError } from '@/lib/api';
 import { useApiAction } from '@/lib/api-action';
 
-const commonFilterKeys = new Set(['stage', 'party_branch_id', 'timeline_status']);
+const commonFilterKeys = new Set(['stage', 'party_branch_id', 'timeline_status', 'node_status']);
 
 function Filter({
   workspaceID,
@@ -79,25 +84,103 @@ function Filter({
 
 export function PersonFilterPanel({
   workspaceID,
+  applied,
   draft,
   setDraft,
   changeFilters,
+  applyChanges,
   onApply,
   hasUnappliedChanges,
   nodeView = false,
 }: {
   workspaceID: string;
+  applied: PersonFilters;
   draft: PersonFilters;
   setDraft: (values: SetStateAction<PersonFilters>) => void;
   changeFilters: (changes: Partial<PersonFilters>) => void;
+  applyChanges: (
+    changes: Partial<PersonFilters>,
+    draftChanges?: Partial<PersonFilters>,
+  ) => Promise<unknown>;
   onApply: (values: PersonFilters) => Promise<unknown>;
   hasUnappliedChanges?: boolean;
   nodeView?: boolean;
 }) {
   const search = useApiAction();
+  // 复用下拉框加载的支部简称，关闭下拉框后仍可显示已选名称。
+  const branches = useQuery({ ...personBranchOptions(workspaceID), enabled: false });
+  const options: Partial<Record<keyof PersonFilters, readonly { value: string; label: string }[]>> =
+    {
+      stage: stages,
+      party_branch_id: branches.data ?? [],
+      timeline_status: timelineStatuses,
+      node_status: nodeStatuses,
+    };
+  const appliedFilters: AppliedFilter[] = [];
+  const keyword = applied.keyword.trim();
+  if (keyword) {
+    appliedFilters.push({
+      id: 'keyword',
+      label: '学号或姓名',
+      value: keyword,
+      onRemove: () => applyChanges({ keyword: '' }),
+    });
+  }
+  for (const field of filterFields) {
+    const key = nodeView && field.key === 'timeline_status' ? 'node_status' : field.key;
+    const values = applied[key];
+    if (values.length === 0) continue;
+    appliedFilters.push({
+      id: key,
+      label: key === 'node_status' ? '节点状态' : field.label,
+      value: values
+        .map(
+          (value) =>
+            options[key]?.find((item) => item.value === value)?.label ?? (value || '未填写'),
+        )
+        .join('、'),
+      onRemove: () => applyChanges({ [key]: [] }),
+    });
+  }
+  if (!nodeView && applied.timeline_template) {
+    appliedFilters.push({
+      id: 'timeline_template',
+      label: '时间线模板',
+      value: applied.timeline_template.label,
+      onRemove: () => applyChanges({ timeline_template: null }),
+    });
+  }
+  for (const condition of applied.timeline_filters) {
+    const { id, field } = condition;
+    if (!field) continue;
+    const [serialized] = serializeTimelineFilters([condition]);
+    if (!serialized) continue;
+    const { operator, value } = serialized;
+    const operatorLabel =
+      timelineFilterOperators(field.type).find((item) => item.value === operator)?.label ??
+      operator;
+    const valueLabel =
+      value === undefined
+        ? ''
+        : timelineValueLabel(field.type === 'boolean' ? value === 'true' : value);
+    appliedFilters.push({
+      id: `timeline:${id}`,
+      label: field.label,
+      value: valueLabel ? `${operatorLabel} ${valueLabel}` : operatorLabel,
+      onRemove: () =>
+        applyChanges(
+          { timeline_filters: applied.timeline_filters.filter((item) => item.id !== id) },
+          { timeline_filters: draft.timeline_filters.filter((item) => item.id !== id) },
+        ),
+    });
+  }
   return (
     <FilterPanel
       hasUnappliedChanges={hasUnappliedChanges}
+      appliedFilters={appliedFilters}
+      moreActiveCount={
+        appliedFilters.filter(({ id }) => id !== 'keyword' && !commonFilterKeys.has(id)).length
+      }
       onSubmit={(event) => {
         event.preventDefault();
         void search.run('search', () => onApply(draft));
