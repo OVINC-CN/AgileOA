@@ -1,9 +1,10 @@
-import { Pencil, Save, Trash2 } from 'lucide-react';
+import { Pencil, Save } from 'lucide-react';
 import { useState } from 'react';
 
 import { TableActionButton } from '@/components/table-action-button';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { DeleteConfirmation } from '@/components/ui/delete-confirmation';
 import { Drawer } from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -162,63 +163,17 @@ export function TimelinePresetManagerDrawer({
                 <Save aria-hidden="true" />
                 覆盖保存
               </TableActionButton>
-              <TableActionButton
-                aria-label={`删除方案 ${preset.name}`}
-                onClick={() => {
+              <DeleteConfirmation
+                target={preset.name}
+                onConfirm={() => {
                   onDelete(preset);
                 }}
-              >
-                <Trash2 aria-hidden="true" />
-                删除
-              </TableActionButton>
+                aria-label={`删除方案 ${preset.name}`}
+              />
             </div>
           </li>
         ))}
       </ul>
-    </Drawer>
-  );
-}
-
-export function TimelinePresetDeleteDrawer({
-  preset,
-  onDelete,
-  onClose,
-}: {
-  preset: TimelineFilterPreset;
-  onDelete: () => void;
-  onClose: () => void;
-}) {
-  return (
-    <Drawer
-      title="删除常用筛选方案"
-      description={preset.name}
-      onClose={onClose}
-      footerDismiss={
-        <Button type="button" variant="cancel" onClick={onClose}>
-          取消
-        </Button>
-      }
-      footer={
-        <Button
-          type="button"
-          variant="destructive"
-          onClick={() => {
-            try {
-              onDelete();
-              onClose();
-            } catch (cause) {
-              showMessage(cause instanceof Error ? cause.message : '删除方案失败，请重试');
-            }
-          }}
-        >
-          <Trash2 aria-hidden="true" />
-          删除方案
-        </Button>
-      }
-    >
-      <p className="p-6 text-sm text-muted-foreground">
-        删除后无法恢复。当前已填写或已生效的筛选条件保持不变。
-      </p>
     </Drawer>
   );
 }

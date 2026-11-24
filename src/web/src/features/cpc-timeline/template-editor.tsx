@@ -1,8 +1,9 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { Eye, Pencil, Save, TriangleAlert } from 'lucide-react';
+import { Eye, Pencil, Save } from 'lucide-react';
 import { useId, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { DeleteConfirmation } from '@/components/ui/delete-confirmation';
 import { Drawer } from '@/components/ui/drawer';
 import { DrawerTabs } from '@/components/ui/drawer-tabs';
 import { Input } from '@/components/ui/input';
@@ -50,7 +51,6 @@ export function TemplateEditor({
   const [preview, setPreview] = useState(false);
   const [section, setSection] = useState<'nodes' | 'transfers'>('nodes');
   const [checkingNode, setCheckingNode] = useState(false);
-  const [confirmingDeletion, setConfirmingDeletion] = useState(false);
   const [attachmentBusy, setAttachmentBusy] = useState(false);
   const tabsID = useId();
   const save = useApiAction();
@@ -70,8 +70,8 @@ export function TemplateEditor({
   );
   const removedNodes =
     original?.definition.nodes.filter((node) => !nodes.some((item) => item.id === node.id)) ?? [];
-  const submit = (confirmed: boolean) => {
-    void save.run('save', async () => {
+  const submit = async (confirmed: boolean) => {
+    const result = await save.run('save', async () => {
       await saveTimeline(workspaceID, original, values, confirmed);
       await Promise.all([
         client.invalidateQueries({ queryKey: timelineKey(workspaceID) }),
@@ -79,8 +79,15 @@ export function TemplateEditor({
       ]);
       onClose();
     });
+    return result.ok;
   };
-  const busy = save.pending || checkingNode || confirmingDeletion || attachmentBusy;
+  const busy = save.pending || checkingNode || attachmentBusy;
+  const saveButton = (
+    <Button type="submit" loading={save.pending} disabled={checkingNode || attachmentBusy}>
+      <Save aria-hidden="true" />
+      保存
+    </Button>
+  );
   return (
     <Drawer
       title={original ? '编辑时间线模板' : '新增时间线模板'}
@@ -94,8 +101,7 @@ export function TemplateEditor({
         onSubmit: (event) => {
           event.preventDefault();
           if (busy) return;
-          if (removedNodes.length) setConfirmingDeletion(true);
-          else submit(false);
+          if (!removedNodes.length) void submit(false);
         },
       }}
       footerNavigation={
@@ -134,10 +140,20 @@ export function TemplateEditor({
             </Button>
           ) : null}
 
-          <Button type="submit" loading={save.pending} disabled={checkingNode || attachmentBusy}>
-            <Save aria-hidden="true" />
-            保存
-          </Button>
+          {removedNodes.length ? (
+            <DeleteConfirmation
+              target={`节点 ${removedNodes.map((node) => node.name).join('、')} 及绑定人员的对应节点`}
+              type="submit"
+              variant="default"
+              size="default"
+              label="保存"
+              icon={Save}
+              disabled={busy}
+              onConfirm={() => submit(true)}
+            />
+          ) : (
+            saveButton
+          )}
         </>
       }
     >
@@ -305,55 +321,6 @@ export function TemplateEditor({
           )}
         </div>
       </fieldset>
-      {confirmingDeletion ? (
-        <Drawer
-          title="确认同步删除人员节点"
-          description="此操作影响所有绑定本模板的人员，无法恢复"
-          busy={save.pending}
-          onClose={() => {
-            setConfirmingDeletion(false);
-          }}
-          footerDismiss={
-            <Button
-              type="button"
-              variant="cancel"
-              disabled={save.pending}
-              onClick={() => {
-                setConfirmingDeletion(false);
-              }}
-            >
-              返回检查
-            </Button>
-          }
-          footer={
-            <Button
-              type="button"
-              variant="destructive"
-              loading={save.pending}
-              onClick={() => {
-                submit(true);
-              }}
-            >
-              <TriangleAlert aria-hidden="true" />
-              确认删除并保存
-            </Button>
-          }
-        >
-          <div className="space-y-4 p-6 text-sm">
-            <p className="font-semibold text-danger-foreground">
-              以下节点、所有绑定人员的对应节点、填写内容及人员附件记录将同步删除：
-            </p>
-            <ul className="list-disc space-y-1 pl-5">
-              {removedNodes.map((node) => (
-                <li key={node.id} className="wrap-anywhere">
-                  {node.name}
-                </li>
-              ))}
-            </ul>
-            <p>节点的模板附件须先删除；保存后将一并移除关联的人员填写内容和附件记录，无法恢复。</p>
-          </div>
-        </Drawer>
-      ) : null}
     </Drawer>
   );
 }

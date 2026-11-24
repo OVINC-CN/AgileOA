@@ -74,13 +74,11 @@ function PersonWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
   const [filters, setFilters] = useState<PersonFilters>(defaultFilters);
   const [editing, setEditing] = useState<Person | null | undefined>();
   const [detail, setDetail] = useState<Person | null>(null);
-  const [deleting, setDeleting] = useState<Person | null>(null);
   const [transfer, setTransfer] = useState(false);
   const peoplePagination = useTablePagination();
   const client = useQueryClient();
   const refresh = useApiAction();
   const read = useApiAction();
-  const remove = useApiAction();
   const download = useApiAction();
   const timelineView = usePersonTimelineView({
     workspaceID,
@@ -189,11 +187,24 @@ function PersonWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
           label={formatIdentity(person.name, person.student_no)}
           actions={[
             {
-              label: '删除人员',
+              label: '删除',
               icon: Trash2,
               destructive: true,
-              onSelect: () => {
-                setDeleting(person);
+              confirmDelete: {
+                target: formatIdentity(person.name, person.student_no),
+                onConfirm: async () => {
+                  await deletePerson(workspaceID, person);
+                  const page = Math.max(
+                    1,
+                    Math.min(
+                      pagination.page,
+                      Math.ceil(((data?.total ?? 1) - 1) / pagination.pageSize),
+                    ),
+                  );
+                  pagination.setPage(page);
+                  await client.invalidateQueries({ queryKey: personKey(workspaceID) });
+                  await fetchPage(page, pagination.pageSize);
+                },
               },
             },
           ]}
@@ -269,11 +280,7 @@ function PersonWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
         ),
     },
     ...recordTimeColumns<Person>((record) => record),
-    {
-      id: 'actions',
-      header: '操作',
-      cell: ({ row }) => renderActions(row.original),
-    },
+    { id: 'actions', header: '操作' },
   ];
   const refreshButton = (
     <Button
@@ -456,6 +463,7 @@ function PersonWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
                         };
                       },
                     }}
+                    rowActions={renderActions}
                     columns={columns}
                     data={peopleData?.items ?? []}
                     total={peopleData?.total ?? 0}
@@ -543,57 +551,6 @@ function PersonWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
           }
         >
           <PersonDetail person={detail} />
-        </Drawer>
-      ) : null}
-      {data && deleting && can('delete') ? (
-        <Drawer
-          title="删除党建人员"
-          truncateDescription
-          description={formatIdentity(deleting.name, deleting.student_no)}
-          busy={remove.pending}
-          onClose={() => {
-            setDeleting(null);
-          }}
-          footerDismiss={
-            <Button
-              variant="cancel"
-              disabled={remove.pending}
-              onClick={() => {
-                setDeleting(null);
-              }}
-            >
-              取消
-            </Button>
-          }
-          footer={
-            <Button
-              variant="destructive"
-              loading={remove.pending}
-              onClick={() => {
-                void remove.run('delete', async () => {
-                  await deletePerson(workspaceID, deleting);
-                  const page = Math.max(
-                    1,
-                    Math.min(
-                      pagination.page,
-                      Math.ceil(((data.total || 1) - 1) / pagination.pageSize),
-                    ),
-                  );
-                  pagination.setPage(page);
-                  await client.invalidateQueries({ queryKey: personKey(workspaceID) });
-                  await fetchPage(page, pagination.pageSize);
-                  setDeleting(null);
-                });
-              }}
-            >
-              <Trash2 aria-hidden="true" />
-              确认删除
-            </Button>
-          }
-        >
-          <p className="p-6 text-sm">
-            将永久删除该党建记录及其时间线节点、填写内容、转移申请和附件记录，学生基础档案、时间线模板及历史审计保留。转移处理中的人员不可删除。
-          </p>
         </Drawer>
       ) : null}
     </section>

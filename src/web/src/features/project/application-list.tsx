@@ -13,7 +13,6 @@ import { TableActionButton } from '@/components/table-action-button';
 import { TableActionsMenu } from '@/components/table-actions-menu';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Drawer } from '@/components/ui/drawer';
 import { SearchSelect } from '@/components/ui/search-select';
 import { projectKey } from '@/features/project/api';
 import {
@@ -65,7 +64,6 @@ export function ApplicationList({
   const applicationID = params.get('application_id');
   const [filters, setFilters] = useState(() => defaultApplicationFilters(scope));
   const [creating, setCreating] = useState(false);
-  const [deleting, setDeleting] = useState<ApplicationSummary | null>(null);
   const pagination = useTablePagination();
   const client = useQueryClient();
   const query = useQuery({
@@ -126,6 +124,63 @@ export function ApplicationList({
     accessorFn: ({ year, project_name }) =>
       isMine ? `${String(year)} · ${project_name}` : project_name,
   };
+  const renderActions = (record: ApplicationSummary) => {
+    const editable = record.can_edit || record.can_approve || record.can_reject;
+    return (
+      <div className="flex items-center gap-1">
+        <TableActionButton
+          disabled={loadDetail.pending}
+          loading={loadDetail.isPending(String(record.id))}
+          onClick={() => {
+            openDetail(record.id, String(record.id));
+          }}
+        >
+          {editable ? <Pencil aria-hidden="true" /> : <Eye aria-hidden="true" />}
+          {editable ? '处理' : '详情'}
+        </TableActionButton>
+        {scope === 'manage' && canDelete ? (
+          <TableActionsMenu
+            label={[
+              formatIdentity(record.student_name, record.student_no),
+              String(record.year),
+              record.project_name,
+            ].join(' · ')}
+            disabled={remove.pending || denied}
+            actions={[
+              {
+                label: '删除',
+                icon: Trash2,
+                destructive: true,
+                confirmDelete: {
+                  target:
+                    `${record.project_name} · ${String(record.year)} · ` +
+                    formatIdentity(record.student_name, record.student_no),
+                  onConfirm: async () => {
+                    const result = await remove.run('delete', async () => {
+                      await deleteApplication(workspaceID, record);
+                      client.removeQueries({
+                        queryKey: applicationDetailOptions(workspaceID, scope, record.id).queryKey,
+                      });
+                      await client.invalidateQueries({ queryKey: projectKey(workspaceID) });
+                      const lastPage = Math.max(
+                        1,
+                        Math.ceil(((data?.total ?? 1) - 1) / pagination.pageSize),
+                      );
+                      if (pagination.page > lastPage) {
+                        pagination.setPage(lastPage);
+                        await fetchPage(lastPage, pagination.pageSize);
+                      }
+                    });
+                    return result.ok;
+                  },
+                },
+              },
+            ]}
+          />
+        ) : null}
+      </div>
+    );
+  };
   const columns: ColumnDef<ApplicationSummary>[] = [
     ...(isMine
       ? [projectColumn, ...studentColumns]
@@ -138,48 +193,7 @@ export function ApplicationList({
     },
     { accessorKey: 'current_reviewer', header: '当前处理人' },
     ...recordTimeColumns<ApplicationSummary>((record) => record),
-    {
-      id: 'actions',
-      header: '操作',
-      cell: ({ row }) => {
-        const record = row.original;
-        const editable = record.can_edit || record.can_approve || record.can_reject;
-        return (
-          <div className="flex items-center gap-1">
-            <TableActionButton
-              disabled={loadDetail.pending}
-              loading={loadDetail.isPending(String(record.id))}
-              onClick={() => {
-                openDetail(record.id, String(record.id));
-              }}
-            >
-              {editable ? <Pencil aria-hidden="true" /> : <Eye aria-hidden="true" />}
-              {editable ? '处理' : '详情'}
-            </TableActionButton>
-            {scope === 'manage' && canDelete ? (
-              <TableActionsMenu
-                label={[
-                  formatIdentity(record.student_name, record.student_no),
-                  String(record.year),
-                  record.project_name,
-                ].join(' · ')}
-                disabled={remove.pending || denied}
-                actions={[
-                  {
-                    label: '删除',
-                    icon: Trash2,
-                    destructive: true,
-                    onSelect: () => {
-                      setDeleting(record);
-                    },
-                  },
-                ]}
-              />
-            ) : null}
-          </div>
-        );
-      },
-    },
+    { id: 'actions', header: '操作' },
   ];
   const denied = query.error instanceof ApiError && [401, 403, 404].includes(query.error.status);
   const data = denied ? undefined : query.data;
@@ -316,6 +330,8 @@ export function ApplicationList({
                 };
               },
             }}
+            rowActions={renderActions}
+            rowID={(record) => String(record.id)}
             columns={columns}
             data={data?.items ?? []}
             total={data?.total ?? 0}
@@ -349,61 +365,6 @@ export function ApplicationList({
           record={null}
           onClose={closeDetail}
         />
-      ) : null}
-      {scope === 'manage' && canDelete && !denied && deleting ? (
-        <Drawer
-          title="删除填报"
-          truncateDescription
-          description={`${deleting.project_name} · ${String(deleting.year)} · ${formatIdentity(deleting.student_name, deleting.student_no)}`}
-          busy={remove.pending}
-          onClose={() => {
-            setDeleting(null);
-          }}
-          footerDismiss={
-            <Button
-              variant="cancel"
-              disabled={remove.pending}
-              onClick={() => {
-                setDeleting(null);
-              }}
-            >
-              取消
-            </Button>
-          }
-          footer={
-            <Button
-              loading={remove.pending}
-              onClick={() => {
-                void (async () => {
-                  const result = await remove.run('delete', async () => {
-                    await deleteApplication(workspaceID, deleting);
-                    client.removeQueries({
-                      queryKey: applicationDetailOptions(workspaceID, scope, deleting.id).queryKey,
-                    });
-                    await client.invalidateQueries({ queryKey: projectKey(workspaceID) });
-                    const lastPage = Math.max(
-                      1,
-                      Math.ceil(((data?.total ?? 1) - 1) / pagination.pageSize),
-                    );
-                    if (pagination.page > lastPage) {
-                      pagination.setPage(lastPage);
-                      await fetchPage(lastPage, pagination.pageSize);
-                    }
-                  });
-                  if (result.ok) setDeleting(null);
-                })();
-              }}
-            >
-              <Trash2 aria-hidden="true" />
-              确认删除
-            </Button>
-          }
-        >
-          <p className="p-6 text-sm">
-            将永久删除本条填报及其全部评分子项、审批流程、签署记录、流转历史和附件。
-            学生档案、项目、获奖记录及历史审计保留。
-          </p>
-        </Drawer>
       ) : null}
     </div>
   );

@@ -15,7 +15,6 @@ import { TableActionsMenu } from '@/components/table-actions-menu';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Drawer } from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
 import { SearchSelect } from '@/components/ui/search-select';
 import { Tooltip } from '@/components/ui/tooltip';
@@ -28,7 +27,7 @@ import {
 } from '@/features/workspace/api';
 import { workspaceURL } from '@/features/workspace/navigation';
 import { WorkspaceEditor } from '@/features/workspace/workspace-editor';
-import { useApiAction, useApiMutation, useInitialLoading } from '@/lib/api-action';
+import { useApiAction, useInitialLoading } from '@/lib/api-action';
 import { useFilterForm } from '@/lib/filter-form';
 import { formatValue } from '@/lib/format';
 import { useTablePagination } from '@/lib/pagination';
@@ -37,69 +36,12 @@ import { recordTimeColumns } from '@/lib/record-time-columns';
 const empty: Workspace[] = [];
 const defaultFilters: WorkspaceFilters = { keyword: '', status: [] };
 
-function DeleteWorkspace({
-  workspace,
-  onClose,
-  onDeleted,
-}: {
-  workspace: Workspace;
-  onClose: () => void;
-  onDeleted: () => void;
-}) {
-  const client = useQueryClient();
-  const mutation = useApiMutation({
-    mutationFn: async () => {
-      await deleteWorkspace(workspace.id);
-      await Promise.all([
-        client.invalidateQueries({ queryKey: ['management', 'workspaces'] }),
-        client.invalidateQueries({ queryKey: ['management', 'audit'] }),
-        client.invalidateQueries({ queryKey: ['workspace'] }),
-      ]);
-    },
-    onSuccess: onDeleted,
-  });
-  return (
-    <Drawer
-      title="删除工作空间"
-      busy={mutation.isPending}
-      description={workspace.name}
-      onClose={() => {
-        if (!mutation.isPending) onClose();
-      }}
-      footerDismiss={
-        <Button variant="cancel" disabled={mutation.isPending} onClick={onClose}>
-          取消
-        </Button>
-      }
-      footer={
-        <Button
-          loading={mutation.isPending}
-          onClick={() => {
-            mutation.mutate();
-          }}
-        >
-          <Trash2 aria-hidden="true" />
-          确认删除
-        </Button>
-      }
-    >
-      <div className="space-y-4 p-6 text-sm">
-        <p>
-          将永久删除工作空间及其中的学生、党建、月度工作等业务数据和关联记录，历史审计保留。空间仍有授权或奖项项目时不可删除。
-        </p>
-        {mutation.error ? <ErrorMessage>{mutation.error.message}</ErrorMessage> : null}
-      </div>
-    </Drawer>
-  );
-}
-
 export function WorkspacesPage() {
   const { data: user } = useCurrentUser();
   const client = useQueryClient();
   const [filters, setFilters] = useState(defaultFilters);
   const { page, pageSize, setPage, setPageSize } = useTablePagination();
   const [editor, setEditor] = useState<{ workspace: Workspace | null } | null>(null);
-  const [deleting, setDeleting] = useState<Workspace | null>(null);
   const [notice, setNotice] = useState('');
   const searchAction = useApiAction();
   const list = useQuery({
@@ -118,6 +60,47 @@ export function WorkspacesPage() {
     defaultFilters,
     applyFilters,
     filters,
+  );
+  const renderActions = (record: Workspace) => (
+    <div className="flex flex-nowrap gap-1">
+      <TableActionButton
+        onClick={() => {
+          setEditor({ workspace: record });
+        }}
+      >
+        <Pencil aria-hidden="true" />
+        编辑
+      </TableActionButton>
+      <TableActionButton asChild>
+        <Link to={workspaceURL('/system/permissions', record.id)}>
+          <ShieldCheck aria-hidden="true" />
+          权限
+        </Link>
+      </TableActionButton>
+      <TableActionsMenu
+        label={record.name}
+        actions={[
+          {
+            label: '删除',
+            icon: Trash2,
+            destructive: true,
+            confirmDelete: {
+              target: record.name,
+              onConfirm: async () => {
+                await deleteWorkspace(record.id);
+                await Promise.all([
+                  client.invalidateQueries({ queryKey: ['management', 'workspaces'] }),
+                  client.invalidateQueries({ queryKey: ['management', 'audit'] }),
+                  client.invalidateQueries({ queryKey: ['workspace'] }),
+                ]);
+                setNotice(`已删除工作空间 ${record.name}`);
+                if (list.data?.items.length === 1 && page > 1) setPage(page - 1);
+              },
+            },
+          },
+        ]}
+      />
+    </div>
   );
   const columns: ColumnDef<Workspace>[] = [
     { accessorKey: 'name', header: '工作空间' },
@@ -145,41 +128,7 @@ export function WorkspacesPage() {
       ),
     },
     ...recordTimeColumns<Workspace>((record) => record),
-    {
-      id: 'actions',
-      header: '操作',
-      cell: ({ row }) => (
-        <div className="flex flex-nowrap gap-1">
-          <TableActionButton
-            onClick={() => {
-              setEditor({ workspace: row.original });
-            }}
-          >
-            <Pencil aria-hidden="true" />
-            编辑
-          </TableActionButton>
-          <TableActionButton asChild>
-            <Link to={workspaceURL('/system/permissions', row.original.id)}>
-              <ShieldCheck aria-hidden="true" />
-              权限
-            </Link>
-          </TableActionButton>
-          <TableActionsMenu
-            label={row.original.name}
-            actions={[
-              {
-                label: '删除',
-                icon: Trash2,
-                destructive: true,
-                onSelect: () => {
-                  setDeleting(row.original);
-                },
-              },
-            ]}
-          />
-        </div>
-      ),
-    },
+    { id: 'actions', header: '操作' },
   ];
   if (!user?.is_admin) return <ErrorMessage>仅系统管理员可以访问工作空间。</ErrorMessage>;
   return (
@@ -277,6 +226,8 @@ export function WorkspacesPage() {
               },
             }),
           }}
+          rowActions={renderActions}
+          rowID={(record) => record.id}
           columns={columns}
           data={list.data?.items ?? empty}
           total={list.data?.total ?? 0}
@@ -306,19 +257,6 @@ export function WorkspacesPage() {
           onSaved={(message) => {
             setEditor(null);
             setNotice(message);
-          }}
-        />
-      ) : null}
-      {deleting ? (
-        <DeleteWorkspace
-          workspace={deleting}
-          onClose={() => {
-            setDeleting(null);
-          }}
-          onDeleted={() => {
-            setDeleting(null);
-            setNotice(`已删除工作空间 ${deleting.name}`);
-            if (list.data?.items.length === 1 && page > 1) setPage(page - 1);
           }}
         />
       ) : null}

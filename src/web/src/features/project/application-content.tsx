@@ -2,10 +2,10 @@ import { Paperclip, Plus, Trash2, Upload } from 'lucide-react';
 
 import { AttachmentFilename } from '@/components/attachment-filename';
 import { DetailValue } from '@/components/detail-value';
-import { TableActionButton } from '@/components/table-action-button';
 import { TableTimestamp } from '@/components/table-timestamp';
 import { AutoTextarea } from '@/components/ui/auto-textarea';
 import { Button } from '@/components/ui/button';
+import { DeleteConfirmation } from '@/components/ui/delete-confirmation';
 import { FileUploadButton } from '@/components/ui/file-upload-button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -35,10 +35,9 @@ interface FileProps {
   applicationID: number;
   busy: boolean;
   uploading: boolean;
-  deleting: (id: number) => boolean;
   onUpload?: (file: File, updateUpload: UploadUpdate) => void;
   onPrepareUpload?: (() => void) | undefined;
-  onDelete?: (file: ApplicationAttachment) => void;
+  onDelete?: (file: ApplicationAttachment) => Promise<boolean>;
 }
 
 export function ApplicationMetadata({ record }: { record: Application }) {
@@ -91,7 +90,6 @@ export function ApplicationFiles({
   applicationID,
   busy,
   uploading,
-  deleting,
   onUpload,
   onPrepareUpload,
   onDelete,
@@ -116,16 +114,11 @@ export function ApplicationFiles({
             </span>
           ) : null}
           {onDelete ? (
-            <TableActionButton
+            <DeleteConfirmation
+              target={file.filename}
+              onConfirm={() => onDelete(file)}
               disabled={busy}
-              loading={deleting(file.id)}
-              onClick={() => {
-                onDelete(file);
-              }}
-            >
-              <Trash2 aria-hidden="true" />
-              删除
-            </TableActionButton>
+            />
           ) : null}
         </div>
       ))}

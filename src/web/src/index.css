@@ -86,6 +86,7 @@
   --font-size-metric-emphasis: 1.5rem;
   --motion-navigation-duration: 200ms;
   --motion-sidebar-duration: 220ms;
+  --motion-delete-confirmation-duration: 350ms;
   --motion-easing-standard: cubic-bezier(0.22, 1, 0.36, 1);
   --radius: 0.5rem;
   --background: #fff;

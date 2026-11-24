@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it, vi } from 'vitest';
 
@@ -304,4 +304,57 @@ it('编辑和预览直接展示附件列表，返回编辑后继续保护有附�
   await user.click(screen.getByRole('button', { name: '删除节点 1' }));
   expect(await screen.findByRole('alert')).toHaveTextContent('节点仍有模板附件');
   expect(screen.getByRole('button', { name: '1. 虚构节点' })).toBeVisible();
+});
+
+it('保存移除节点的模板时，在原按钮确认后提交同步删除', async () => {
+  const removed = { ...newNode(), name: '待删除节点' };
+  const remaining = { ...newNode(), name: '保留节点' };
+  const original: TimelineInfo = {
+    ...template,
+    description: '',
+    node_count: 2,
+    revision: 1,
+    definition: { nodes: [removed, remaining] },
+    created_at: '2026-11-06T00:00:00Z',
+    updated_at: '2026-11-06T00:00:00Z',
+  };
+  const request = vi.fn<(url: string, options: RequestInit) => Promise<Response>>(() =>
+    Promise.resolve(
+      respond({ ...original, node_count: 1, revision: 2, definition: { nodes: [remaining] } }),
+    ),
+  );
+  vi.stubGlobal('fetch', request);
+  const onClose = vi.fn();
+  render(
+    <QueryClientProvider client={client()}>
+      <TemplateEditor
+        workspaceID={workspaceID}
+        original={original}
+        actions={[]}
+        onClose={onClose}
+      />
+    </QueryClientProvider>,
+  );
+  const user = userEvent.setup();
+  await user.click(screen.getByRole('button', { name: '删除节点 1' }));
+  const save = screen.getByRole('button', { name: '保存' });
+  await user.click(save);
+  const confirm = screen.getByRole('button', { name: '确认' });
+  expect(confirm).toBe(save);
+  expect(confirm).toHaveAccessibleDescription('确认删除 节点 待删除节点 及绑定人员的对应节点 ?');
+  expect(request).not.toHaveBeenCalled();
+  await user.keyboard('{Escape}');
+  expect(screen.getByRole('button', { name: '保存' })).toBe(save);
+  expect(save).toHaveFocus();
+
+  await user.click(save);
+  await user.click(screen.getByRole('button', { name: '确认' }));
+  await waitFor(() => {
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+  expect(request).toHaveBeenCalledOnce();
+  const [url, options] = request.mock.calls[0] ?? [];
+  expect(url).toContain('/cpc-timeline-templates/7');
+  expect(options?.method).toBe('PUT');
+  expect(options?.body).toContain('"confirm_node_deletion":true');
 });

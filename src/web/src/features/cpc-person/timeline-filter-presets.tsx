@@ -9,7 +9,6 @@ import { SearchSelect } from '@/components/ui/search-select';
 import { personTimelineFilterFieldOptions } from '@/features/cpc-person/api';
 import type { TimelineFilterDraft } from '@/features/cpc-person/timeline-filter-model';
 import {
-  TimelinePresetDeleteDrawer,
   type TimelinePresetEditor,
   TimelinePresetEditorDrawer,
   TimelinePresetManagerDrawer,
@@ -18,7 +17,6 @@ import {
   prepareTimelinePreset,
   readTimelinePresets,
   restoreTimelinePreset,
-  type TimelineFilterPreset,
   timelineFilterSignature,
   timelinePresetChangeEvent,
   timelinePresetStorageKey,
@@ -58,7 +56,6 @@ function ScopedTimelineFilterPresets({
   const [selectedID, setSelectedID] = useState('');
   const [managing, setManaging] = useState(false);
   const [editor, setEditor] = useState<TimelinePresetEditor | null>(null);
-  const [deleting, setDeleting] = useState<TimelineFilterPreset | null>(null);
   const restore = useApiAction();
   const client = useQueryClient();
   const selected = snapshot.presets.find((preset) => preset.id === selectedID);
@@ -171,7 +168,13 @@ function ScopedTimelineFilterPresets({
           presets={snapshot.presets}
           canOverwrite={value.length > 0}
           onEdit={setEditor}
-          onDelete={setDeleting}
+          onDelete={(deleted) => {
+            const current = readTimelinePresets(storageKey).presets;
+            writeTimelinePresets(
+              storageKey,
+              current.filter((preset) => preset.id !== deleted.id),
+            );
+          }}
           onClose={() => {
             setManaging(false);
           }}
@@ -184,21 +187,6 @@ function ScopedTimelineFilterPresets({
           onSave={save}
           onClose={() => {
             setEditor(null);
-          }}
-        />
-      ) : null}
-      {deleting ? (
-        <TimelinePresetDeleteDrawer
-          preset={deleting}
-          onDelete={() => {
-            const current = readTimelinePresets(storageKey).presets;
-            writeTimelinePresets(
-              storageKey,
-              current.filter((preset) => preset.id !== deleting.id),
-            );
-          }}
-          onClose={() => {
-            setDeleting(null);
           }}
         />
       ) : null}

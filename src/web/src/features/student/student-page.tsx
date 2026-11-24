@@ -26,7 +26,9 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { SearchSelect } from '@/components/ui/search-select';
+import { graduationKey } from '@/features/graduation/api';
 import {
+  deleteStudent,
   exportStudentReport,
   saveStudentFile,
   type Student,
@@ -39,7 +41,7 @@ import { StudentFilterSelect } from '@/features/student/field-input';
 import { politicalStatusLabel, sensitiveAction, studentFields } from '@/features/student/fields';
 import { StudentChart } from '@/features/student/student-chart';
 import { StudentDetailDrawer } from '@/features/student/student-detail-drawer';
-import { DeleteStudent, StudentEditor } from '@/features/student/student-editor';
+import { StudentEditor } from '@/features/student/student-editor';
 import { StudentTransfer } from '@/features/student/student-transfer';
 import { ApiError } from '@/lib/api';
 import { useApiAction, useInitialLoading } from '@/lib/api-action';
@@ -85,7 +87,6 @@ export function StudentPage({
   const studentID = params.get(studentDetailParam);
   const [filters, setFilters] = useState(defaultFilters);
   const [editor, setEditor] = useState<Student | null | undefined>(undefined);
-  const [deleting, setDeleting] = useState<Student | null>(null);
   const [transfer, setTransfer] = useState<'import' | 'export' | null>(null);
   const refresh = useApiAction();
   const search = useApiAction();
@@ -138,6 +139,53 @@ export function StudentPage({
     next.set(studentDetailParam, String(id));
     return { search: next.toString(), hash: location.hash };
   };
+  const renderActions = (student: Student) => {
+    return (
+      <div className="flex items-center gap-1">
+        {can('student.detail') ? (
+          <TableActionButton asChild>
+            <Link to={studentDetailLocation(student.id)}>
+              <Eye aria-hidden="true" />
+              详情
+            </Link>
+          </TableActionButton>
+        ) : null}
+        {can('student.update') || can(sensitiveAction) ? (
+          <TableActionButton
+            onClick={() => {
+              setEditor(student);
+            }}
+          >
+            <Pencil aria-hidden="true" />
+            编辑
+          </TableActionButton>
+        ) : null}
+        {can('student.delete') ? (
+          <TableActionsMenu
+            label={formatIdentity(student.name, student.student_no)}
+            actions={[
+              {
+                label: '删除',
+                icon: Trash2,
+                destructive: true,
+                confirmDelete: {
+                  target: formatIdentity(student.name, student.student_no),
+                  onConfirm: async () => {
+                    await deleteStudent(workspaceID, student);
+                    await Promise.all([
+                      client.invalidateQueries({ queryKey: studentKey(workspaceID) }),
+                      client.invalidateQueries({ queryKey: graduationKey(workspaceID) }),
+                      client.invalidateQueries({ queryKey: ['management', 'audit'] }),
+                    ]);
+                  },
+                },
+              },
+            ]}
+          />
+        ) : null}
+      </div>
+    );
+  };
   const columns: ColumnDef<Student>[] = [
     { accessorKey: 'name', header: '姓名' },
     { accessorKey: 'student_no', header: '学号' },
@@ -160,50 +208,7 @@ export function StudentPage({
     { accessorKey: 'room', header: '宿舍号' },
     { accessorKey: 'phone', header: '电话' },
     ...recordTimeColumns<Student>((record) => record),
-    {
-      id: 'operations',
-      header: '操作',
-      cell: ({ row: entry }) => {
-        const student = entry.original;
-        return (
-          <div className="flex items-center gap-1">
-            {can('student.detail') ? (
-              <TableActionButton asChild>
-                <Link to={studentDetailLocation(student.id)}>
-                  <Eye aria-hidden="true" />
-                  详情
-                </Link>
-              </TableActionButton>
-            ) : null}
-            {can('student.update') || can(sensitiveAction) ? (
-              <TableActionButton
-                onClick={() => {
-                  setEditor(student);
-                }}
-              >
-                <Pencil aria-hidden="true" />
-                编辑
-              </TableActionButton>
-            ) : null}
-            {can('student.delete') ? (
-              <TableActionsMenu
-                label={formatIdentity(student.name, student.student_no)}
-                actions={[
-                  {
-                    label: '删除',
-                    icon: Trash2,
-                    destructive: true,
-                    onSelect: () => {
-                      setDeleting(student);
-                    },
-                  },
-                ]}
-              />
-            ) : null}
-          </div>
-        );
-      },
-    },
+    { id: 'operations', header: '操作' },
   ];
   const selectors = studentFields.filter((field) => field.enumerable);
   const selectedValues = (key: string) => {
@@ -491,6 +496,7 @@ export function StudentPage({
                     }
                   : undefined,
             }}
+            rowActions={renderActions}
             columns={columns}
             data={data?.items ?? empty}
             total={data?.total ?? 0}
@@ -547,15 +553,7 @@ export function StudentPage({
           }}
         />
       ) : null}
-      {deleting ? (
-        <DeleteStudent
-          workspaceID={workspaceID}
-          student={deleting}
-          onClose={() => {
-            setDeleting(null);
-          }}
-        />
-      ) : null}
+
       {transfer ? (
         <StudentTransfer
           workspaceID={workspaceID}

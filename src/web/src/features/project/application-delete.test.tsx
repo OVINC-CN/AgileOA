@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { act, render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { afterEach, expect, it, vi } from 'vitest';
@@ -42,6 +42,7 @@ const list = (items = [record], total = items.length, page = 1) => ({
   page_size: 5,
 });
 const moreActions = /^更多操作 /u;
+const confirmation = { name: '确认' };
 
 async function selectDelete(user: ReturnType<typeof userEvent.setup>) {
   await user.click(await screen.findByRole('button', { name: moreActions }));
@@ -167,22 +168,27 @@ it('删除须确认，取消不请求；提交携带版本与 CSRF，加载期�
   );
   const { client, detailKey } = renderApplications();
   const user = userEvent.setup();
-  await selectDelete(user);
-  let drawer = screen.getByRole('dialog', { name: '删除填报' });
-  expect(drawer).toHaveTextContent('优秀学生 · 2026 · 虚构学生(0007)');
-  expect(drawer).toHaveTextContent('审批流程、签署记录、流转历史和附件');
-  await user.click(within(drawer).getByRole('button', { name: '取消' }));
+  const more = await screen.findByRole('button', { name: moreActions });
+  await user.click(more);
+  const remove = screen.getByRole('menuitem', { name: '删除' });
+  await user.dblClick(remove);
+  expect(screen.getByRole('menuitem', confirmation)).toBe(remove);
+  expect(remove).toHaveAccessibleDescription('确认删除 优秀学生 · 2026 · 虚构学生(0007) ?');
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   expect(requests.filter(({ options }) => options.method === 'DELETE')).toHaveLength(0);
+  await user.keyboard('{Escape}');
+  expect(screen.queryByRole('menuitem', confirmation)).not.toBeInTheDocument();
+  await waitFor(() => expect(more).toHaveFocus());
 
-  await selectDelete(user);
-  drawer = screen.getByRole('dialog', { name: '删除填报' });
-  const confirm = within(drawer).getByRole('button', { name: '确认删除' });
+  await user.keyboard('{Enter}');
+  await user.keyboard('{Enter}');
+  const confirm = screen.getByRole('menuitem', confirmation);
+  expect(confirm).toHaveFocus();
   await user.dblClick(confirm);
   expect(confirm).toHaveAttribute('aria-busy', 'true');
-  expect(within(drawer).getByRole('button', { name: '取消' })).toBeDisabled();
-  expect(within(drawer).getByRole('button', { name: '关闭抽屉' })).toBeDisabled();
+  expect(confirm).toHaveAttribute('aria-disabled', 'true');
   await user.keyboard('{Escape}');
-  expect(screen.getByRole('dialog', { name: '删除填报' })).toBeVisible();
+  expect(screen.getByRole('menuitem', confirmation)).toBeVisible();
   const deletes = requests.filter(({ options }) => options.method === 'DELETE');
   expect(deletes).toHaveLength(1);
   expect(deletes[0]?.path).toBe(`/v1/workspaces/${workspaceID}/project-applications/7?revision=3`);
@@ -203,11 +209,11 @@ it('删除须确认，取消不请求；提交携带版本与 CSRF，加载期�
     return Promise.resolve();
   });
   await screen.findByText('暂无符合条件的申报单');
-  expect(screen.queryByRole('dialog', { name: '删除填报' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('menuitem', confirmation)).not.toBeInTheDocument();
   expect(requests.filter(({ options }) => options.method === 'DELETE')).toHaveLength(1);
 });
 
-it('版本冲突保留记录和确认抽屉，通过顶部消息提示并允许关闭', async () => {
+it('版本冲突保留记录和确认入口，通过顶部消息提示并允许关闭', async () => {
   const message = '记录已更新，请刷新后重试';
   vi.stubGlobal(
     'fetch',
@@ -222,16 +228,16 @@ it('版本冲突保留记录和确认抽屉，通过顶部消息提示并允许�
   renderApplications();
   const user = userEvent.setup();
   await selectDelete(user);
-  const drawer = screen.getByRole('dialog', { name: '删除填报' });
-  const confirm = within(drawer).getByRole('button', { name: '确认删除' });
+  const confirm = screen.getByRole('menuitem', confirmation);
   await user.click(confirm);
-  expect(await within(drawer).findByRole('alert')).toHaveTextContent(message);
+  expect(await screen.findByRole('alert')).toHaveTextContent(message);
   expect(screen.getAllByText(message)).toHaveLength(1);
-  expect(confirm).toBeEnabled();
+  expect(confirm).not.toHaveAttribute('aria-disabled', 'true');
   await waitFor(() => {
     expect(confirm).not.toHaveAttribute('aria-busy', 'true');
   });
-  await user.click(within(drawer).getByRole('button', { name: '取消' }));
+  await user.keyboard('{Escape}');
+  expect(screen.queryByRole('menuitem', confirmation)).not.toBeInTheDocument();
   expect(screen.getByRole('button', { name: moreActions })).toBeVisible();
 });
 
@@ -263,10 +269,10 @@ it('删除末页唯一记录后回到上一页并保留已提交筛选', async (
   await user.click(screen.getByRole('button', { name: '下一页' }));
   await screen.findByText('第 2 / 2 页');
   await selectDelete(user);
-  await user.click(screen.getByRole('button', { name: '确认删除' }));
+  await user.click(screen.getByRole('menuitem', confirmation));
   await screen.findByText('第 1 / 1 页');
   await waitFor(() => {
-    expect(screen.queryByRole('dialog', { name: '删除填报' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', confirmation)).not.toBeInTheDocument();
   });
   expect(screen.getAllByRole('button', { name: moreActions })).toHaveLength(5);
   expect(requests.at(-1)?.searchParams.get('page')).toBe('1');

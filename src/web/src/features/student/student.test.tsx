@@ -781,8 +781,13 @@ describe('工作空间学生信息', () => {
     const dialog = within(screen.getByRole('dialog', { name: '编辑学生' }));
     const remove = await dialog.findByRole('button', { name: '删除' });
     await userEvent.click(remove);
+    expect(request.mock.calls.some(([, options]) => options.method === 'DELETE')).toBe(false);
+    const confirm = dialog.getByRole('button', { name: '确认' });
+    expect(confirm).toBe(remove);
+    expect(confirm).toHaveAccessibleDescription('确认删除 未完成头像.png ?');
+    await userEvent.click(confirm);
     const upload = dialog.getByRole('button', { name: '上传头像' });
-    expect(remove).toHaveAttribute('aria-busy', 'true');
+    expect(confirm).toHaveAttribute('aria-busy', 'true');
     expect(upload).toBeDisabled();
     expect(upload).not.toHaveAttribute('aria-busy');
     expect(screen.queryByRole('group', { name: '文件上传状态' })).not.toBeInTheDocument();
@@ -1007,9 +1012,10 @@ describe('工作空间学生信息', () => {
       screen.getByRole('button', { name: `更多操作 ${student.name}(${student.student_no})` }),
     );
     await user.click(screen.getByRole('menuitem', { name: '删除' }));
-    const confirmation = within(await screen.findByRole('dialog', { name: '删除学生' }));
-    expect(confirmation.getByText(/将永久删除/)).toBeVisible();
-    await user.click(confirmation.getByRole('button', { name: '取消' }));
+    expect(screen.getByRole('menuitem', { name: '确认' })).toHaveAccessibleDescription(
+      `确认删除 ${student.name}(${student.student_no}) ?`,
+    );
+    await user.keyboard('{Escape}');
     expect(calls.some(({ options }) => options.method === 'DELETE')).toBe(false);
   });
 

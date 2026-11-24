@@ -1,9 +1,9 @@
-import { RotateCcw, Save, SkipForward, Trash2 } from 'lucide-react';
+import { RotateCcw, Save, SkipForward } from 'lucide-react';
 import { useState } from 'react';
 
-import { TableActionButton } from '@/components/table-action-button';
 import { Button } from '@/components/ui/button';
 import { DatePicker } from '@/components/ui/date-picker';
+import { DeleteConfirmation } from '@/components/ui/delete-confirmation';
 import { Drawer } from '@/components/ui/drawer';
 import { FileUploadButton } from '@/components/ui/file-upload-button';
 import { Input } from '@/components/ui/input';
@@ -12,7 +12,6 @@ import { SearchSelect } from '@/components/ui/search-select';
 import { Textarea } from '@/components/ui/textarea';
 import {
   deletePersonTimelineAttachment,
-  type PersonTimelineAttachment,
   type PersonTimelineNode,
   resetPersonTimelineNode,
   savePersonTimelineNode,
@@ -53,7 +52,6 @@ export function PersonTimelineNodeEditor({
 }) {
   const [values, setValues] = useState<TimelineValues>(original.values);
   const [confirmingReset, setConfirmingReset] = useState(false);
-  const [deleting, setDeleting] = useState<PersonTimelineAttachment | null>(null);
   const save = useApiAction();
   const reset = useApiAction();
   const skip = useApiAction();
@@ -68,7 +66,7 @@ export function PersonTimelineNodeEditor({
       title="编辑时间线节点"
       truncateDescription={!!personLabel}
       description={personLabel ? `${personLabel} · ${original.name}` : original.name}
-      busy={busy || confirmingReset || deleting !== null}
+      busy={busy || confirmingReset}
       onClose={onClose}
       form={{
         noValidate: true,
@@ -266,16 +264,20 @@ export function PersonTimelineNodeEditor({
             node={current}
             editing
             renderAction={(attachment) => (
-              <TableActionButton
-                type="button"
-                disabled={busy}
-                onClick={() => {
-                  setDeleting(attachment);
+              <DeleteConfirmation
+                target={attachment.filename}
+                onConfirm={async () => {
+                  const result = await remove.run('delete', async () => {
+                    try {
+                      await deletePersonTimelineAttachment(workspaceID, attachment);
+                    } finally {
+                      await invalidate();
+                    }
+                  });
+                  return result.ok;
                 }}
-              >
-                <Trash2 aria-hidden="true" />
-                删除
-              </TableActionButton>
+                disabled={busy}
+              />
             )}
           />
         </section>
@@ -334,50 +336,6 @@ export function PersonTimelineNodeEditor({
               ? '引用学生信息的字段仍按当前学生资料显示。'
               : null}
           </p>
-        </Drawer>
-      ) : null}
-      {deleting ? (
-        <Drawer
-          title="删除人员附件"
-          description={deleting.filename}
-          busy={remove.pending}
-          onClose={() => {
-            setDeleting(null);
-          }}
-          footerDismiss={
-            <Button
-              type="button"
-              variant="cancel"
-              disabled={remove.pending}
-              onClick={() => {
-                setDeleting(null);
-              }}
-            >
-              取消
-            </Button>
-          }
-          footer={
-            <Button
-              type="button"
-              variant="destructive"
-              loading={remove.pending}
-              onClick={() => {
-                void remove.run('delete', async () => {
-                  try {
-                    await deletePersonTimelineAttachment(workspaceID, deleting);
-                    setDeleting(null);
-                  } finally {
-                    await invalidate();
-                  }
-                });
-              }}
-            >
-              <Trash2 aria-hidden="true" />
-              确认删除
-            </Button>
-          }
-        >
-          <p className="p-6 text-sm">将永久删除此节点的附件。</p>
         </Drawer>
       ) : null}
     </Drawer>

@@ -426,8 +426,10 @@ describe('月度工作', () => {
       expect(screen.queryByRole('button', { name: '删除' })).not.toBeInTheDocument();
       await user.click(screen.getByRole('button', more));
       await user.click(screen.getByRole('menuitem', { name: '删除' }));
-      const confirmation = within(screen.getByRole('dialog', { name: '删除月度工作' }));
-      await user.click(confirmation.getByRole('button', { name: '取消' }));
+      expect(screen.getByRole('menuitem', { name: '确认' })).toHaveAccessibleDescription(
+        `确认删除 ${record.date} · ${record.work_item} ?`,
+      );
+      await user.keyboard('{Escape}');
       await user.click(screen.getByRole('button', { name: '编辑' }));
       await user.click(screen.getByRole('combobox', { name: '负责人' }));
       await user.click(

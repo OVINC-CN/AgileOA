@@ -21,7 +21,6 @@ import { TableActionButton } from '@/components/table-action-button';
 import { TableActionsMenu } from '@/components/table-actions-menu';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Drawer } from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
 import { SearchSelect } from '@/components/ui/search-select';
 import {
@@ -92,7 +91,6 @@ function MonthlyWorkWorkspace({
   );
   const targetRecord = useRef<HTMLLIElement>(null);
   const [editing, setEditing] = useState<WorkRecord | null | undefined>();
-  const [deleting, setDeleting] = useState<WorkRecord | null>(null);
   const [attachmentWorkID, setAttachmentWorkID] = useState<number | null>(null);
   const [transfer, setTransfer] = useState(false);
   const client = useQueryClient();
@@ -436,15 +434,26 @@ function MonthlyWorkWorkspace({
                           {canChangeWork(record, 'delete') ? (
                             <TableActionsMenu
                               label={record.work_item}
-                              loading={remove.isPending(String(record.id))}
                               disabled={remove.pending}
                               actions={[
                                 {
                                   label: '删除',
                                   icon: Trash2,
                                   destructive: true,
-                                  onSelect: () => {
-                                    setDeleting(record);
+                                  confirmDelete: {
+                                    target: `${record.date} · ${record.work_item}`,
+                                    onConfirm: async () => {
+                                      const result = await remove.run(
+                                        String(record.id),
+                                        async () => {
+                                          await deleteWork(workspaceID, record, category);
+                                          await client.invalidateQueries({
+                                            queryKey: workKey(workspaceID, category),
+                                          });
+                                        },
+                                      );
+                                      return result.ok;
+                                    },
                                   },
                                 },
                               ]}
@@ -501,48 +510,6 @@ function MonthlyWorkWorkspace({
             setTransfer(false);
           }}
         />
-      ) : null}
-      {deleting && canChangeWork(findWork(deleting.id), 'delete') ? (
-        <Drawer
-          title="删除月度工作"
-          description={`${deleting.date} · ${deleting.work_item}`}
-          busy={remove.pending}
-          onClose={() => {
-            setDeleting(null);
-          }}
-          footerDismiss={
-            <Button
-              variant="cancel"
-              disabled={remove.pending}
-              onClick={() => {
-                setDeleting(null);
-              }}
-            >
-              取消
-            </Button>
-          }
-          footer={
-            <Button
-              loading={remove.pending}
-              onClick={() => {
-                void (async () => {
-                  const result = await remove.run(String(deleting.id), async () => {
-                    await deleteWork(workspaceID, deleting, category);
-                    await client.invalidateQueries({ queryKey: workKey(workspaceID, category) });
-                  });
-                  if (result.ok) setDeleting(null);
-                })();
-              }}
-            >
-              <Trash2 aria-hidden="true" />
-              确认删除
-            </Button>
-          }
-        >
-          <p className="p-6 text-sm leading-6">
-            将永久删除该工作记录、参与人关联及所属附件记录，历史审计保留。
-          </p>
-        </Drawer>
       ) : null}
     </section>
   );

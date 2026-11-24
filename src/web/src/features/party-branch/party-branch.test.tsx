@@ -105,8 +105,8 @@ describe('党支部', () => {
     expect(table.queryByRole('button', { name: '删除' })).not.toBeInTheDocument();
     await userEvent.click(more);
     await userEvent.click(screen.getByRole('menuitem', { name: '删除' }));
-    expect(screen.getByRole('dialog', { name: '删除党支部' })).toHaveAccessibleDescription(
-      `确认删除“${record.full_name}”？`,
+    expect(screen.getByRole('menuitem', { name: '确认' })).toHaveAccessibleDescription(
+      `确认删除 ${record.full_name} ?`,
     );
   });
 

@@ -22,7 +22,6 @@ import { TableActionsMenu } from '@/components/table-actions-menu';
 import { Button } from '@/components/ui/button';
 import { ButtonGroup } from '@/components/ui/button-group';
 import { Card } from '@/components/ui/card';
-import { Drawer } from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
 import { SearchSelect } from '@/components/ui/search-select';
 import {
@@ -72,14 +71,12 @@ function GraduationWorkspace({
   const [filters, setFilters] = useState<GraduationFilters>(emptyFilters);
   const [dimension, setDimension] = useState<Dimension>('major');
   const [editing, setEditing] = useState<Graduation | null>(null);
-  const [clearing, setClearing] = useState<Graduation | null>(null);
   const [transfer, setTransfer] = useState(false);
   const pagination = useTablePagination();
   const client = useQueryClient();
   const refresh = useApiAction();
   const search = useApiAction();
   const changeDimension = useApiAction();
-  const remove = useApiAction();
   const download = useApiAction();
   const list = useQuery({
     ...graduationListOptions(workspaceID, filters, pagination.page, pagination.pageSize),
@@ -130,6 +127,42 @@ function GraduationWorkspace({
     applyFilters,
     filters,
   );
+  const renderActions = (record: Graduation) => (
+    <div className="flex items-center gap-1">
+      {canUpdate ? (
+        <TableActionButton
+          onClick={() => {
+            setEditing(record);
+          }}
+        >
+          {record.type ? <Pencil aria-hidden="true" /> : <Link2 aria-hidden="true" />}
+          {record.type ? '编辑' : '绑定'}
+        </TableActionButton>
+      ) : null}
+      {actions.includes('graduation.delete') && (record.type || record.destination) ? (
+        <TableActionsMenu
+          label={formatIdentity(record.student_name, record.student_no)}
+          actions={[
+            {
+              label: '删除',
+              icon: Trash2,
+              destructive: true,
+              confirmDelete: {
+                target: `${formatIdentity(record.student_name, record.student_no)} 的毕业去向`,
+                onConfirm: async () => {
+                  await clearGraduation(workspaceID, record);
+                  await Promise.all([
+                    client.invalidateQueries({ queryKey: graduationKey(workspaceID) }),
+                    client.invalidateQueries({ queryKey: studentKey(workspaceID) }),
+                  ]);
+                },
+              },
+            },
+          ]}
+        />
+      ) : null}
+    </div>
+  );
   const columns: ColumnDef<Graduation>[] = [
     { accessorKey: 'student_name', header: '姓名' },
     { accessorKey: 'student_no', header: '学号' },
@@ -152,40 +185,7 @@ function GraduationWorkspace({
       ),
     },
     ...recordTimeColumns<Graduation>((record) => record),
-    {
-      id: 'actions',
-      header: '操作',
-      cell: ({ row }) => (
-        <div className="flex items-center gap-1">
-          {canUpdate ? (
-            <TableActionButton
-              onClick={() => {
-                setEditing(row.original);
-              }}
-            >
-              {row.original.type ? <Pencil aria-hidden="true" /> : <Link2 aria-hidden="true" />}
-              {row.original.type ? '编辑' : '绑定'}
-            </TableActionButton>
-          ) : null}
-          {actions.includes('graduation.delete') &&
-          (row.original.type || row.original.destination) ? (
-            <TableActionsMenu
-              label={formatIdentity(row.original.student_name, row.original.student_no)}
-              actions={[
-                {
-                  label: '清除',
-                  icon: Trash2,
-                  destructive: true,
-                  onSelect: () => {
-                    setClearing(row.original);
-                  },
-                },
-              ]}
-            />
-          ) : null}
-        </div>
-      ),
-    },
+    { id: 'actions', header: '操作' },
   ];
   const refreshButton = (
     <Button
@@ -440,6 +440,8 @@ function GraduationWorkspace({
                     }
                   : undefined,
             }}
+            rowActions={renderActions}
+            rowID={(record) => String(record.student_id)}
             columns={columns}
             data={data?.items ?? []}
             total={data?.total ?? 0}
@@ -470,49 +472,7 @@ function GraduationWorkspace({
           }}
         />
       ) : null}
-      {clearing ? (
-        <Drawer
-          title="清除毕业去向"
-          truncateDescription
-          description={formatIdentity(clearing.student_name, clearing.student_no)}
-          busy={remove.pending}
-          onClose={() => {
-            setClearing(null);
-          }}
-          footerDismiss={
-            <Button
-              variant="cancel"
-              disabled={remove.pending}
-              onClick={() => {
-                setClearing(null);
-              }}
-            >
-              取消
-            </Button>
-          }
-          footer={
-            <Button
-              variant="destructive"
-              loading={remove.pending}
-              onClick={() => {
-                void remove.run('clear', async () => {
-                  await clearGraduation(workspaceID, clearing);
-                  await Promise.all([
-                    client.invalidateQueries({ queryKey: graduationKey(workspaceID) }),
-                    client.invalidateQueries({ queryKey: studentKey(workspaceID) }),
-                  ]);
-                  setClearing(null);
-                });
-              }}
-            >
-              <Trash2 aria-hidden="true" />
-              清除
-            </Button>
-          }
-        >
-          <p className="p-6 text-sm">清除该学生的类型和毕业去向后，该学生继续计入待就业。</p>
-        </Drawer>
-      ) : null}
+
       {transfer ? (
         <GraduationTransfer
           workspaceID={workspaceID}

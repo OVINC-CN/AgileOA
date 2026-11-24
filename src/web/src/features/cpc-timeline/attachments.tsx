@@ -1,17 +1,15 @@
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
-import { RefreshCw, Trash2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { RefreshCw } from 'lucide-react';
+import { useEffect } from 'react';
 
 import { AttachmentFilename } from '@/components/attachment-filename';
 import { ErrorMessage } from '@/components/error-message';
 import { ManagementPagination } from '@/components/management-pagination';
-import { TableActionButton } from '@/components/table-action-button';
 import { Button } from '@/components/ui/button';
-import { Drawer } from '@/components/ui/drawer';
+import { DeleteConfirmation } from '@/components/ui/delete-confirmation';
 import { FileUploadButton } from '@/components/ui/file-upload-button';
 import {
   deleteTimelineAttachment,
-  type TimelineAttachment,
   timelineAttachmentDownload,
   timelineAttachmentKey,
   timelineAttachmentOptions,
@@ -63,7 +61,6 @@ function AttachmentPanel({
   const canRead = can('read') && available;
   const client = useQueryClient();
   const pagination = useTablePagination();
-  const [deleting, setDeleting] = useState<TimelineAttachment | null>(null);
   const upload = useApiAction();
   const remove = useApiAction();
   const refresh = useApiAction();
@@ -81,7 +78,7 @@ function AttachmentPanel({
   const denied = query.error instanceof ApiError && [401, 403, 404].includes(query.error.status);
   const data = denied || !canRead ? undefined : query.data;
   const loading = useLoadingDelay(query.isFetching);
-  const busy = upload.pending || remove.pending || (deleting !== null && can('delete'));
+  const busy = upload.pending || remove.pending;
   useEffect(() => {
     onBusyChange?.(busy);
   }, [busy, onBusyChange]);
@@ -175,17 +172,31 @@ function AttachmentPanel({
                     ) : null}
                     <div className="flex shrink-0 items-center gap-1">
                       {can('delete') ? (
-                        <TableActionButton
-                          type="button"
-                          disabled={upload.pending || remove.pending}
-                          loading={remove.isPending(String(attachment.id))}
-                          onClick={() => {
-                            setDeleting(attachment);
+                        <DeleteConfirmation
+                          target={attachment.filename}
+                          onConfirm={async () => {
+                            const result = await remove.run(String(attachment.id), async () => {
+                              const page = Math.max(
+                                1,
+                                Math.min(
+                                  pagination.page,
+                                  Math.ceil((data.total - 1) / pagination.pageSize),
+                                ),
+                              );
+                              let removed = false;
+                              try {
+                                await deleteTimelineAttachment(workspaceID, attachment);
+                                removed = true;
+                              } finally {
+                                const targetPage = removed ? page : pagination.page;
+                                pagination.setPage(targetPage);
+                                await invalidate(targetPage);
+                              }
+                            });
+                            return result.ok;
                           }}
-                        >
-                          <Trash2 aria-hidden="true" />
-                          删除
-                        </TableActionButton>
+                          disabled={upload.pending || remove.pending}
+                        />
                       ) : null}
                     </div>
                   </li>
@@ -213,61 +224,6 @@ function AttachmentPanel({
             ) : null}
           </div>
         </section>
-      ) : null}
-      {deleting && can('delete') ? (
-        <Drawer
-          title="删除时间线节点附件"
-          description={deleting.filename}
-          busy={remove.pending}
-          onClose={() => {
-            setDeleting(null);
-          }}
-          footerDismiss={
-            <Button
-              type="button"
-              variant="cancel"
-              disabled={remove.pending}
-              onClick={() => {
-                setDeleting(null);
-              }}
-            >
-              取消
-            </Button>
-          }
-          footer={
-            <Button
-              type="button"
-              variant="destructive"
-              loading={remove.pending}
-              onClick={() => {
-                void remove.run(String(deleting.id), async () => {
-                  const page = Math.max(
-                    1,
-                    Math.min(
-                      pagination.page,
-                      Math.ceil(((data?.total ?? 1) - 1) / pagination.pageSize),
-                    ),
-                  );
-                  let removed = false;
-                  try {
-                    await deleteTimelineAttachment(workspaceID, deleting);
-                    removed = true;
-                  } finally {
-                    const targetPage = removed ? page : pagination.page;
-                    pagination.setPage(targetPage);
-                    await invalidate(targetPage);
-                  }
-                  setDeleting(null);
-                });
-              }}
-            >
-              <Trash2 aria-hidden="true" />
-              确认删除
-            </Button>
-          }
-        >
-          <p className="p-6 text-sm">将永久删除文件及附件记录，历史操作审计会保留。</p>
-        </Drawer>
       ) : null}
     </>
   );

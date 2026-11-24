@@ -151,13 +151,14 @@ it('保存、恢复、重命名、覆盖与确认删除共用本地方案，重�
   await user.click(editor.getByRole('button', { name: '覆盖保存' }));
   expect(readTimelinePresets(storageKey).presets[0]?.conditions[0]?.value).toBe('20');
 
-  await user.click(screen.getByRole('button', { name: '删除方案 新的名称' }));
-  let confirmation = within(screen.getByRole('dialog', { name: '删除常用筛选方案' }));
-  await user.click(confirmation.getByRole('button', { name: '取消' }));
+  const remove = screen.getByRole('button', { name: '删除方案 新的名称' });
+  await user.click(remove);
+  expect(screen.getByRole('button', { name: '确认' })).toBe(remove);
+  await user.keyboard('{Escape}');
+  expect(screen.getByRole('button', { name: '删除方案 新的名称' })).toBe(remove);
   expect(readTimelinePresets(storageKey).presets).toHaveLength(1);
-  await user.click(screen.getByRole('button', { name: '删除方案 新的名称' }));
-  confirmation = within(screen.getByRole('dialog', { name: '删除常用筛选方案' }));
-  await user.click(confirmation.getByRole('button', { name: '删除方案' }));
+  await user.click(remove);
+  await user.click(screen.getByRole('button', { name: '确认' }));
   expect(readTimelinePresets(storageKey).presets).toEqual([]);
   manager = within(screen.getByRole('dialog', { name: '管理常用筛选方案' }));
   expect(manager.getByText('暂无常用筛选方案')).toBeInTheDocument();

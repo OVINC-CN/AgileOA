@@ -44,6 +44,7 @@ interface Props<T> {
   pinnedEndColumn?: string;
   primaryColumn?:
     { id: string; getAction: (record: T) => PrimaryColumnAction | undefined } | undefined;
+  rowActions?: (record: T) => ReactNode;
 }
 
 function columnOptions<T>(columns: ColumnDef<T>[]): TableColumn[] {
@@ -122,6 +123,7 @@ export function ManagementTable<T>({
   pinnedColumn,
   pinnedEndColumn,
   primaryColumn,
+  rowActions,
 }: Props<T>) {
   const settings = useTableColumns(tableID, columnOptions(columns));
   const endPinnedColumns = pinnedEndColumn ? [pinnedEndColumn] : ['actions', 'operations'];
@@ -193,6 +195,8 @@ export function ManagementTable<T>({
                         label={formatValue(cell.getValue<string | number | boolean | null>())}
                         action={primaryColumn.getAction(row.original)}
                       />
+                    ) : rowActions && endPinnedColumns.includes(cell.column.id) ? (
+                      rowActions(row.original)
                     ) : (
                       flexRender(cell.column.columnDef.cell, cell.getContext())
                     )}
