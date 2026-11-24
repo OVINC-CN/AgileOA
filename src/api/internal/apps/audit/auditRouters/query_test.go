@@ -17,6 +17,7 @@ func TestAuditScalarFilters(t *testing.T) {
 	for _, scenario := range []struct {
 		name    string
 		query   string
+		ip      string
 		invalid bool
 	}{
 		{name: "default"},
@@ -29,6 +30,9 @@ func TestAuditScalarFilters(t *testing.T) {
 		{name: "empty-instance", query: "?instance_id="},
 		{name: "leading-zero-instance", query: "?instance_id=0000123"},
 		{name: "trace", query: "?request_id=4bf92f3577b34da6a3ce929d0e0e4736"},
+		{name: "ipv4", query: "?access_source_ip=+192.0.2.1+", ip: "192.0.2.1"},
+		{name: "ipv6", query: "?access_source_ip=2001%3Adb8%3A%3A0001", ip: "2001:db8::0001"},
+		{name: "empty-ip", query: "?access_source_ip="},
 		{name: "utc-window", query: "?start_time=1794787200000&end_time=1794873600000"},
 		{name: "unknown", query: "?unknown=x", invalid: true},
 		{name: "old-keyword", query: "?keyword=someone", invalid: true},
@@ -41,6 +45,9 @@ func TestAuditScalarFilters(t *testing.T) {
 		{name: "overflow-user", query: "?user_id=18446744073709551616", invalid: true},
 		{name: "multiple-users", query: "?user_id=1&user_id=2", invalid: true},
 		{name: "multiple-instances", query: "?instance_id=1&instance_id=2", invalid: true},
+		{name: "partial-ip", query: "?access_source_ip=192.0.2", invalid: true},
+		{name: "ip-subnet", query: "?access_source_ip=192.0.2.0%2F24", invalid: true},
+		{name: "multiple-ips", query: "?access_source_ip=192.0.2.1&access_source_ip=", invalid: true},
 		{name: "zero-trace", query: "?request_id=00000000000000000000000000000000", invalid: true},
 		{name: "partial-trace", query: "?request_id=4bf92f35", invalid: true},
 		{name: "invalid-access", query: "?access_type=3", invalid: true},
@@ -59,6 +66,9 @@ func TestAuditScalarFilters(t *testing.T) {
 			}
 			if !scenario.invalid && query.Until.Location().String() != "UTC" {
 				t.Fatal("时间边界没有使用 UTC")
+			}
+			if !scenario.invalid && query.AccessSourceIP != scenario.ip {
+				t.Fatalf("客户端 IP 筛选错误：%q", query.AccessSourceIP)
 			}
 			if scenario.name == "maximum-user" && (query.UserID == nil ||
 				strconv.FormatUint(*query.UserID, 10) != "18446744073709551615") {

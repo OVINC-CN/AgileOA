@@ -1216,6 +1216,12 @@
                     },
                     {
                         "type": "string",
+                        "description": "客户端 IPv4 或 IPv6，按记录中的地址文本精确匹配，空值不限",
+                        "name": "access_source_ip",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "description": "对象编号精确匹配；显式空值匹配空编号",
                         "name": "instance_id",
                         "in": "query"
@@ -1350,6 +1356,12 @@
                         "collectionFormat": "multi",
                         "description": "来源，web 为 1、mcp 为 2",
                         "name": "access_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "客户端 IPv4 或 IPv6，按记录中的地址文本精确匹配，空值不限",
+                        "name": "access_source_ip",
                         "in": "query"
                     },
                     {

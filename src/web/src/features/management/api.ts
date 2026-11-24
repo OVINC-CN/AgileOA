@@ -48,6 +48,7 @@ export interface AuditFilters {
   action_id: string[];
   result_code: string[];
   access_type: string[];
+  access_source_ip: string;
   instance_id: string;
   request_id: string;
   start_time: string;
@@ -62,6 +63,7 @@ export const defaultAuditFilters: AuditFilters = {
   action_id: [excludeAuditAction],
   result_code: [],
   access_type: [],
+  access_source_ip: '',
   instance_id: '',
   request_id: '',
   start_time: '',
