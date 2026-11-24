@@ -117,8 +117,9 @@ API 侧先在业务事务中保存任务所需状态和操作审计，由 app �
 | 场景 | 查询入口 | 重点核对 |
 | --- | --- | --- |
 | 空间授权用户与候选 | [accessSvc/users.go](src/api/internal/apps/access/accessSvc/users.go) | `idx_users_access_search` 与 `access_permissions` 复合主键；筛选、总数和选页使用相同授权条件 |
-| 审计列表、统计与详情 | [auditSvc/query.go](src/api/internal/apps/audit/auditSvc/query.go) | UTC 分区裁剪、标量筛选索引、当前页复合键回读和详情唯一索引 |
+| 审计列表、统计与详情 | [auditSvc/query.go](src/api/internal/apps/audit/auditSvc/query.go) | UTC 分区裁剪、标量筛选索引、当前页复合键回读和详情唯一索引，趋势按应用展示时区归日 |
 | 最近登录与登录趋势 | [auditSvc/login.go](src/api/internal/apps/audit/auditSvc/login.go) | `idx_audit_events_login`、`idx_audit_events_login_time` |
+| 新增账号趋势 | [userSvc/management.go](src/api/internal/apps/user/userSvc/management.go) | `idx_users_created_at` 筛选 UTC 时间范围，按应用展示时区归日 |
 | 申报流程同步与排名 | [projectSvc](src/api/internal/apps/project/projectSvc/) | 空间、项目、状态组合条件及学生关联 |
 | 申报历史正文 | [application_versions.go](src/api/internal/apps/project/projectSvc/application_versions.go) | 操作、空间、对象编号及成功结果条件 |
 

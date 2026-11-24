@@ -13,9 +13,9 @@ import (
 	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/audit/auditConstants"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/audit/auditModels"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/audit/auditSvc"
-	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/audit/auditUtils"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/workspace/workspaceUtils"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/config"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/displaytime"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/pagination"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/queryfilter"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
@@ -25,7 +25,7 @@ var errInvalidFilter = errors.New("invalid audit filter")
 
 // List 仅提取固定标量条件，不接受 JSON 路径或模糊匹配。
 // @Summary 审计日志列表
-// @Description 系统管理员查询标准事件，按数据库 ID 倒序。所有筛选均为标量精确条件。
+// @Description 系统管理员查询标准事件，按数据库 ID 倒序。默认查询展示时区的最近自然日，所有筛选均为标量精确条件。
 // @Tags 审计日志
 // @Produce json
 // @Param page query int false "页码" default(1)
@@ -56,7 +56,7 @@ func List(c echo.Context) error {
 
 // Statistics 复用列表的全部已提交筛选条件。
 // @Summary 审计日志统计
-// @Description 两个时间参数均限制事件的 start_time，按 UTC 日期一次聚合总计与趋势。
+// @Description 两个时间参数均限制事件的 start_time，按配置的展示时区聚合自然日趋势。
 // @Tags 审计日志
 // @Produce json
 // @Param user_identify_tenant_id query []string false "用户租户，组织为 system，学生为所属空间" collectionFormat(multi)
@@ -132,16 +132,17 @@ func parse(c echo.Context) (auditModels.Query, error) {
 		return auditModels.Query{}, err
 	}
 
-	// 查询使用 UTC 半开区间，并为数据库日期分区提供相同边界。
-	start, end := auditUtils.UTCWindow(config.Config.Audit.QueryDefaultDays)
-	if value := c.QueryParam("start_time"); value != "" {
-		start, err = parseTime(value)
+	// 默认范围按展示时区取自然日，查询边界统一为 UTC 时刻。
+	start, end := displaytime.Window(time.Now(), config.Config.Audit.QueryDefaultDays)
+	startValue, endValue := c.QueryParam("start_time"), c.QueryParam("end_time")
+	if startValue != "" {
+		start, err = parseTime(startValue)
 		if err != nil {
 			return auditModels.Query{}, err
 		}
 	}
-	if value := c.QueryParam("end_time"); value != "" {
-		end, err = parseTime(value)
+	if endValue != "" {
+		end, err = parseTime(endValue)
 		if err != nil {
 			return auditModels.Query{}, err
 		}
@@ -157,8 +158,8 @@ func parse(c echo.Context) (auditModels.Query, error) {
 	if !parameters.Has("action_id") {
 		query.Actions = []string{auditConstants.FilterExcludeAudit}
 	}
-	if !start.Before(end) ||
-		end.Sub(start) > time.Duration(config.Config.Audit.QueryMaxDays)*24*time.Hour {
+	if !start.Before(end) || ((startValue != "" || endValue != "") &&
+		!displaytime.WithinDays(start, end, config.Config.Audit.QueryMaxDays)) {
 		return query, errInvalidFilter
 	}
 

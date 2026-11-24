@@ -6,6 +6,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/audit/auditModels"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/displaytime"
 )
 
 // LatestLogins 在现有业务事务中读取最近登录，业务无需了解审计存储字段。
@@ -33,12 +34,13 @@ func LatestLogins(tx *gorm.DB, ids []uint64) ([]auditModels.LatestLogin, error) 
 	return result, nil
 }
 
-// LoginTrend 保留用户管理原上海日期口径，结束时刻范围不会漏掉跨日长请求。
+// LoginTrend 按展示时区汇总成功登录的结束日期。
 func LoginTrend(tx *gorm.DB, start, end time.Time) ([]auditModels.LoginDay, error) {
 	// 查询只读取成功登录投影；日期来自结束时刻，不套用开始日期的下界。
 	result := []auditModels.LoginDay{}
+	date := displaytime.UnixMilliDateSQL("end_time", start, end)
 	err := tx.Model(&auditModels.Record{}).
-		Select("DATE_FORMAT(TIMESTAMPADD(HOUR,8,TIMESTAMPADD(MICROSECOND,end_time * 1000,CAST('1970-01-01 00:00:00.000000' AS DATETIME(6)))),'%Y-%m-%d') AS date, COUNT(*) AS count").
+		Select("? AS date, COUNT(*) AS count", date).
 		Where("is_login_event = 1 AND end_time >= ? AND end_time < ?", start.UnixMilli(), end.UnixMilli()).
 		Group("date").Scan(&result).Error
 	return result, err

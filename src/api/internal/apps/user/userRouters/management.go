@@ -58,7 +58,7 @@ func List(c echo.Context) error {
 
 // Statistics 返回真实用户数量与每日趋势。
 // @Summary 用户管理统计
-// @Description 汇总真实账号数量、状态及配置日期窗口内的新增和登录次数。
+// @Description 汇总真实账号数量和状态，按配置的展示时区统计自然日内的新增和登录次数。
 // @Tags 用户管理
 // @Produce json
 // @Success 200 {object} userModels.StatisticsResponse "用户统计"

@@ -262,11 +262,10 @@ export function AuditPage() {
                 }}
               />
             </FilterField>
-            <FilterField label="开始时间（UTC）" htmlFor="audit-start-time">
+            <FilterField label="开始时间" htmlFor="audit-start-time">
               <DateTimePicker
                 id="audit-start-time"
                 label="开始时间"
-                timeZone="UTC"
                 defaultTime={midnight}
                 value={draft.start_time || null}
                 onValueChange={(value) => {
@@ -274,11 +273,10 @@ export function AuditPage() {
                 }}
               />
             </FilterField>
-            <FilterField label="结束时间（UTC，不含）" htmlFor="audit-end-time">
+            <FilterField label="结束时间（不含）" htmlFor="audit-end-time">
               <DateTimePicker
                 id="audit-end-time"
                 label="结束时间"
-                timeZone="UTC"
                 defaultTime={midnight}
                 value={draft.end_time || null}
                 onValueChange={(value) => {

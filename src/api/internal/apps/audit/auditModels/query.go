@@ -122,9 +122,9 @@ type ListData struct {
 	EndTime int64 `json:"end_time" example:"1794873600000"`
 }
 
-// Day 是按 UTC 日期聚合的成功与失败次数。
+// Day 是按展示时区自然日聚合的成功与失败次数。
 type Day struct {
-	// Date 是 UTC 日期。
+	// Date 是配置的展示时区中的日期。
 	Date string `json:"date" example:"2026-11-16"`
 	// Success 是成功次数。
 	Success int64 `json:"success" example:"30"`
@@ -142,7 +142,7 @@ type StatisticsData struct {
 	Failure int64 `json:"failure" example:"20"`
 	// Denied 是结果码为 403 的次数。
 	Denied int64 `json:"denied" example:"3"`
-	// Days 是 UTC 日期趋势，缺少记录的日期补零。
+	// Days 是展示时区的自然日趋势，缺少记录的日期补零。
 	Days []Day `json:"days" gorm:"-"`
 }
 

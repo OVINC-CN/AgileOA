@@ -45,7 +45,10 @@ func load(filename string) (*config, error) {
 	}
 
 	// 严格解析单个 YAML 文档，拒绝未知字段和重复键。
-	cfg := &config{CDN: cdnConfig{SigningCacheTTL: 10 * time.Minute}}
+	cfg := &config{
+		App: appConfig{TimeZone: defaultTimeZone},
+		CDN: cdnConfig{SigningCacheTTL: 10 * time.Minute},
+	}
 	decoder := yaml.NewDecoder(bytes.NewReader(data), yaml.Strict())
 	if err := decoder.Decode(cfg); err != nil {
 		return nil, fmt.Errorf("config parsing failed: %w", err)

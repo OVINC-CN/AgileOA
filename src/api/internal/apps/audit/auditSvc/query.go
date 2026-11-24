@@ -18,6 +18,7 @@ import (
 	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/audit/auditModels"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/user/userUtils"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/db"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/displaytime"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/tracing"
 )
@@ -132,7 +133,7 @@ func Detail(ctx context.Context, id, date string) (auditModels.Detail, error) {
 	return result, err
 }
 
-// Statistics 一次按 UTC 日期聚合，同时生成总数、结果、拒绝及趋势。
+// Statistics 按展示时区的自然日聚合，同步生成总数、结果、拒绝及趋势。
 func Statistics(ctx context.Context, query auditModels.Query) (auditModels.StatisticsData, error) {
 	result := auditModels.StatisticsData{Days: []auditModels.Day{}}
 	event := queryEvent()
@@ -149,9 +150,11 @@ func Statistics(ctx context.Context, query auditModels.Query) (auditModels.Stati
 				Failure int64
 				Denied  int64
 			}
+			date := displaytime.UnixMilliDateSQL("start_time", query.From, query.Until)
 			if err := queryScope(tx, query).
-				Select("DATE_FORMAT(event_date,'%Y-%m-%d') AS date, COUNT(*) AS total, SUM(result_code = 0) AS success, SUM(result_code <> 0) AS failure, SUM(result_code = 403) AS denied").
-				Group("event_date").Scan(&rows).Error; err != nil {
+				Select("? AS date, COUNT(*) AS total, SUM(result_code = 0) AS success, "+
+					"SUM(result_code <> 0) AS failure, SUM(result_code = 403) AS denied", date).
+				Group("date").Scan(&rows).Error; err != nil {
 				return event, err
 			}
 			byDate := make(map[string]auditModels.Day, len(rows))
@@ -164,14 +167,12 @@ func Statistics(ctx context.Context, query auditModels.Query) (auditModels.Stati
 					Date: row.Date, Success: row.Success, Failure: row.Failure,
 				}
 			}
-			first, last := dateBounds(query)
-			day, _ := time.Parse(time.DateOnly, first)
-			for !day.After(last) {
+			last := displaytime.Date(query.Until.Add(-time.Millisecond))
+			for day := displaytime.Date(query.From); !day.After(last); day = day.AddDate(0, 0, 1) {
 				date := day.Format(time.DateOnly)
 				item := byDate[date]
 				item.Date = date
 				result.Days = append(result.Days, item)
-				day = day.AddDate(0, 0, 1)
 			}
 			return event, nil
 		},

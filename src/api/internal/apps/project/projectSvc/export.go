@@ -192,7 +192,7 @@ func exportProjects(
 		}
 		deadline := ""
 		if row.SelfApplyDeadline != nil {
-			deadline = row.SelfApplyDeadline.UTC().Format(time.RFC3339Nano)
+			deadline = row.SelfApplyDeadline.In(config.Config.App.Location).Format(time.RFC3339Nano)
 		}
 		records = append(records, []string{
 			row.Name,

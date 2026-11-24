@@ -442,7 +442,7 @@ definitions:
   auditModels.Day:
     properties:
       date:
-        description: Date 是 UTC 日期。
+        description: Date 是配置的展示时区中的日期。
         example: "2026-11-16"
         type: string
       failure:
@@ -663,7 +663,7 @@ definitions:
   auditModels.StatisticsData:
     properties:
       days:
-        description: Days 是 UTC 日期趋势，缺少记录的日期补零。
+        description: Days 是展示时区的自然日趋势，缺少记录的日期补零。
         items:
           $ref: '#/definitions/auditModels.Day'
         type: array
@@ -7141,7 +7141,7 @@ definitions:
         example: 3
         type: integer
       date:
-        description: Date 是上海日期。
+        description: Date 是配置的展示时区中的日期。
         example: "2026-11-03"
         type: string
       logins:
@@ -8532,7 +8532,7 @@ paths:
       - 权限管理
   /v1/system/audit/logs:
     get:
-      description: 系统管理员查询标准事件，按数据库 ID 倒序。所有筛选均为标量精确条件。
+      description: 系统管理员查询标准事件，按数据库 ID 倒序。默认查询展示时区的最近自然日，所有筛选均为标量精确条件。
       parameters:
       - default: 1
         description: 页码
@@ -8634,7 +8634,7 @@ paths:
       - 审计日志
   /v1/system/audit/statistics:
     get:
-      description: 两个时间参数均限制事件的 start_time，按 UTC 日期一次聚合总计与趋势。
+      description: 两个时间参数均限制事件的 start_time，按配置的展示时区聚合自然日趋势。
       parameters:
       - collectionFormat: multi
         description: 用户租户，组织为 system，学生为所属空间
@@ -8983,7 +8983,7 @@ paths:
       - 用户管理
   /v1/system/users/statistics:
     get:
-      description: 汇总真实账号数量、状态及配置日期窗口内的新增和登录次数。
+      description: 汇总真实账号数量和状态，按配置的展示时区统计自然日内的新增和登录次数。
       produces:
       - application/json
       responses:
@@ -15069,7 +15069,9 @@ paths:
       - 评奖评优
   /v1/workspaces/{workspace_id}/projects/export:
     get:
-      description: 使用独立项目导出权限，复用列表筛选及排序，导出全部匹配项目的名称、年份、说明和附件数量；审计提交后返回文本格式 XLSX。
+      description: |-
+        使用独立项目导出权限，复用列表筛选及排序，导出全部匹配项目的名称、年份、说明和附件数量；审计提交后返回文本格式 XLSX。
+        自行申报截止时间使用配置的展示时区，并保留时区偏移。
       parameters:
       - description: 工作空间编号
         in: path

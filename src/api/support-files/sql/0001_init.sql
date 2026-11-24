@@ -23,7 +23,8 @@ CREATE TABLE `users`
   `updated_at` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6) COMMENT '更新时间，UTC，由数据库维护',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_users_username` (`username`),
-  KEY `idx_users_access_search` (`id`, `username`, `display_name`)
+  KEY `idx_users_access_search` (`id`, `username`, `display_name`),
+  KEY `idx_users_created_at` (`created_at`)
 ) ENGINE = InnoDB COMMENT ='全局登录账号';
 
 -- 每个账号最多一个 API Token，认证使用摘要，独立密钥加密原值以支持再次查看。
