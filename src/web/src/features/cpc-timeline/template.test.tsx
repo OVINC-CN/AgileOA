@@ -184,8 +184,8 @@ it('模板详情直接展示基准标记和附件列表，附件保持只读', a
   await userEvent.click(table.getByRole('button', { name: `更多操作 ${record.name}` }));
   expect(screen.getAllByRole('menuitem').map((item) => item.textContent)).toEqual(['克隆', '删除']);
   await userEvent.click(screen.getByRole('menuitem', { name: '删除' }));
-  expect(screen.getByRole('dialog', { name: '删除时间线模板' })).toHaveAccessibleDescription(
-    `确认删除“${record.name}”？`,
+  expect(screen.getByRole('menuitem', { name: '确认' })).toHaveAccessibleDescription(
+    `确认删除 ${record.name} ?`,
   );
 });
 

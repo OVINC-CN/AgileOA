@@ -168,6 +168,7 @@ API 侧先在业务事务中保存任务所需状态和操作审计，由 app �
 | 下拉、日期及日期时间 | [search-select.tsx](src/web/src/components/ui/search-select.tsx)、[date-picker.tsx](src/web/src/components/ui/date-picker.tsx)、[date-time-picker.tsx](src/web/src/components/ui/date-time-picker.tsx) |
 | 筛选、统计、表格及分页 | [filter-panel.tsx](src/web/src/components/filter-panel.tsx)、[metric-card.tsx](src/web/src/components/metric-card.tsx)、[management-table.tsx](src/web/src/components/management-table.tsx)、[management-pagination.tsx](src/web/src/components/management-pagination.tsx) |
 | 表格行操作及更多操作 | [table-action-button.tsx](src/web/src/components/table-action-button.tsx)、[table-actions-menu.tsx](src/web/src/components/table-actions-menu.tsx)，共用 `table-action` 按钮样式 |
+| 删除确认 | [delete-confirmation.tsx](src/web/src/components/ui/delete-confirmation.tsx) |
 | Drawer、底部分区及提示 | [drawer.tsx](src/web/src/components/ui/drawer.tsx)、[drawer-tabs.tsx](src/web/src/components/ui/drawer-tabs.tsx)、[tooltip.tsx](src/web/src/components/ui/tooltip.tsx) |
 | 桌面和移动导航 | [side-navigation-layout.tsx](src/web/src/components/side-navigation-layout.tsx)、[mobile-navigation.tsx](src/web/src/components/mobile-navigation.tsx) |
 | 表格列、空值、时间和身份 | [table-columns.ts](src/web/src/lib/table-columns.ts)、[record-time-columns.tsx](src/web/src/lib/record-time-columns.tsx)、[format.ts](src/web/src/lib/format.ts) |
@@ -200,8 +201,11 @@ Drawer 默认在底部提供「关闭」。通过 `footerDismiss` 自定义取�
 填报管理和学生服务的我的审核将姓名固定在左侧首列，学号放在第二列。
 我的申报将 `年份 · 项目名称` 固定在左侧首列，三个视图均通过首列打开对应申报详情。
 新建申报与申报详情共用底部的主要信息、审批流程和流转记录分区，切换时保留表单草稿。
-学生信息、奖项管理、获奖学生和填报管理的行删除入口统一放在更多操作菜单中。
-毕业去向将姓名固定在左侧首列，有编辑权限时点击姓名打开绑定或编辑抽屉，清除入口放在更多操作菜单中。
+行删除通过 `TableActionsMenu` 的 `confirmDelete` 配置对象名称和删除操作。行操作通过
+`ManagementTable` 的 `rowActions` 渲染，并以记录编号作为 `rowID`，使刷新期间的确认状态和所属记录保持关联。
+附件等直接操作使用 `DeleteConfirmation`。首次点击在原入口显示「确认」，再次点击提交。
+时间线模板保存时需要同步删除节点，确认状态显示在原保存按钮上。
+毕业去向将姓名固定在左侧首列，有编辑权限时点击姓名打开绑定或编辑抽屉，删除毕业去向的入口放在更多操作菜单中。
 党建人员视图将姓名固定在左侧首列，有详情权限时点击姓名打开党建人员详情。
 时间线视图将姓名固定在左侧首列，点击打开当前节点详情，操作按详情、编辑、时间线排列。
 学生专业表、住宿信息表和支部党员表使用公共 `Table` 的 `pinFirstColumn` 固定首个可见列。

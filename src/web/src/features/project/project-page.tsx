@@ -13,7 +13,6 @@ import { TableActionsMenu } from '@/components/table-actions-menu';
 import { TableTimestamp } from '@/components/table-timestamp';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Drawer } from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
 import { SearchSelect } from '@/components/ui/search-select';
 import {
@@ -72,15 +71,10 @@ function ProjectWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: W
   } | null>(null);
   const [detail, setDetail] = useState<Project | null>(null);
   const [transfer, setTransfer] = useState(false);
-  const [deleting, setDeleting] = useState<{
-    record: Project | ParticipationSummary;
-    participation: boolean;
-  } | null>(null);
   const pagination = useTablePagination();
   const client = useQueryClient();
   const refresh = useApiAction();
   const search = useApiAction();
-  const remove = useApiAction();
   const loadDetail = useApiAction();
   const download = useApiAction();
   const canViewStatistics = tab === 'projects' && can('project.statistics');
@@ -118,6 +112,47 @@ function ProjectWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: W
     );
     if (result.ok) setParticipation({ record: result.data, readOnly: true });
   };
+  const renderProjectActions = (record: Project) => (
+    <div className="flex items-center gap-1">
+      <TableActionButton
+        onClick={() => {
+          setDetail(record);
+        }}
+      >
+        <Eye aria-hidden="true" />
+        详情
+      </TableActionButton>
+      {can('project.update') ? (
+        <TableActionButton
+          onClick={() => {
+            setProject(record);
+          }}
+        >
+          <Pencil aria-hidden="true" />
+          编辑
+        </TableActionButton>
+      ) : null}
+      {can('project.delete') ? (
+        <TableActionsMenu
+          label={`${String(record.year)} · ${record.name}`}
+          actions={[
+            {
+              label: '删除',
+              icon: Trash2,
+              destructive: true,
+              confirmDelete: {
+                target: record.name,
+                onConfirm: async () => {
+                  await deleteRecord(workspaceID, record, false);
+                  await client.invalidateQueries({ queryKey: projectKey(workspaceID) });
+                },
+              },
+            },
+          ]}
+        />
+      ) : null}
+    </div>
+  );
   const columns: ColumnDef<Project>[] = [
     {
       id: 'name',
@@ -151,48 +186,65 @@ function ProjectWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: W
       cell: ({ row }) => String(row.original.attachment_ids.length),
     },
     ...recordTimeColumns<Project>((record) => record),
-    {
-      id: 'actions',
-      header: '操作',
-      cell: ({ row }) => (
-        <div className="flex items-center gap-1">
-          <TableActionButton
-            onClick={() => {
-              setDetail(row.original);
-            }}
-          >
-            <Eye aria-hidden="true" />
-            详情
-          </TableActionButton>
-          {can('project.update') ? (
-            <TableActionButton
-              onClick={() => {
-                setProject(row.original);
-              }}
-            >
-              <Pencil aria-hidden="true" />
-              编辑
-            </TableActionButton>
-          ) : null}
-          {can('project.delete') ? (
-            <TableActionsMenu
-              label={`${String(row.original.year)} · ${row.original.name}`}
-              actions={[
-                {
-                  label: '删除',
-                  icon: Trash2,
-                  destructive: true,
-                  onSelect: () => {
-                    setDeleting({ record: row.original, participation: false });
-                  },
-                },
-              ]}
-            />
-          ) : null}
-        </div>
-      ),
-    },
+    { id: 'actions', header: '操作' },
   ];
+  const renderParticipationActions = (record: ParticipationSummary) => (
+    <div className="flex items-center gap-1">
+      <TableActionButton
+        loading={loadDetail.isPending(`view:${String(record.id)}`)}
+        onClick={() => {
+          void openParticipationDetail(record.id, `view:${String(record.id)}`);
+        }}
+      >
+        <Eye aria-hidden="true" />
+        详情
+      </TableActionButton>
+      {can('project.participation.update') ? (
+        <TableActionButton
+          loading={loadDetail.isPending(`edit:${String(record.id)}`)}
+          onClick={() => {
+            void (async () => {
+              const result = await loadDetail.run(`edit:${String(record.id)}`, () =>
+                client.query({
+                  ...participationDetailOptions(workspaceID, record.id),
+                  staleTime: 0,
+                }),
+              );
+              if (result.ok) setParticipation({ record: result.data, readOnly: false });
+            })();
+          }}
+        >
+          <Pencil aria-hidden="true" />
+          编辑
+        </TableActionButton>
+      ) : null}
+      {can('project.participation.delete') ? (
+        <TableActionsMenu
+          label={[
+            formatIdentity(record.student_name, record.student_no),
+            String(record.year),
+            record.project_name,
+          ].join(' · ')}
+          actions={[
+            {
+              label: '删除',
+              icon: Trash2,
+              destructive: true,
+              confirmDelete: {
+                target:
+                  `${record.project_name} · ` +
+                  formatIdentity(record.student_name, record.student_no),
+                onConfirm: async () => {
+                  await deleteRecord(workspaceID, record, true);
+                  await client.invalidateQueries({ queryKey: projectKey(workspaceID) });
+                },
+              },
+            },
+          ]}
+        />
+      ) : null}
+    </div>
+  );
   const participationColumns: ColumnDef<ParticipationSummary>[] = [
     { accessorKey: 'student_name', header: '姓名' },
     { accessorKey: 'student_no', header: '学号' },
@@ -209,61 +261,7 @@ function ProjectWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: W
       cell: ({ row }) => `${String(row.original.detail_count)} 项`,
     },
     ...recordTimeColumns<ParticipationSummary>((record) => record),
-    {
-      id: 'actions',
-      header: '操作',
-      cell: ({ row }) => (
-        <div className="flex items-center gap-1">
-          <TableActionButton
-            loading={loadDetail.isPending(`view:${String(row.original.id)}`)}
-            onClick={() => {
-              void openParticipationDetail(row.original.id, `view:${String(row.original.id)}`);
-            }}
-          >
-            <Eye aria-hidden="true" />
-            详情
-          </TableActionButton>
-          {can('project.participation.update') ? (
-            <TableActionButton
-              loading={loadDetail.isPending(`edit:${String(row.original.id)}`)}
-              onClick={() => {
-                void (async () => {
-                  const result = await loadDetail.run(`edit:${String(row.original.id)}`, () =>
-                    client.query({
-                      ...participationDetailOptions(workspaceID, row.original.id),
-                      staleTime: 0,
-                    }),
-                  );
-                  if (result.ok) setParticipation({ record: result.data, readOnly: false });
-                })();
-              }}
-            >
-              <Pencil aria-hidden="true" />
-              编辑
-            </TableActionButton>
-          ) : null}
-          {can('project.participation.delete') ? (
-            <TableActionsMenu
-              label={[
-                formatIdentity(row.original.student_name, row.original.student_no),
-                String(row.original.year),
-                row.original.project_name,
-              ].join(' · ')}
-              actions={[
-                {
-                  label: '删除',
-                  icon: Trash2,
-                  destructive: true,
-                  onSelect: () => {
-                    setDeleting({ record: row.original, participation: true });
-                  },
-                },
-              ]}
-            />
-          ) : null}
-        </div>
-      ),
-    },
+    { id: 'actions', header: '操作' },
   ];
   const fetchPage = (
     page: number,
@@ -615,6 +613,8 @@ function ProjectWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: W
                     };
                   },
                 }}
+                rowActions={renderParticipationActions}
+                rowID={(record) => String(record.id)}
                 columns={participationColumns}
                 data={participations?.items ?? []}
                 total={participations?.total ?? 0}
@@ -644,6 +644,8 @@ function ProjectWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: W
                     },
                   }),
                 }}
+                rowActions={renderProjectActions}
+                rowID={(record) => String(record.id)}
                 columns={columns}
                 data={projects?.items ?? []}
                 total={projects?.total ?? 0}
@@ -711,56 +713,6 @@ function ProjectWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: W
             setDetail(null);
           }}
         />
-      ) : null}
-      {deleting ? (
-        <Drawer
-          title={deleting.participation ? '删除获奖记录' : '删除项目'}
-          truncateDescription
-          description={
-            'name' in deleting.record
-              ? deleting.record.name
-              : `${deleting.record.project_name} · ` +
-                formatIdentity(deleting.record.student_name, deleting.record.student_no)
-          }
-          busy={remove.pending}
-          onClose={() => {
-            setDeleting(null);
-          }}
-          footerDismiss={
-            <Button
-              variant="cancel"
-              disabled={remove.pending}
-              onClick={() => {
-                setDeleting(null);
-              }}
-            >
-              取消
-            </Button>
-          }
-          footer={
-            <Button
-              loading={remove.pending}
-              onClick={() => {
-                void (async () => {
-                  const result = await remove.run('delete', async () => {
-                    await deleteRecord(workspaceID, deleting.record, deleting.participation);
-                    await client.invalidateQueries({ queryKey: projectKey(workspaceID) });
-                  });
-                  if (result.ok) setDeleting(null);
-                })();
-              }}
-            >
-              <Trash2 aria-hidden="true" />
-              确认删除
-            </Button>
-          }
-        >
-          <p className="p-6 text-sm">
-            {deleting.participation
-              ? '将永久删除本条获奖记录及其全部评分子项，学生档案、项目及历史审计保留。'
-              : '将永久删除项目、子项配置及审批流程，历史审计保留。项目仍有关联申报、获奖记录或附件时不可删除。'}
-          </p>
-        </Drawer>
       ) : null}
     </section>
   );

@@ -42,14 +42,12 @@ export function TimelinePage({
   const [keyword, setKeyword] = useState('');
   const [editor, setEditor] = useState<TimelineInfo | null | undefined>();
   const [detail, setDetail] = useState<TimelineInfo | null>(null);
-  const [deleting, setDeleting] = useState<TimelineSummary | null>(null);
   const [importing, setImporting] = useState(false);
   const client = useQueryClient();
   const pagination = useTablePagination();
   const refresh = useApiAction();
   const search = useApiAction();
   const load = useApiAction();
-  const remove = useApiAction();
   const clone = useApiAction();
   const query = useQuery({
     ...timelineListOptions(workspaceID, keyword, pagination.page, pagination.pageSize),
@@ -79,6 +77,83 @@ export function TimelinePage({
       else setDetail(result);
     });
   };
+  const renderActions = (record: TimelineSummary) => (
+    <div className="flex items-center gap-1">
+      {can('detail') ? (
+        <TableActionButton
+          disabled={load.pending}
+          loading={load.isPending(`detail:${String(record.id)}`)}
+          onClick={() => {
+            open(record, 'detail');
+          }}
+        >
+          <Eye aria-hidden="true" />
+          详情
+        </TableActionButton>
+      ) : null}
+      {can('update') && can('detail') ? (
+        <TableActionButton
+          disabled={load.pending}
+          loading={load.isPending(`edit:${String(record.id)}`)}
+          onClick={() => {
+            open(record, 'edit');
+          }}
+        >
+          <Pencil aria-hidden="true" />
+          编辑
+        </TableActionButton>
+      ) : null}
+      <TableActionsMenu
+        label={record.name}
+        disabled={clone.pending && !can('delete')}
+        loading={clone.isPending(String(record.id))}
+        actions={[
+          ...(can('create')
+            ? [
+                {
+                  label: '克隆',
+                  icon: Copy,
+                  disabled: clone.pending,
+                  onSelect: () => {
+                    void clone.run(String(record.id), async () => {
+                      await cloneTimeline(workspaceID, record);
+                      pagination.setPage(1);
+                      await client.invalidateQueries({ queryKey: timelineKey(workspaceID) });
+                      await fetchPage(1, pagination.pageSize);
+                    });
+                  },
+                },
+              ]
+            : []),
+          ...(can('delete')
+            ? [
+                {
+                  label: '删除',
+                  icon: Trash2,
+                  destructive: true,
+                  confirmDelete: {
+                    target: record.name,
+                    onConfirm: async () => {
+                      await deleteTimeline(workspaceID, record);
+                      const page = Math.max(
+                        1,
+                        Math.min(
+                          pagination.page,
+                          Math.ceil(((data?.total ?? 1) - 1) / pagination.pageSize),
+                        ),
+                      );
+                      pagination.setPage(page);
+                      await client.invalidateQueries({ queryKey: timelineKey(workspaceID) });
+                      await fetchPage(page, pagination.pageSize);
+                    },
+                  },
+                },
+              ]
+            : []),
+        ]}
+      />
+    </div>
+  );
   const columns: ColumnDef<TimelineSummary>[] = [
     { accessorKey: 'name', header: '模板名称' },
     {
@@ -92,74 +167,7 @@ export function TimelinePage({
     },
     { accessorKey: 'node_count', header: '节点数' },
     ...recordTimeColumns<TimelineSummary>((record) => record),
-    {
-      id: 'actions',
-      header: '操作',
-      cell: ({ row }) => (
-        <div className="flex items-center gap-1">
-          {can('detail') ? (
-            <TableActionButton
-              disabled={load.pending}
-              loading={load.isPending(`detail:${String(row.original.id)}`)}
-              onClick={() => {
-                open(row.original, 'detail');
-              }}
-            >
-              <Eye aria-hidden="true" />
-              详情
-            </TableActionButton>
-          ) : null}
-          {can('update') && can('detail') ? (
-            <TableActionButton
-              disabled={load.pending}
-              loading={load.isPending(`edit:${String(row.original.id)}`)}
-              onClick={() => {
-                open(row.original, 'edit');
-              }}
-            >
-              <Pencil aria-hidden="true" />
-              编辑
-            </TableActionButton>
-          ) : null}
-          <TableActionsMenu
-            label={row.original.name}
-            disabled={clone.pending && !can('delete')}
-            loading={clone.isPending(String(row.original.id))}
-            actions={[
-              ...(can('create')
-                ? [
-                    {
-                      label: '克隆',
-                      icon: Copy,
-                      disabled: clone.pending,
-                      onSelect: () => {
-                        void clone.run(String(row.original.id), async () => {
-                          await cloneTimeline(workspaceID, row.original);
-                          pagination.setPage(1);
-                          await client.invalidateQueries({ queryKey: timelineKey(workspaceID) });
-                          await fetchPage(1, pagination.pageSize);
-                        });
-                      },
-                    },
-                  ]
-                : []),
-              ...(can('delete')
-                ? [
-                    {
-                      label: '删除',
-                      icon: Trash2,
-                      destructive: true,
-                      onSelect: () => {
-                        setDeleting(row.original);
-                      },
-                    },
-                  ]
-                : []),
-            ]}
-          />
-        </div>
-      ),
-    },
+    { id: 'actions', header: '操作' },
   ];
   const refreshButton = (
     <Button
@@ -280,6 +288,8 @@ export function TimelinePage({
                     }
                   : undefined,
             }}
+            rowActions={renderActions}
+            rowID={(record) => String(record.id)}
             columns={columns}
             data={data?.items ?? []}
             total={data?.total ?? 0}
@@ -337,56 +347,6 @@ export function TimelinePage({
               actions={actions}
             />
           </div>
-        </Drawer>
-      ) : null}
-      {deleting && can('delete') ? (
-        <Drawer
-          title="删除时间线模板"
-          description={`确认删除“${deleting.name}”？`}
-          busy={remove.pending}
-          onClose={() => {
-            setDeleting(null);
-          }}
-          footerDismiss={
-            <Button
-              variant="cancel"
-              disabled={remove.pending}
-              onClick={() => {
-                setDeleting(null);
-              }}
-            >
-              取消
-            </Button>
-          }
-          footer={
-            <Button
-              variant="destructive"
-              loading={remove.pending}
-              onClick={() => {
-                void remove.run('delete', async () => {
-                  await deleteTimeline(workspaceID, deleting);
-                  const page = Math.max(
-                    1,
-                    Math.min(
-                      pagination.page,
-                      Math.ceil(((data?.total ?? 1) - 1) / pagination.pageSize),
-                    ),
-                  );
-                  pagination.setPage(page);
-                  await client.invalidateQueries({ queryKey: timelineKey(workspaceID) });
-                  await fetchPage(page, pagination.pageSize);
-                  setDeleting(null);
-                });
-              }}
-            >
-              <Trash2 aria-hidden="true" />
-              确认删除
-            </Button>
-          }
-        >
-          <p className="p-6 text-sm text-muted-foreground">
-            将永久删除该模板、全部节点、节点附件记录，以及以此模板为来源或目标的转移配置；历史审计保留。已绑定人员的模板不可删除。
-          </p>
         </Drawer>
       ) : null}
     </section>

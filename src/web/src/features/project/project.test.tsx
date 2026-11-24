@@ -306,7 +306,9 @@ describe('评奖评优', () => {
     expect(table.queryByRole('button', { name: '删除' })).not.toBeInTheDocument();
     await userEvent.click(table.getByRole('button', { name: '更多操作 2026 · 虚构项目' }));
     await userEvent.click(screen.getByRole('menuitem', { name: '删除' }));
-    expect(screen.getByRole('dialog', { name: '删除项目' })).toHaveTextContent(project.name);
+    expect(screen.getByRole('menuitem', { name: '确认' })).toHaveAccessibleDescription(
+      `确认删除 ${project.name} ?`,
+    );
   });
 
   it('获奖学生固定姓名为首列，学号为第二列，点击姓名读取评分详情', async () => {
@@ -364,8 +366,8 @@ describe('评奖评优', () => {
     expect(table.queryByRole('button', { name: '删除' })).not.toBeInTheDocument();
     await userEvent.click(table.getByRole('button', { name: /^更多操作 虚构学生/u }));
     await userEvent.click(screen.getByRole('menuitem', { name: '删除' }));
-    expect(screen.getByRole('dialog', { name: '删除获奖记录' })).toHaveTextContent(
-      record.student_name,
+    expect(screen.getByRole('menuitem', { name: '确认' })).toHaveAccessibleDescription(
+      `确认删除 ${record.project_name} · ${record.student_name}(${record.student_no}) ?`,
     );
   });
 

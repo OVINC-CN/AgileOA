@@ -7,6 +7,7 @@ import { TableActionButton } from '@/components/table-action-button';
 import { TableActionsMenu } from '@/components/table-actions-menu';
 import { TableTimestamp } from '@/components/table-timestamp';
 import type { UserRow } from '@/features/management/api';
+import { formatIdentity } from '@/lib/format';
 import { recordTimeColumns } from '@/lib/record-time-columns';
 
 export function UserTable({
@@ -34,10 +35,59 @@ export function UserTable({
   onPage: (page: number) => Promise<unknown>;
   onPageSize: (pageSize: number) => Promise<unknown>;
   onEdit: (user: UserRow) => void;
-  onDelete: (user: UserRow) => void;
+  onDelete: (user: UserRow) => Promise<void>;
   onRevoke: (user: UserRow) => void;
   onAPIToken: (user: UserRow) => void;
 }) {
+  const renderActions = (record: UserRow) => (
+    <div className="flex flex-nowrap gap-1">
+      <TableActionButton
+        onClick={() => {
+          onEdit(record);
+        }}
+      >
+        <Pencil aria-hidden="true" />
+        编辑
+      </TableActionButton>
+      <TableActionButton
+        aria-label={`配置 ${record.username} 的 MCP`}
+        onClick={() => {
+          onAPIToken(record);
+        }}
+      >
+        <Plug aria-hidden="true" />
+        MCP
+      </TableActionButton>
+      <TableActionsMenu
+        label={record.username}
+        actions={[
+          {
+            label: '撤销会话',
+            icon: Unplug,
+            disabled: record.id === currentID,
+            destructive: true,
+            onSelect: () => {
+              onRevoke(record);
+            },
+          },
+          {
+            label: '删除',
+            icon: Trash2,
+            disabled: record.id === currentID,
+            destructive: true,
+            confirmDelete: {
+              target: formatIdentity(record.display_name, record.username),
+              blocked:
+                record.session_count > 0 || record.has_api_token
+                  ? '请先撤销该账号的全部会话和 API Token。'
+                  : undefined,
+              onConfirm: () => onDelete(record),
+            },
+          },
+        ]}
+      />
+    </div>
+  );
   const columns = useMemo<ColumnDef<UserRow>[]>(
     () => [
       { accessorKey: 'id', header: 'ID' },
@@ -101,56 +151,9 @@ export function UserTable({
         cell: ({ row }) => <TableTimestamp value={row.original.last_login_at} />,
       },
       ...recordTimeColumns<UserRow>((record) => record),
-      {
-        id: 'actions',
-        header: '操作',
-        cell: ({ row }) => (
-          <div className="flex flex-nowrap gap-1">
-            <TableActionButton
-              onClick={() => {
-                onEdit(row.original);
-              }}
-            >
-              <Pencil aria-hidden="true" />
-              编辑
-            </TableActionButton>
-            <TableActionButton
-              aria-label={`配置 ${row.original.username} 的 MCP`}
-              onClick={() => {
-                onAPIToken(row.original);
-              }}
-            >
-              <Plug aria-hidden="true" />
-              MCP
-            </TableActionButton>
-            <TableActionsMenu
-              label={row.original.username}
-              actions={[
-                {
-                  label: '撤销会话',
-                  icon: Unplug,
-                  disabled: row.original.id === currentID,
-                  destructive: true,
-                  onSelect: () => {
-                    onRevoke(row.original);
-                  },
-                },
-                {
-                  label: '删除',
-                  icon: Trash2,
-                  disabled: row.original.id === currentID,
-                  destructive: true,
-                  onSelect: () => {
-                    onDelete(row.original);
-                  },
-                },
-              ]}
-            />
-          </div>
-        ),
-      },
+      { id: 'actions', header: '操作' },
     ],
-    [currentID, onEdit, onDelete, onRevoke, onAPIToken],
+    [currentID],
   );
   return (
     <ManagementTable
@@ -165,6 +168,8 @@ export function UserTable({
           },
         }),
       }}
+      rowActions={renderActions}
+      rowID={(record) => String(record.id)}
       columns={columns}
       data={data}
       total={total}

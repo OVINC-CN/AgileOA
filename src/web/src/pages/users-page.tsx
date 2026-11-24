@@ -1,5 +1,5 @@
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, Plus, Search, Trash2, Unplug, X } from 'lucide-react';
+import { Check, Plus, Search, Unplug, X } from 'lucide-react';
 import { useState } from 'react';
 
 import { ErrorMessage } from '@/components/error-message';
@@ -33,36 +33,31 @@ import { useTablePagination } from '@/lib/pagination';
 const emptyRows: UserRow[] = [];
 const defaultFilters: UserFilters = { keyword: '', status: [] };
 
-function UserAction({
-  kind,
+function RevokeUserSessions({
   user,
   onClose,
-  onSwitch,
   onDone,
 }: {
-  kind: 'delete' | 'revoke';
   user: UserRow;
   onClose: () => void;
-  onSwitch: () => void;
   onDone: (message: string) => void;
 }) {
   const client = useQueryClient();
   const mutation = useApiMutation({
     mutationFn: async () => {
-      await (kind === 'delete' ? deleteUser(user.id) : revokeSessions(user.id));
+      await revokeSessions(user.id);
       await Promise.all([
         client.invalidateQueries({ queryKey: ['management', 'users'] }),
         client.invalidateQueries({ queryKey: ['management', 'audit'] }),
       ]);
     },
     onSuccess: () => {
-      onDone(kind === 'delete' ? `已删除用户 ${user.username}` : `已撤销 ${user.username} 的会话`);
+      onDone(`已撤销 ${user.username} 的会话`);
     },
   });
-  const blocked = kind === 'delete' && (user.session_count > 0 || user.has_api_token);
   return (
     <Drawer
-      title={kind === 'delete' ? '删除用户' : '撤销用户会话'}
+      title="撤销用户会话"
       busy={mutation.isPending}
       truncateDescription
       description={formatIdentity(user.display_name, user.username)}
@@ -77,35 +72,24 @@ function UserAction({
         </Button>
       }
       footer={
-        blocked ? (
-          <Button onClick={onSwitch}>撤销会话</Button>
-        ) : (
-          <Button
-            loading={mutation.isPending}
-            onClick={() => {
-              mutation.mutate();
-            }}
-          >
-            {kind === 'delete' ? <Trash2 aria-hidden="true" /> : <Unplug aria-hidden="true" />}
-            {kind === 'delete' ? '确认删除' : '确认撤销'}
-          </Button>
-        )
+        <Button
+          loading={mutation.isPending}
+          onClick={() => {
+            mutation.mutate();
+          }}
+        >
+          <Unplug aria-hidden="true" />
+          确认撤销
+        </Button>
       }
     >
       <div className="space-y-4 p-6">
         <div className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
-          {kind === 'delete' ? <Trash2 aria-hidden="true" /> : <Unplug aria-hidden="true" />}
+          <Unplug aria-hidden="true" />
         </div>
         <p className="text-sm leading-6">
-          {kind === 'delete'
-            ? '将永久删除该账号及其权限、负责的月度工作、担任书记的党支部和相应关联记录；历史操作记录保留。存在会话、API Token 或评奖评优审批引用时不可删除。'
-            : '将撤销该用户在所有设备上的会话、API Token 及待使用的邮件登录验证码，该用户需要重新登录。'}
+          将撤销该用户在所有设备上的会话、API Token 及待使用的邮件登录验证码，该用户需要重新登录。
         </p>
-        {blocked ? (
-          <p className="rounded-xl border border-warning-border bg-warning/70 p-3 text-sm text-warning-foreground">
-            该用户仍有会话或 API Token，请先撤销全部会话和 API Token，再删除账号。
-          </p>
-        ) : null}
         {mutation.error ? <ErrorMessage>{mutation.error.message}</ErrorMessage> : null}
       </div>
     </Drawer>
@@ -118,7 +102,7 @@ export function UsersPage() {
   const [filters, setFilters] = useState(defaultFilters);
   const { page, pageSize, setPage, setPageSize } = useTablePagination();
   const [editor, setEditor] = useState<{ user: UserRow | null } | null>(null);
-  const [action, setAction] = useState<{ kind: 'delete' | 'revoke'; user: UserRow } | null>(null);
+  const [revoking, setRevoking] = useState<UserRow | null>(null);
   const [apiTokenUser, setAPITokenUser] = useState<UserRow | null>(null);
   const [notice, setNotice] = useState('');
   const searchAction = useApiAction();
@@ -145,7 +129,7 @@ export function UsersPage() {
   );
   const done = (message: string) => {
     setEditor(null);
-    setAction(null);
+    setRevoking(null);
     setNotice(message);
     if (list.data?.items.length === 1 && page > 1 && message.startsWith('已删除')) {
       setPage(page - 1);
@@ -277,12 +261,15 @@ export function UsersPage() {
           onEdit={(user) => {
             setEditor({ user });
           }}
-          onDelete={(user) => {
-            setAction({ kind: 'delete', user });
+          onDelete={async (user) => {
+            await deleteUser(user.id);
+            await Promise.all([
+              client.invalidateQueries({ queryKey: ['management', 'users'] }),
+              client.invalidateQueries({ queryKey: ['management', 'audit'] }),
+            ]);
+            done(`已删除用户 ${user.username}`);
           }}
-          onRevoke={(user) => {
-            setAction({ kind: 'revoke', user });
-          }}
+          onRevoke={setRevoking}
           onAPIToken={setAPITokenUser}
         />
       </Card>
@@ -305,16 +292,12 @@ export function UsersPage() {
           }}
         />
       ) : null}
-      {action ? (
-        <UserAction
-          key={action.kind + String(action.user.id)}
-          kind={action.kind}
-          user={action.user}
+      {revoking ? (
+        <RevokeUserSessions
+          key={revoking.id}
+          user={revoking}
           onClose={() => {
-            setAction(null);
-          }}
-          onSwitch={() => {
-            setAction({ ...action, kind: 'revoke' });
+            setRevoking(null);
           }}
           onDone={done}
         />

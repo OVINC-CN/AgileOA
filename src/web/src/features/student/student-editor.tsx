@@ -1,9 +1,10 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, ArrowRight, RefreshCw, Save, Trash2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, RefreshCw, Save } from 'lucide-react';
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 
 import { ErrorMessage } from '@/components/error-message';
 import { Button } from '@/components/ui/button';
+import { DeleteConfirmation } from '@/components/ui/delete-confirmation';
 import { Drawer } from '@/components/ui/drawer';
 import { DrawerSteps } from '@/components/ui/drawer-steps';
 import { DrawerTabs } from '@/components/ui/drawer-tabs';
@@ -14,7 +15,6 @@ import {
   type AvatarUpload,
   createStudent,
   deleteAvatarUpload,
-  deleteStudent,
   emptyOffCampus,
   emptyStudent,
   type OffCampusValues,
@@ -393,25 +393,24 @@ function StudentEditorForm({
                   >
                     <span className="min-w-0 truncate">{upload.filename}</span>
                     <span className="shrink-0">{uploadStateLabels[upload.state]}</span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      disabled={busy}
-                      loading={avatarUpload.isPending(`delete:${String(upload.id)}`)}
-                      onClick={() => {
-                        void avatarUpload.run(`delete:${String(upload.id)}`, async () => {
-                          try {
-                            await deleteAvatarUpload(workspaceID, originalStudent.id, upload);
-                          } finally {
-                            await invalidate();
-                          }
-                        });
+                    <DeleteConfirmation
+                      target={upload.filename}
+                      onConfirm={async () => {
+                        const result = await avatarUpload.run(
+                          `delete:${String(upload.id)}`,
+                          async () => {
+                            try {
+                              await deleteAvatarUpload(workspaceID, originalStudent.id, upload);
+                            } finally {
+                              await invalidate();
+                            }
+                          },
+                        );
+                        return result.ok;
                       }}
-                    >
-                      <Trash2 aria-hidden="true" />
-                      删除
-                    </Button>
+                      variant="ghost"
+                      disabled={busy}
+                    />
                   </div>
                 ))}
                 <p className="text-xs text-muted-foreground">
@@ -511,61 +510,6 @@ function StudentEditorForm({
           </section>
         ))}
       </fieldset>
-    </Drawer>
-  );
-}
-
-export function DeleteStudent({
-  workspaceID,
-  student,
-  onClose,
-}: {
-  workspaceID: string;
-  student: Student;
-  onClose: () => void;
-}) {
-  const client = useQueryClient();
-  const mutation = useApiMutation({
-    mutationFn: async () => {
-      await deleteStudent(workspaceID, student);
-      await Promise.all([
-        client.invalidateQueries({ queryKey: studentKey(workspaceID) }),
-        client.invalidateQueries({ queryKey: graduationKey(workspaceID) }),
-        client.invalidateQueries({ queryKey: ['management', 'audit'] }),
-      ]);
-    },
-    onSuccess: onClose,
-  });
-  return (
-    <Drawer
-      title="删除学生"
-      truncateDescription
-      description={formatIdentity(student.name, student.student_no)}
-      busy={mutation.isPending}
-      onClose={onClose}
-      footerDismiss={
-        <Button variant="cancel" disabled={mutation.isPending} onClick={onClose}>
-          取消
-        </Button>
-      }
-      footer={
-        <Button
-          loading={mutation.isPending}
-          onClick={() => {
-            mutation.mutate();
-          }}
-        >
-          <Trash2 aria-hidden="true" />
-          确认删除
-        </Button>
-      }
-    >
-      <div className="space-y-4 p-6 text-sm">
-        <p>
-          将永久删除该学生档案、隐私信息、毕业去向、校外住宿、获奖及党建记录，并删除相关会话、时间线和附件记录；历史审计保留。存在申报或审批节点引用时不可删除。
-        </p>
-        {mutation.error ? <ErrorMessage>{mutation.error.message}</ErrorMessage> : null}
-      </div>
     </Drawer>
   );
 }

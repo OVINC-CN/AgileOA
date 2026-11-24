@@ -75,13 +75,13 @@ describe('毕业去向', () => {
     await user.click(name);
     const editor = within(screen.getByRole('dialog', { name: title }));
     await user.click(editor.getByRole('button', { name: '取消' }));
-    expect(table.queryByRole('button', { name: '清除' })).not.toBeInTheDocument();
+    expect(table.queryByRole('button', { name: '删除' })).not.toBeInTheDocument();
     const more = { name: `更多操作 ${record.student_name}(${record.student_no})` };
     if (type) {
       await user.click(table.getByRole('button', more));
-      await user.click(screen.getByRole('menuitem', { name: '清除' }));
-      expect(screen.getByRole('dialog', { name: '清除毕业去向' })).toHaveTextContent(
-        record.student_name,
+      await user.click(screen.getByRole('menuitem', { name: '删除' }));
+      expect(screen.getByRole('menuitem', { name: '确认' })).toHaveAccessibleDescription(
+        `确认删除 ${record.student_name}(${record.student_no}) 的毕业去向 ?`,
       );
     } else {
       expect(table.queryByRole('button', more)).not.toBeInTheDocument();

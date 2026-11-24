@@ -1279,7 +1279,7 @@ describe('登录与系统管理', () => {
       }
     },
   );
-  it('从固定 ID 列打开编辑，保存信息并通过确认弹窗删除用户', async () => {
+  it('从固定 ID 列打开编辑，保存信息并在更多操作中确认删除用户', async () => {
     const { user, fetchMock } = setup();
     const row = await screen.findByRole('row', { name: /fixture.user/ });
     const idCell = within(row).getAllByRole('cell')[0];
@@ -1325,9 +1325,9 @@ describe('登录与系统管理', () => {
     await user.click(within(revoke).getByRole('button', { name: '取消' }));
     await user.click(screen.getByRole('button', { name: '更多操作 fixture.user' }));
     await user.click(screen.getByRole('menuitem', { name: '删除' }));
-    const confirm = await screen.findByRole('dialog');
-    expect(within(confirm).getByText(/永久删除/)).toBeVisible();
-    await user.click(within(confirm).getByRole('button', { name: '确认删除' }));
+    const confirm = screen.getByRole('menuitem', { name: '确认' });
+    expect(confirm).toHaveAccessibleDescription('确认删除 更新后的名称(fixture.user) ?');
+    await user.click(confirm);
     expect(await screen.findByText('已删除用户 fixture.user')).toBeVisible();
     expect(screen.queryByText('fixture.user')).not.toBeInTheDocument();
   });
@@ -1349,7 +1349,9 @@ describe('登录与系统管理', () => {
     expect(within(row).queryByRole('button', { name: '删除' })).not.toBeInTheDocument();
     await user.click(within(row).getByRole('button', { name: `更多操作 ${workspace.name}` }));
     await user.click(screen.getByRole('menuitem', { name: '删除' }));
-    expect(await screen.findByRole('dialog', { name: '删除工作空间' })).toBeVisible();
+    expect(screen.getByRole('menuitem', { name: '确认' })).toHaveAccessibleDescription(
+      `确认删除 ${workspace.name} ?`,
+    );
   });
   it('审计筛选和详情使用实际接口，展示快照差异与请求信息', async () => {
     const { user, fetchMock } = setup('/system/audit');

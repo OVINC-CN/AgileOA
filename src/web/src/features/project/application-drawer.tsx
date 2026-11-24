@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, Pencil, Save, Send, Trash2, Undo2 } from 'lucide-react';
+import { Check, Pencil, Save, Send, Undo2 } from 'lucide-react';
 import { useId, useState } from 'react';
 
 import { ErrorMessage } from '@/components/error-message';
@@ -95,7 +95,6 @@ export function ApplicationDrawer({
   const [project, setProject] = useState<Project | null>(null);
   const [decision, setDecision] = useState<'approve' | 'reject' | null>(null);
   const [comment, setComment] = useState('');
-  const [deleting, setDeleting] = useState<ApplicationAttachment | null>(null);
   const [uploadTarget, setUploadTarget] = useState<{ key: string; completed: boolean } | null>(
     null,
   );
@@ -264,13 +263,11 @@ export function ApplicationDrawer({
       }
     });
   };
-  const removeFile = () => {
-    if (!record || !record.can_edit || !deleting) return;
-    const file = deleting;
-    void files.run(`delete:${String(file.id)}`, async () => {
+  const removeFile = async (file: ApplicationAttachment) => {
+    if (!record?.can_edit) return false;
+    const result = await files.run(`delete:${String(file.id)}`, async () => {
       try {
         await accept(await deleteApplicationAttachment(workspaceID, scope, record, file), false);
-        setDeleting(null);
       } catch (cause) {
         try {
           const current = await client.query({
@@ -278,23 +275,19 @@ export function ApplicationDrawer({
             staleTime: 0,
           });
           await accept(current, false);
-          const latest = current.details
-            .flatMap((detail) => detail.attachments)
-            .find((item) => item.id === file.id);
-          if (latest) setDeleting(latest);
         } catch {
           // 后续刷新可按已持久化的删除状态继续重试。
         }
         throw cause;
       }
     });
+    return result.ok;
   };
   const fileProps = {
     workspaceID,
     scope,
     applicationID: record?.id ?? 0,
     busy,
-    deleting: (id: number) => files.isPending(`delete:${String(id)}`),
   };
   const canProcess = record && (record.can_edit || record.can_approve || record.can_reject);
   const reapplying = scope === 'mine' && record?.status === 'rejected';
@@ -524,7 +517,7 @@ export function ApplicationDrawer({
                       setUploadTarget({ key, completed: false });
                     }
                   : undefined,
-                onDelete: setDeleting,
+                onDelete: removeFile,
               })}
             />
           ) : record ? (
@@ -640,35 +633,6 @@ export function ApplicationDrawer({
               disabled={action.pending}
             />
           </div>
-        </Drawer>
-      ) : null}
-      {deleting ? (
-        <Drawer
-          title="删除附件"
-          description={deleting.filename}
-          onClose={() => {
-            setDeleting(null);
-          }}
-          busy={files.pending}
-          footerDismiss={
-            <Button
-              variant="cancel"
-              disabled={files.pending}
-              onClick={() => {
-                setDeleting(null);
-              }}
-            >
-              取消
-            </Button>
-          }
-          footer={
-            <Button loading={files.isPending(`delete:${String(deleting.id)}`)} onClick={removeFile}>
-              <Trash2 aria-hidden="true" />
-              删除
-            </Button>
-          }
-        >
-          <p className="p-6 text-sm">将永久删除此子项附件及文件，历史审计保留。</p>
         </Drawer>
       ) : null}
     </>

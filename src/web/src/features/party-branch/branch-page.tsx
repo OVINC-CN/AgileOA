@@ -61,7 +61,6 @@ function BranchWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
     branch: PartyBranch;
     rule: AdmissionRuleNode | null;
   } | null>(null);
-  const [deleting, setDeleting] = useState<PartyBranch | null>(null);
   const [transfer, setTransfer] = useState(false);
   const [reordering, setReordering] = useState(false);
   const [editingRule, setEditingRule] = useState<AdmissionRuleInfo | null>(null);
@@ -69,7 +68,6 @@ function BranchWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
   const client = useQueryClient();
   const refresh = useApiAction();
   const search = useApiAction();
-  const remove = useApiAction();
   const reorder = useApiAction();
   const download = useApiAction();
   const loadEdit = useApiAction();
@@ -98,6 +96,77 @@ function BranchWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
     );
     if (result.ok) setDetail({ branch, rule: result.data.rule });
   };
+  const renderActions = (record: PartyBranch) => (
+    <div className="flex items-center gap-1">
+      <TableActionButton
+        loading={loadDetail.isPending(String(record.id))}
+        disabled={loadDetail.pending}
+        onClick={() => {
+          void openDetail(record, String(record.id));
+        }}
+      >
+        <Eye aria-hidden="true" />
+        详情
+      </TableActionButton>
+      {can('update') ? (
+        <TableActionButton
+          loading={loadEdit.isPending(String(record.id))}
+          disabled={loadEdit.pending}
+          onClick={() => {
+            void (async () => {
+              const result = await loadEdit.run(String(record.id), async () => {
+                const info = await client.query({
+                  ...partyBranchAdmissionRuleOptions(workspaceID, record.id),
+                  staleTime: 0,
+                });
+                if (info.revision !== record.revision) {
+                  await client.invalidateQueries({ queryKey: partyBranchKey(workspaceID) });
+                  throw new Error('党支部已被修改，请刷新后重试');
+                }
+                return info;
+              });
+              if (result.ok) {
+                setEditingRule(result.data);
+                setEditing(record);
+              }
+            })();
+          }}
+        >
+          <Pencil aria-hidden="true" />
+          编辑
+        </TableActionButton>
+      ) : null}
+      {can('delete') ? (
+        <TableActionsMenu
+          label={record.short_name}
+          actions={[
+            {
+              label: '删除',
+              icon: Trash2,
+              destructive: true,
+              confirmDelete: {
+                target: record.full_name,
+                onConfirm: async () => {
+                  await deletePartyBranch(workspaceID, record);
+                  const page = Math.max(
+                    1,
+                    Math.min(
+                      pagination.page,
+                      Math.ceil(((data?.total ?? 1) - 1) / pagination.pageSize),
+                    ),
+                  );
+                  pagination.setPage(page);
+                  await client.invalidateQueries({ queryKey: partyBranchKey(workspaceID) });
+                  await client.invalidateQueries({ queryKey: personKey(workspaceID) });
+                  await fetchPage(page, pagination.pageSize);
+                },
+              },
+            },
+          ]}
+        />
+      ) : null}
+    </div>
+  );
   const columns: ColumnDef<PartyBranch>[] = [
     { accessorKey: 'short_name', header: '党支部简称' },
     {
@@ -119,67 +188,7 @@ function BranchWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
           : formatIdentity(row.original.secretary_name, row.original.secretary_username),
     },
     ...recordTimeColumns<PartyBranch>((record) => record),
-    {
-      id: 'actions',
-      header: '操作',
-      cell: ({ row }) => (
-        <div className="flex items-center gap-1">
-          <TableActionButton
-            loading={loadDetail.isPending(String(row.original.id))}
-            disabled={loadDetail.pending}
-            onClick={() => {
-              void openDetail(row.original, String(row.original.id));
-            }}
-          >
-            <Eye aria-hidden="true" />
-            详情
-          </TableActionButton>
-          {can('update') ? (
-            <TableActionButton
-              loading={loadEdit.isPending(String(row.original.id))}
-              disabled={loadEdit.pending}
-              onClick={() => {
-                void (async () => {
-                  const result = await loadEdit.run(String(row.original.id), async () => {
-                    const info = await client.query({
-                      ...partyBranchAdmissionRuleOptions(workspaceID, row.original.id),
-                      staleTime: 0,
-                    });
-                    if (info.revision !== row.original.revision) {
-                      await client.invalidateQueries({ queryKey: partyBranchKey(workspaceID) });
-                      throw new Error('党支部已被修改，请刷新后重试');
-                    }
-                    return info;
-                  });
-                  if (result.ok) {
-                    setEditingRule(result.data);
-                    setEditing(row.original);
-                  }
-                })();
-              }}
-            >
-              <Pencil aria-hidden="true" />
-              编辑
-            </TableActionButton>
-          ) : null}
-          {can('delete') ? (
-            <TableActionsMenu
-              label={row.original.short_name}
-              actions={[
-                {
-                  label: '删除',
-                  icon: Trash2,
-                  destructive: true,
-                  onSelect: () => {
-                    setDeleting(row.original);
-                  },
-                },
-              ]}
-            />
-          ) : null}
-        </div>
-      ),
-    },
+    { id: 'actions', header: '操作' },
   ];
   const refreshButton = (
     <Button
@@ -340,6 +349,8 @@ function BranchWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
                   };
                 },
               }}
+              rowActions={renderActions}
+              rowID={(record) => String(record.id)}
               columns={columns}
               data={data?.items ?? []}
               total={data?.total ?? 0}
@@ -467,57 +478,6 @@ function BranchWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
             </dl>
             <AdmissionRulePreview rule={detail.rule} />
           </div>
-        </Drawer>
-      ) : null}
-      {canList && deleting && can('delete') ? (
-        <Drawer
-          title="删除党支部"
-          description={`确认删除“${deleting.full_name}”？`}
-          busy={remove.pending}
-          onClose={() => {
-            setDeleting(null);
-          }}
-          footerDismiss={
-            <Button
-              variant="cancel"
-              disabled={remove.pending}
-              onClick={() => {
-                setDeleting(null);
-              }}
-            >
-              取消
-            </Button>
-          }
-          footer={
-            <Button
-              variant="destructive"
-              loading={remove.pending}
-              onClick={() => {
-                void remove.run('delete', async () => {
-                  await deletePartyBranch(workspaceID, deleting);
-                  const page = Math.max(
-                    1,
-                    Math.min(
-                      pagination.page,
-                      Math.ceil(((data?.total ?? 1) - 1) / pagination.pageSize),
-                    ),
-                  );
-                  pagination.setPage(page);
-                  await client.invalidateQueries({ queryKey: partyBranchKey(workspaceID) });
-                  await client.invalidateQueries({ queryKey: personKey(workspaceID) });
-                  await fetchPage(page, pagination.pageSize);
-                  setDeleting(null);
-                });
-              }}
-            >
-              <Trash2 aria-hidden="true" />
-              确认删除
-            </Button>
-          }
-        >
-          <p className="p-6 text-sm text-muted-foreground">
-            将永久删除该党支部及其准入规则、党建人员、时间线和附件记录；学生基础档案、书记账号及历史审计保留。
-          </p>
         </Drawer>
       ) : null}
     </section>
