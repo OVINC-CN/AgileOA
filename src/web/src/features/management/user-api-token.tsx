@@ -1,9 +1,9 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { Copy, Eye, EyeOff, KeyRound, Trash2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
-import { Drawer } from '@/components/ui/drawer';
+import { Drawer, type DrawerHandle } from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tooltip } from '@/components/ui/tooltip';
@@ -46,6 +46,7 @@ export function UserAPITokenDrawer({ user, onClose }: { user: UserRow; onClose: 
     };
   }, [user.id]);
 
+  const confirmationDrawer = useRef<DrawerHandle>(null);
   const save = async (kind: 'reset' | 'delete') => {
     const result = await action.run(kind, async () => {
       const next =
@@ -66,7 +67,7 @@ export function UserAPITokenDrawer({ user, onClose }: { user: UserRow; onClose: 
     if (result.ok) {
       setData(result.data);
       setVisible(kind === 'reset');
-      setConfirmation(null);
+      confirmationDrawer.current?.close();
       showMessage(kind === 'reset' ? 'API Token 已生成，可随时再次查看' : 'API Token 已撤销');
     }
   };
@@ -87,11 +88,6 @@ export function UserAPITokenDrawer({ user, onClose }: { user: UserRow; onClose: 
       description={formatIdentity(user.display_name, user.username)}
       busy={action.pending}
       onClose={onClose}
-      footerDismiss={
-        <Button variant="cancel" disabled={action.pending} onClick={onClose}>
-          关闭
-        </Button>
-      }
       footer={
         <>
           {configured ? (
@@ -184,6 +180,7 @@ export function UserAPITokenDrawer({ user, onClose }: { user: UserRow; onClose: 
       </div>
       {confirmation ? (
         <Drawer
+          ref={confirmationDrawer}
           title={confirmation === 'reset' ? '重置 API Token' : '撤销 API Token'}
           truncateDescription
           description={formatIdentity(user.display_name, user.username)}
@@ -191,17 +188,7 @@ export function UserAPITokenDrawer({ user, onClose }: { user: UserRow; onClose: 
           onClose={() => {
             setConfirmation(null);
           }}
-          footerDismiss={
-            <Button
-              variant="cancel"
-              disabled={action.pending}
-              onClick={() => {
-                setConfirmation(null);
-              }}
-            >
-              取消
-            </Button>
-          }
+          dismissLabel="取消"
           footer={
             <Button
               loading={action.isPending(confirmation)}

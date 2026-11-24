@@ -484,6 +484,70 @@ describe('工作空间学生信息', () => {
     expect(save?.options.body).toContain('"address":"虚构校外地址\\n虚构房间"');
   });
 
+  it('从详情进入编辑后，在同一个编辑抽屉内读取和重试', async () => {
+    mockAPI(['student.list', 'student.detail', 'student.update', sensitiveAction]);
+    const fetchStudent = globalThis.fetch;
+    const reads: ((response: Response) => void)[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string, options: RequestInit) => {
+        if (!url.endsWith('/students/1/sensitive')) return fetchStudent(url, options);
+        return new Promise<Response>((resolve) => {
+          reads.push(resolve);
+        });
+      }),
+    );
+    renderWorkspace();
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('link', { name: '详情' }));
+    const detail = await screen.findByRole('dialog', { name: '学生详情' });
+    await user.click(await within(detail).findByRole('button', { name: '编辑' }));
+
+    const drawer = screen.getByRole('dialog', { name: '编辑学生' });
+    const editor = within(drawer);
+    const form = drawer.querySelector('form');
+    expect(form).toBeInTheDocument();
+    expect(editor.getByRole('status')).toHaveTextContent('正在读取学生资料');
+    const save = editor.getByRole('button', { name: '保存' });
+    expect(save).toBeDisabled();
+    expect(editor.queryByRole('button', { name: '重新读取' })).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(reads).toHaveLength(1);
+    });
+
+    reads[0]?.(
+      Response.json(
+        {
+          trace: '4bf92f3577b34da6a3ce929d0e0e4736',
+          error_msg: '学生资料读取失败',
+          data: null,
+        },
+        { status: 503 },
+      ),
+    );
+    const retry = await editor.findByRole('button', { name: '重新读取' });
+    expect(await editor.findByRole('alert')).toHaveTextContent('学生资料读取失败');
+    await user.click(retry);
+    expect(editor.getByRole('status')).toHaveTextContent('正在读取学生资料');
+    expect(save).toBeDisabled();
+    await waitFor(() => {
+      expect(reads).toHaveLength(2);
+    });
+
+    reads[1]?.(respond({ student_id: 1, revision: student.revision, values: sensitiveValues }));
+    await waitFor(() => {
+      expect(save).toBeEnabled();
+    });
+    expect(screen.getByRole('dialog', { name: '编辑学生' })).toBe(drawer);
+    expect(drawer.querySelector('form')).toBe(form);
+    expect(editor.queryByText('正在读取学生资料')).not.toBeInTheDocument();
+    expect(editor.queryByRole('button', { name: '重新读取' })).not.toBeInTheDocument();
+    await user.click(editor.getByRole('tab', { name: '敏感信息' }));
+    expect(editor.getByLabelText('身份证号码 *')).toHaveValue(fixtureIdentityNumber);
+    await user.click(editor.getByRole('button', { name: '取消' }));
+    expect(screen.getByRole('dialog', { name: '学生详情' })).toBe(detail);
+  });
+
   it.each(['off_campus', 'on_campus'])(
     '仅校外学生显示住宿明细，查看权限不授予编辑：%s',
     async (type) => {
@@ -1002,10 +1066,14 @@ describe('工作空间学生信息', () => {
         name: `查看 ${student.name}(${student.student_no}) 的详情`,
       }),
     );
-    expect(await screen.findByRole('dialog', { name: '学生详情' })).toBeVisible();
+    const detail = await screen.findByRole('dialog', { name: '学生详情' });
+    expect(detail).toBeVisible();
     expect(router.state.location.search).toContain('source=fixture');
     expect(router.state.location.hash).toBe('#student-list');
-    await user.click(screen.getByRole('button', { name: '关闭抽屉' }));
+    await user.click(within(detail).getByRole('button', { name: '关闭抽屉' }));
+    await waitFor(() => {
+      expect(detail).not.toBeInTheDocument();
+    });
     expect(router.state.location.hash).toBe('#student-list');
     expect(screen.queryByRole('button', { name: '删除' })).not.toBeInTheDocument();
     await user.click(

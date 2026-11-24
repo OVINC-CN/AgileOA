@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 
 import { ErrorMessage } from '@/components/error-message';
-import { Button } from '@/components/ui/button';
 import { Drawer } from '@/components/ui/drawer';
 import {
   applicationDetailOptions,
@@ -37,16 +36,7 @@ export function ApplicationLinkDrawer({
     );
   }
   return (
-    <Drawer
-      title="申报详情"
-      description="查看申报内容及审批流程"
-      onClose={onClose}
-      footerDismiss={
-        <Button variant="cancel" onClick={onClose}>
-          关闭
-        </Button>
-      }
-    >
+    <Drawer title="申报详情" description="查看申报内容及审批流程" onClose={onClose}>
       {!valid || query.error ? (
         <ErrorMessage>{valid ? query.error?.message : '申报地址无效'}</ErrorMessage>
       ) : (

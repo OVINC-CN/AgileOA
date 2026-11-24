@@ -444,10 +444,17 @@ describe('月度工作', () => {
       expect(work.queryByRole('button', { name: '编辑' })).not.toBeInTheDocument();
       expect(work.queryByRole('button', more)).not.toBeInTheDocument();
       await user.click(readAttachments);
-      const drawer = await screen.findByRole('dialog', { name: '月度工作附件' });
-      expect(await within(drawer).findByRole('button', { name: '虚构附件.pdf' })).toBeVisible();
-      expect(within(drawer).queryByRole('button', { name: '上传' })).not.toBeInTheDocument();
-      expect(within(drawer).queryByRole('button', { name: '删除' })).not.toBeInTheDocument();
+      const drawer = within(await screen.findByRole('dialog', { name: '月度工作附件' }));
+      const file = await drawer.findByRole('button', { name: '虚构附件.pdf' });
+      expect(file).toBeVisible();
+      const refresh = drawer.getByRole('button', { name: '刷新' });
+      await user.click(refresh);
+      await waitFor(() => {
+        expect(refresh).toBeEnabled();
+        expect(drawer.getByRole('button', { name: '虚构附件.pdf' })).toBe(file);
+      });
+      expect(drawer.queryByRole('button', { name: '上传' })).not.toBeInTheDocument();
+      expect(drawer.queryByRole('button', { name: '删除' })).not.toBeInTheDocument();
     },
   );
 

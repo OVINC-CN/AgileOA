@@ -73,11 +73,6 @@ export function AuditDetail({
           <DrawerTabs id={id} label="审计详情分区" value={active} items={tabs} onChange={setView} />
         ) : null
       }
-      footerDismiss={
-        <Button variant="cancel" onClick={onClose}>
-          关闭
-        </Button>
-      }
     >
       {loading ? (
         <div aria-busy="true" className="min-h-64 p-5" />

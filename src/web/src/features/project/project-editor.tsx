@@ -1,12 +1,12 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Paperclip, Save } from 'lucide-react';
-import { useId, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 
 import { ErrorMessage } from '@/components/error-message';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DateTimePicker } from '@/components/ui/date-time-picker';
-import { Drawer } from '@/components/ui/drawer';
+import { Drawer, type DrawerHandle } from '@/components/ui/drawer';
 import { DrawerTabs } from '@/components/ui/drawer-tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -66,6 +66,7 @@ export function ProjectEditor({
     nameOptions.push({ value: values.name, label: values.name });
   }
   const client = useQueryClient();
+  const drawer = useRef<DrawerHandle>(null);
   const mutation = useApiMutation({
     mutationFn: async () => {
       if (!values.name.trim()) {
@@ -90,11 +91,14 @@ export function ProjectEditor({
       await client.invalidateQueries({ queryKey: projectKey(workspaceID) });
       return result;
     },
-    onSuccess: onClose,
+    onSuccess: () => {
+      drawer.current?.close();
+    },
   });
   return (
     <>
       <Drawer
+        ref={drawer}
         title={project ? '编辑项目' : '新建项目'}
         description="维护项目名称、归属年份、说明及评分子项配置"
         busy={mutation.isPending}
@@ -114,11 +118,7 @@ export function ProjectEditor({
             onChange={setTab}
           />
         }
-        footerDismiss={
-          <Button type="button" variant="cancel" disabled={mutation.isPending} onClick={onClose}>
-            取消
-          </Button>
-        }
+        dismissLabel="取消"
         footer={
           <Button type="submit" loading={mutation.isPending}>
             <Save aria-hidden="true" />

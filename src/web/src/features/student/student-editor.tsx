@@ -5,20 +5,18 @@ import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { ErrorMessage } from '@/components/error-message';
 import { Button } from '@/components/ui/button';
 import { DeleteConfirmation } from '@/components/ui/delete-confirmation';
-import { Drawer } from '@/components/ui/drawer';
+import { Drawer, type DrawerHandle } from '@/components/ui/drawer';
 import { DrawerSteps } from '@/components/ui/drawer-steps';
 import { DrawerTabs } from '@/components/ui/drawer-tabs';
 import { FileUploadButton } from '@/components/ui/file-upload-button';
+import { LoadingIcon } from '@/components/ui/loading-icon';
 import { personKey } from '@/features/cpc-person/api';
 import { graduationKey } from '@/features/graduation/api';
 import {
-  type AvatarUpload,
   createStudent,
   deleteAvatarUpload,
   emptyOffCampus,
   emptyStudent,
-  type OffCampusValues,
-  type SensitiveData,
   type Student,
   studentDetailOptions,
   type StudentInput,
@@ -66,15 +64,7 @@ const studentCreationSteps: readonly StudentEditorStep[] = [
   { value: 'sensitive', label: '敏感信息', group: 'sensitive', sections: [] },
 ];
 
-export function StudentEditor({
-  workspaceID,
-  student,
-  canQuery,
-  canBasic,
-  canDetail,
-  canSensitive,
-  onClose,
-}: {
+interface StudentEditorProps {
   workspaceID: string;
   student: Student | null;
   canQuery: boolean;
@@ -82,7 +72,24 @@ export function StudentEditor({
   canDetail: boolean;
   canSensitive: boolean;
   onClose: () => void;
-}) {
+}
+
+export function StudentEditor(props: StudentEditorProps) {
+  const { workspaceID, student, canBasic, canDetail, canSensitive } = props;
+  if (!canBasic && !canSensitive) return null;
+  const key = [workspaceID, student?.id ?? 'new', canBasic, canDetail, canSensitive].join(':');
+  return <StudentEditorForm key={key} {...props} />;
+}
+
+function StudentEditorForm({
+  workspaceID,
+  student,
+  canQuery,
+  canBasic,
+  canDetail,
+  canSensitive,
+  onClose,
+}: StudentEditorProps) {
   const sensitive = useQuery({
     ...studentSensitiveOptions(workspaceID, student?.id ?? 0),
     enabled: student !== null && canSensitive,
@@ -92,88 +99,42 @@ export function StudentEditor({
     enabled: student !== null && canDetail,
   });
   const retry = useApiAction();
-  if (!canBasic && !canSensitive) return null;
   const canReadOffCampus = canBasic && canDetail && student !== null;
   const needsOffCampus = canReadOffCampus && student.accommodation_type === 'off_campus';
   const pendingReads = [
-    ...(canSensitive && !sensitive.data ? [sensitive] : []),
+    ...(student && canSensitive && !sensitive.data ? [sensitive] : []),
     ...(needsOffCampus && !detail.data ? [detail] : []),
   ];
-  if (student && pendingReads.length > 0) {
-    return (
-      <Drawer
-        title="编辑学生"
-        truncateDescription
-        description={formatIdentity(student.name, student.student_no)}
-        onClose={onClose}
-        footerRefresh={
-          <Button
-            variant="outline"
-            loading={pendingReads.some((read) => read.isFetching) || retry.pending}
-            onClick={() => {
-              void retry.run('retry', () =>
-                Promise.all(pendingReads.map((read) => read.refetch())),
-              );
-            }}
-          >
-            <RefreshCw aria-hidden="true" />
-            重新读取
-          </Button>
-        }
-      >
-        <div className="space-y-4 p-6">
-          <ErrorMessage>{pendingReads.find((read) => read.error)?.error?.message}</ErrorMessage>
-        </div>
-      </Drawer>
-    );
-  }
-  return (
-    <StudentEditorForm
-      key={student?.id ?? 'new'}
-      workspaceID={workspaceID}
-      student={needsOffCampus ? (detail.data ?? student) : student}
-      canQuery={canQuery}
-      canBasic={canBasic}
-      avatarURL={canDetail && !detail.isError ? (detail.data?.avatar_url ?? '') : undefined}
-      avatarLoading={canDetail && detail.isPending && student !== null}
-      avatarUploads={canDetail && !detail.isError ? (detail.data?.avatar_uploads ?? []) : []}
-      canSensitive={canSensitive}
-      sensitive={sensitive.data}
-      canReadOffCampus={canReadOffCampus}
-      offCampusDetails={needsOffCampus ? detail.data?.off_campus_details : undefined}
-      onClose={onClose}
-    />
-  );
-}
+  const ready = pendingReads.length === 0;
+  const reading = pendingReads.some((read) => read.isFetching) || retry.pending;
+  const readError = pendingReads.find((read) => read.error)?.error?.message;
+  const avatarURL = canDetail && !detail.isError ? (detail.data?.avatar_url ?? '') : undefined;
+  const avatarLoading = canDetail && detail.isPending && student !== null;
+  const avatarUploads = canDetail && !detail.isError ? (detail.data?.avatar_uploads ?? []) : [];
 
-function StudentEditorForm({
-  workspaceID,
-  student,
-  canQuery,
-  canBasic,
-  avatarURL,
-  avatarLoading,
-  avatarUploads,
-  canSensitive,
-  sensitive,
-  canReadOffCampus,
-  offCampusDetails,
-  onClose,
-}: {
-  workspaceID: string;
-  student: Student | null;
-  canQuery: boolean;
-  canBasic: boolean;
-  avatarURL: string | undefined;
-  avatarLoading: boolean;
-  avatarUploads: AvatarUpload[];
-  canSensitive: boolean;
-  sensitive: SensitiveData | undefined;
-  canReadOffCampus: boolean;
-  offCampusDetails: OffCampusValues | undefined;
-  onClose: () => void;
-}) {
-  const [originalStudent] = useState(student);
+  const initialDraft = () => {
+    const originalStudent = needsOffCampus ? (detail.data ?? student) : student;
+    const values: StudentInput = originalStudent ?? emptyStudent;
+    return {
+      initialized: ready,
+      originalStudent,
+      values,
+      revision:
+        (canBasic ? originalStudent?.revision : sensitive.data?.revision) ??
+        originalStudent?.revision ??
+        0,
+      offCampus: (needsOffCampus ? detail.data?.off_campus_details : undefined) ?? emptyOffCampus,
+      privateValues: Object.fromEntries(
+        sensitive.data?.values.map(({ field, value }) => [field, value] as const) ?? [],
+      ),
+    };
+  };
+  const [draft, setDraft] = useState(initialDraft);
+  if (ready && !draft.initialized) {
+    // 等编辑所需资料齐备后初始化草稿，后台刷新保留用户输入。
+    setDraft(initialDraft());
+  }
+  const { originalStudent, values, revision, offCampus, privateValues } = draft;
   const [tab, setTab] = useState(canBasic ? 'basic' : 'sensitive');
   const [invalidField, setInvalidField] = useState<StudentValidationError | null>(null);
   const tabsID = useId();
@@ -197,19 +158,11 @@ function StudentEditorForm({
       )
       ?.focus();
   }, [invalidField, activeTab]);
-  const [revision, setRevision] = useState(
-    (canBasic ? student?.revision : sensitive?.revision) ?? student?.revision ?? 0,
-  );
-  const [values, setValues] = useState<StudentInput>(student ?? emptyStudent);
-  const [offCampus, setOffCampus] = useState(offCampusDetails ?? emptyOffCampus);
   const showOffCampus =
     canReadOffCampus &&
     (originalStudent?.accommodation_type === 'off_campus' ||
       values.accommodation_type === 'off_campus');
   const fields = studentFields.filter((field) => field.group === 'sensitive');
-  const [privateValues, setPrivateValues] = useState<Record<string, string>>(() =>
-    Object.fromEntries(sensitive?.values.map((item) => [item.field, item.value]) ?? []),
-  );
   const birthDate = canSensitive
     ? birthDateFromIdentityNumber(privateValues['identity_number'] ?? '')
     : (originalStudent?.birth_date ?? '');
@@ -232,6 +185,7 @@ function StudentEditorForm({
         : (tabs.find((step) => section && step.sections.includes(section.id))?.value ?? 'basic'),
     );
   };
+  const drawer = useRef<DrawerHandle>(null);
   const mutation = useApiMutation({
     mutationFn: async () => {
       const sensitiveValues = canSensitive
@@ -256,7 +210,9 @@ function StudentEditorForm({
       await invalidate();
       return result;
     },
-    onSuccess: onClose,
+    onSuccess: () => {
+      drawer.current?.close();
+    },
     onError: (cause) => {
       if (!(cause instanceof StudentValidationError)) return;
       locateInvalidField(cause);
@@ -264,13 +220,14 @@ function StudentEditorForm({
   });
   const busy = mutation.isPending || avatarUpload.pending;
   const changeStep = (next: string) => {
-    if (busy) return;
+    if (busy || !ready) return;
     if (!tabs.some((item) => item.value === next)) return;
     // 步骤只切换填写区域，全部草稿在保存时统一校验。
     setTab(next);
   };
   return (
     <Drawer
+      ref={drawer}
       title={student ? '编辑学生' : '添加学生'}
       truncateDescription={!!student}
       description={
@@ -300,14 +257,27 @@ function StudentEditorForm({
             value={activeTab}
             items={tabs}
             onChange={changeStep}
-            disabled={busy}
+            disabled={busy || !ready}
           />
         )
       }
-      footerDismiss={
-        <Button type="button" variant="cancel" disabled={busy} onClick={onClose}>
-          取消
-        </Button>
+      dismissLabel="取消"
+      footerRefresh={
+        !ready && (readError || !reading || retry.pending) ? (
+          <Button
+            type="button"
+            variant="outline"
+            loading={reading}
+            onClick={() => {
+              void retry.run('retry', () =>
+                Promise.all(pendingReads.map((read) => read.refetch())),
+              );
+            }}
+          >
+            <RefreshCw aria-hidden="true" />
+            重新读取
+          </Button>
+        ) : null
       }
       footer={
         <>
@@ -324,7 +294,11 @@ function StudentEditorForm({
               上一步
             </Button>
           ) : null}
-          <Button type="submit" loading={mutation.isPending} disabled={avatarUpload.pending}>
+          <Button
+            type="submit"
+            loading={mutation.isPending}
+            disabled={!ready || avatarUpload.pending}
+          >
             {creating && !finalStep ? (
               <ArrowRight aria-hidden="true" />
             ) : (
@@ -338,7 +312,7 @@ function StudentEditorForm({
         noValidate: true,
         onSubmit: (event) => {
           event.preventDefault();
-          if (busy) return;
+          if (busy || !ready) return;
           if (creating && !finalStep) {
             changeStep(tabs[activeIndex + 1]?.value ?? activeTab);
           } else {
@@ -347,8 +321,22 @@ function StudentEditorForm({
         },
       }}
     >
-      <fieldset ref={fieldset} disabled={busy} className="px-5">
-        {originalStudent && (avatarURL !== undefined || canBasic) ? (
+      {!ready ? (
+        <div className="px-6 py-12">
+          <ErrorMessage>{readError}</ErrorMessage>
+          {reading || !readError ? (
+            <p
+              role="status"
+              className="flex items-center justify-center gap-2 text-sm text-muted-foreground"
+            >
+              <LoadingIcon />
+              正在读取学生资料
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+      <fieldset ref={fieldset} disabled={busy || !ready} className="px-5" hidden={!ready}>
+        {ready && originalStudent && (avatarURL !== undefined || canBasic) ? (
           <section
             className="flex flex-wrap items-center gap-4 border-b border-border py-5"
             hidden={activeTab !== 'basic'}
@@ -378,7 +366,7 @@ function StudentEditorForm({
                           file,
                           updateUpload,
                         );
-                        setRevision(result.revision);
+                        setDraft((current) => ({ ...current, revision: result.revision }));
                       } finally {
                         await invalidate();
                       }
@@ -421,7 +409,7 @@ function StudentEditorForm({
             ) : null}
           </section>
         ) : null}
-        {tabs.map((step) => (
+        {(ready ? tabs : []).map((step) => (
           <section
             key={step.value}
             role="tabpanel"
@@ -465,9 +453,15 @@ function StudentEditorForm({
                     onChange={(value) => {
                       if (invalidField?.field === field.key) setInvalidField(null);
                       if (sensitiveField) {
-                        setPrivateValues((current) => ({ ...current, [field.key]: value }));
+                        setDraft((current) => ({
+                          ...current,
+                          privateValues: { ...current.privateValues, [field.key]: value },
+                        }));
                       } else {
-                        setValues((current) => ({ ...current, [field.key]: value }));
+                        setDraft((current) => ({
+                          ...current,
+                          values: { ...current.values, [field.key]: value },
+                        }));
                       }
                     }}
                   />
@@ -502,7 +496,10 @@ function StudentEditorForm({
                 <StudentOffCampusFields
                   values={offCampus}
                   onChange={(key, value) => {
-                    setOffCampus((current) => ({ ...current, [key]: value }));
+                    setDraft((current) => ({
+                      ...current,
+                      offCampus: { ...current.offCampus, [key]: value },
+                    }));
                   }}
                 />
               </section>

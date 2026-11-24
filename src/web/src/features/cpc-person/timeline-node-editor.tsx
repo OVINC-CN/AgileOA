@@ -1,10 +1,10 @@
 import { RotateCcw, Save, SkipForward } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { DatePicker } from '@/components/ui/date-picker';
 import { DeleteConfirmation } from '@/components/ui/delete-confirmation';
-import { Drawer } from '@/components/ui/drawer';
+import { Drawer, type DrawerHandle } from '@/components/ui/drawer';
 import { FileUploadButton } from '@/components/ui/file-upload-button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -52,6 +52,8 @@ export function PersonTimelineNodeEditor({
 }) {
   const [values, setValues] = useState<TimelineValues>(original.values);
   const [confirmingReset, setConfirmingReset] = useState(false);
+  const drawer = useRef<DrawerHandle>(null);
+  const resetDrawer = useRef<DrawerHandle>(null);
   const save = useApiAction();
   const reset = useApiAction();
   const skip = useApiAction();
@@ -63,6 +65,7 @@ export function PersonTimelineNodeEditor({
   };
   return (
     <Drawer
+      ref={drawer}
       title="编辑时间线节点"
       truncateDescription={!!personLabel}
       description={personLabel ? `${personLabel} · ${original.name}` : original.name}
@@ -84,15 +87,11 @@ export function PersonTimelineNodeEditor({
               templateRevision,
             );
             await invalidate();
-            onClose();
+            drawer.current?.close();
           });
         },
       }}
-      footerDismiss={
-        <Button type="button" variant="cancel" disabled={busy} onClick={onClose}>
-          取消
-        </Button>
-      }
+      dismissLabel="取消"
       footer={
         <>
           <Button
@@ -117,7 +116,7 @@ export function PersonTimelineNodeEditor({
                   templateRevision,
                 );
                 await invalidate();
-                onClose();
+                drawer.current?.close();
               });
             }}
           >
@@ -284,24 +283,14 @@ export function PersonTimelineNodeEditor({
       </fieldset>
       {confirmingReset ? (
         <Drawer
+          ref={resetDrawer}
           title="重置节点"
           description={original.name}
           busy={reset.pending}
           onClose={() => {
             setConfirmingReset(false);
           }}
-          footerDismiss={
-            <Button
-              type="button"
-              variant="cancel"
-              disabled={reset.pending}
-              onClick={() => {
-                setConfirmingReset(false);
-              }}
-            >
-              取消
-            </Button>
-          }
+          dismissLabel="取消"
           footer={
             <Button
               type="button"
@@ -321,7 +310,8 @@ export function PersonTimelineNodeEditor({
                   } finally {
                     await invalidate();
                   }
-                  onClose();
+                  resetDrawer.current?.close();
+                  drawer.current?.close();
                 });
               }}
             >

@@ -4,7 +4,6 @@ import { useId, useState } from 'react';
 import { AttachmentFilename } from '@/components/attachment-filename';
 import { TableTimestamp } from '@/components/table-timestamp';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Drawer } from '@/components/ui/drawer';
 import { DrawerTabs } from '@/components/ui/drawer-tabs';
 import { attachmentDownload, type Project } from '@/features/project/api';
@@ -44,11 +43,6 @@ export function ProjectDetail({
           ]}
           onChange={setTab}
         />
-      }
-      footerDismiss={
-        <Button variant="cancel" onClick={onClose}>
-          关闭
-        </Button>
       }
     >
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-6">

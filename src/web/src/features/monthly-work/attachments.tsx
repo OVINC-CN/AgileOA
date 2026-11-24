@@ -1,6 +1,7 @@
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
 import { RefreshCw } from 'lucide-react';
+import { useMemo } from 'react';
 
 import { AttachmentFilename } from '@/components/attachment-filename';
 import { ErrorMessage } from '@/components/error-message';
@@ -93,35 +94,39 @@ function AttachmentPanel({
       </div>
     );
   };
-  const columns: ColumnDef<WorkAttachment>[] = [
-    {
-      accessorKey: 'filename',
-      header: '文件名',
-      cell: ({ row }) => (
-        <AttachmentFilename
-          filename={row.original.filename}
-          className="max-w-64"
-          downloadURL={
-            row.original.state === 'ready'
-              ? workAttachmentDownload(workspaceID, row.original.id, category)
-              : undefined
-          }
-        />
-      ),
-    },
-    {
-      accessorKey: 'size',
-      header: '大小',
-      cell: ({ row }) => `${(row.original.size / 1024).toFixed(1)} KB`,
-    },
-    {
-      accessorKey: 'state',
-      header: '状态',
-      cell: ({ row }) => uploadStateLabels[row.original.state],
-    },
-    ...recordTimeColumns<WorkAttachment>((record) => record),
-    { id: 'actions', header: '操作' },
-  ];
+  // 保持单元格组件稳定，避免附件刷新时关闭正在查看的预览。
+  const columns = useMemo<ColumnDef<WorkAttachment>[]>(
+    () => [
+      {
+        accessorKey: 'filename',
+        header: '文件名',
+        cell: ({ row }) => (
+          <AttachmentFilename
+            filename={row.original.filename}
+            className="max-w-64"
+            downloadURL={
+              row.original.state === 'ready'
+                ? workAttachmentDownload(workspaceID, row.original.id, category)
+                : undefined
+            }
+          />
+        ),
+      },
+      {
+        accessorKey: 'size',
+        header: '大小',
+        cell: ({ row }) => `${(row.original.size / 1024).toFixed(1)} KB`,
+      },
+      {
+        accessorKey: 'state',
+        header: '状态',
+        cell: ({ row }) => uploadStateLabels[row.original.state],
+      },
+      ...recordTimeColumns<WorkAttachment>((record) => record),
+      ...(canDelete ? [{ id: 'actions', header: '操作' }] : []),
+    ],
+    [canDelete, category, workspaceID],
+  );
   return (
     <Drawer
       title="月度工作附件"
@@ -181,7 +186,7 @@ function AttachmentPanel({
               tableID={`monthly-work-attachments:${category}`}
               rowActions={renderActions}
               rowID={(record) => String(record.id)}
-              columns={columns.filter((column) => column.id !== 'actions' || canDelete)}
+              columns={columns}
               data={data?.items ?? []}
               total={data?.total ?? 0}
               page={pagination.page}

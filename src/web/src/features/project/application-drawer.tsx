@@ -1,12 +1,12 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, Pencil, Save, Send, Undo2 } from 'lucide-react';
-import { useId, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 
 import { ErrorMessage } from '@/components/error-message';
 import { TableTimestamp } from '@/components/table-timestamp';
 import { AutoTextarea } from '@/components/ui/auto-textarea';
 import { Button } from '@/components/ui/button';
-import { Drawer } from '@/components/ui/drawer';
+import { Drawer, type DrawerHandle } from '@/components/ui/drawer';
 import { DrawerSteps } from '@/components/ui/drawer-steps';
 import { DrawerTabs } from '@/components/ui/drawer-tabs';
 import { FileUploadButton } from '@/components/ui/file-upload-button';
@@ -93,6 +93,7 @@ export function ApplicationDrawer({
   const [tab, setTab] = useState('main');
   const [keyword, setKeyword] = useState('');
   const [project, setProject] = useState<Project | null>(null);
+  const decisionDrawer = useRef<DrawerHandle>(null);
   const [decision, setDecision] = useState<'approve' | 'reject' | null>(null);
   const [comment, setComment] = useState('');
   const [uploadTarget, setUploadTarget] = useState<{ key: string; completed: boolean } | null>(
@@ -204,15 +205,14 @@ export function ApplicationDrawer({
       );
       await accept(next, true);
       setEditing(false);
-      setDecision(null);
-      setComment('');
+      decisionDrawer.current?.close(() => {
+        setDecision(null);
+        setComment('');
+      });
     });
   };
   const cancelEdit = () => {
-    if (!record) {
-      onClose();
-      return;
-    }
+    if (!record) return;
     setValues(valuesOf(record));
     setItems(detailsOf(record));
     setEditing(false);
@@ -329,8 +329,9 @@ export function ApplicationDrawer({
             />
           ) : undefined
         }
+        dismissLabel={editing ? '取消' : '关闭'}
         footerDismiss={
-          editing ? (
+          editing && record ? (
             <Button type="button" variant="cancel" disabled={busy} onClick={cancelEdit}>
               取消
             </Button>
@@ -554,17 +555,7 @@ export function ApplicationDrawer({
             setUploadTarget(null);
           }}
           busy={files.pending}
-          footerDismiss={
-            <Button
-              variant="cancel"
-              disabled={files.pending}
-              onClick={() => {
-                setUploadTarget(null);
-              }}
-            >
-              {uploadTarget.completed ? '关闭' : '取消'}
-            </Button>
-          }
+          dismissLabel={uploadTarget.completed ? '关闭' : '取消'}
           footer={
             <FileUploadButton
               label="选择文件并保存上传"
@@ -586,6 +577,7 @@ export function ApplicationDrawer({
       ) : null}
       {decision ? (
         <Drawer
+          ref={decisionDrawer}
           title={decision === 'reject' ? '驳回申报' : '通过申报'}
           description={
             decision === 'reject'
@@ -596,17 +588,7 @@ export function ApplicationDrawer({
             setDecision(null);
           }}
           busy={action.pending}
-          footerDismiss={
-            <Button
-              variant="cancel"
-              disabled={action.pending}
-              onClick={() => {
-                setDecision(null);
-              }}
-            >
-              取消
-            </Button>
-          }
+          dismissLabel="取消"
           footer={
             <Button
               loading={action.isPending(decision)}

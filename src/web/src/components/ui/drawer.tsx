@@ -4,10 +4,13 @@ import {
   type ComponentProps,
   type ReactElement,
   type ReactNode,
+  type Ref,
   type SubmitEventHandler,
   useCallback,
+  useImperativeHandle,
   useLayoutEffect,
   useRef,
+  useState,
 } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -15,7 +18,12 @@ import { Tooltip } from '@/components/ui/tooltip';
 import { setMessageContainer } from '@/lib/messages';
 import { cn } from '@/lib/utils';
 
+export interface DrawerHandle {
+  close: (afterClose?: () => void) => void;
+}
+
 interface Props {
+  ref?: Ref<DrawerHandle>;
   title: string;
   description?: string | undefined;
   truncateDescription?: boolean;
@@ -23,6 +31,7 @@ interface Props {
   footerNavigation?: ReactNode;
   children: ReactNode;
   footerDismiss?: ReactElement | undefined;
+  dismissLabel?: string;
   footerRefresh?: ReactNode;
   footer?: ReactNode;
   form?: {
@@ -39,6 +48,7 @@ interface Props {
 }
 
 export function Drawer({
+  ref,
   title,
   description,
   truncateDescription = false,
@@ -46,6 +56,7 @@ export function Drawer({
   footerNavigation,
   children,
   footerDismiss,
+  dismissLabel = '关闭',
   footerRefresh,
   footer,
   form,
@@ -59,6 +70,41 @@ export function Drawer({
 }: Props) {
   const viewportScroll = scrollMode === 'viewport';
   const container = useRef<HTMLDivElement>(null);
+  const overlay = useRef<HTMLDivElement>(null);
+  const afterExit = useRef<(() => void) | null>(null);
+  const [closing, setClosing] = useState(false);
+
+  const close = useCallback(
+    (afterClose = onClose) => {
+      if (afterExit.current) return;
+      afterExit.current = afterClose;
+      setClosing(true);
+    },
+    [onClose],
+  );
+  useImperativeHandle(ref, () => ({ close }), [close]);
+
+  useLayoutEffect(() => {
+    if (!closing) return;
+
+    const panel = container.current?.querySelector(':scope > .drawer-panel');
+    const transitions = [overlay.current, panel].flatMap((element) =>
+      element && typeof element.getAnimations === 'function' ? element.getAnimations() : [],
+    );
+    // 面板和遮罩退出后再释放焦点和滚动锁定。
+    let mounted = true;
+    void Promise.allSettled(transitions.map((transition) => transition.finished)).then(() => {
+      if (!mounted) return;
+      const afterClose = afterExit.current;
+      afterExit.current = null;
+      setClosing(false);
+      afterClose?.();
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [closing]);
+
   const fitViewport = useCallback(() => {
     const element = container.current;
     if (!element) return;
@@ -150,7 +196,7 @@ export function Drawer({
             size="icon-sm"
             className="border-0"
             aria-label={closeLabel}
-            disabled={busy}
+            disabled={busy || closing}
           >
             <X aria-hidden="true" />
           </Button>
@@ -184,8 +230,8 @@ export function Drawer({
         <div className="ml-auto flex max-w-full flex-wrap items-center justify-end gap-2 sm:gap-3">
           {footerDismiss ?? (
             <Dialog.Close asChild>
-              <Button type="button" variant="cancel" disabled={busy}>
-                关闭
+              <Button type="button" variant="cancel" disabled={busy || closing}>
+                {dismissLabel}
               </Button>
             </Dialog.Close>
           )}
@@ -199,14 +245,19 @@ export function Drawer({
     <Dialog.Root
       open
       onOpenChange={(open) => {
-        if (!open && !busy) onClose();
+        if (!open && !busy) close();
       }}
     >
       <Dialog.Portal>
-        <Dialog.Overlay className="drawer-overlay fixed inset-0 z-50 bg-overlay/20 backdrop-blur-sm" />
+        <Dialog.Overlay
+          ref={overlay}
+          data-closing={closing || undefined}
+          className="drawer-overlay fixed inset-0 z-50 bg-overlay/20 backdrop-blur-sm"
+        />
         <Dialog.Content
           {...(description ? {} : { 'aria-describedby': undefined })}
           ref={setContainer}
+          data-closing={closing || undefined}
           onCloseAutoFocus={onCloseAutoFocus}
           style={{ pointerEvents: viewportScroll ? 'auto' : 'none' }}
           className={cn(
@@ -217,11 +268,16 @@ export function Drawer({
           )}
         >
           {form ? (
-            <form {...form} style={{ pointerEvents: 'auto' }} className={panelClassName}>
+            <form
+              {...form}
+              inert={closing}
+              style={{ pointerEvents: 'auto' }}
+              className={panelClassName}
+            >
               {content}
             </form>
           ) : (
-            <div style={{ pointerEvents: 'auto' }} className={panelClassName}>
+            <div inert={closing} style={{ pointerEvents: 'auto' }} className={panelClassName}>
               {content}
             </div>
           )}

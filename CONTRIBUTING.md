@@ -177,8 +177,10 @@ API 侧先在业务事务中保存任务所需状态和操作审计，由 app �
 表单与详情使用 Drawer 内容滚动模式，全屏导航使用 `scrollMode="viewport"`。
 标题宽度不足时整行省略，通过公共 Tooltip 查看完整内容。包含对象标识的副标题使用
 `truncateDescription` 启用同样的行为。
-Drawer 默认在底部提供「关闭」。通过 `footerDismiss` 自定义取消或返回操作，
+Drawer 默认在底部提供「关闭」。使用 `dismissLabel` 设置退出按钮文案，使用 `footerDismiss` 自定义抽屉内的返回操作，
 刷新和重试放入 `footerRefresh`，业务操作放入 `footer`，组件按此顺序渲染。
+关闭时等待面板和遮罩退出，再释放焦点与滚动锁。保存等业务操作可通过 `DrawerHandle.close()` 退出。
+动效使用 `index.css` 中的加减速曲线，循环加载使用首尾速度相同的曲线。
 [通知抽屉](src/web/src/features/notification/notification-center.tsx)的范围按钮与 `DrawerTabs`
 共用 [NavigationButtonGroup](src/web/src/components/ui/navigation-button-group.tsx) 的分组外观、悬停和选中高亮。
 右上角使用无边框 X 图标关闭按钮，可通过 `closeLabel` 自定义无障碍名称。底部关闭按钮使用纯文字。
@@ -191,6 +193,7 @@ Drawer 默认在底部提供「关闭」。通过 `footerDismiss` 自定义取�
 学生档案的编辑与详情通过 [studentRecordTabs](src/web/src/features/student/fields.ts)
 共用学籍资料、联系住宿、敏感信息三个分区。敏感分区仅向有处理权限的用户开放，
 进入详情的敏感分区时自动读取并展示原始值。
+学生编辑所需数据在现有编辑抽屉内加载并可重试，数据齐备后初始化表单草稿。
 学生服务的个人信息由 [学生档案接口](src/api/internal/apps/student/studentSvc/profile.go) 提供，
 仅返回本人编号、学号、姓名、年级、状态、学历、专业、班级和班内任职。
 

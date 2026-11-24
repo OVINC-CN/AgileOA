@@ -539,16 +539,6 @@ function PersonWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
           onClose={() => {
             setDetail(null);
           }}
-          footerDismiss={
-            <Button
-              variant="cancel"
-              onClick={() => {
-                setDetail(null);
-              }}
-            >
-              关闭
-            </Button>
-          }
         >
           <PersonDetail person={detail} />
         </Drawer>

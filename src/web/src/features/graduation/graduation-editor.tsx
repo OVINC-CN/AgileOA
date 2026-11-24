@@ -1,9 +1,9 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { Save } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
-import { Drawer } from '@/components/ui/drawer';
+import { Drawer, type DrawerHandle } from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SearchSelect } from '@/components/ui/search-select';
@@ -37,6 +37,7 @@ export function GraduationEditor({
     destination: record.destination,
   }));
   const client = useQueryClient();
+  const drawer = useRef<DrawerHandle>(null);
   const mutation = useApiMutation({
     mutationFn: async () => {
       const result = await saveGraduation(workspaceID, record, values);
@@ -46,7 +47,9 @@ export function GraduationEditor({
       ]);
       return result;
     },
-    onSuccess: onClose,
+    onSuccess: () => {
+      drawer.current?.close();
+    },
   });
   const storedOptions = [
     pendingOption,
@@ -62,6 +65,7 @@ export function GraduationEditor({
   }
   return (
     <Drawer
+      ref={drawer}
       title={record.type ? '编辑毕业去向' : '绑定毕业去向'}
       truncateDescription
       description={formatIdentity(record.student_name, record.student_no)}
@@ -73,11 +77,7 @@ export function GraduationEditor({
           mutation.mutate();
         },
       }}
-      footerDismiss={
-        <Button type="button" variant="cancel" disabled={mutation.isPending} onClick={onClose}>
-          取消
-        </Button>
-      }
+      dismissLabel="取消"
       footer={
         <Button type="submit" loading={mutation.isPending}>
           <Save aria-hidden="true" />

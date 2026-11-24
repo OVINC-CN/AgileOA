@@ -1,11 +1,11 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Paperclip, Save } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { ErrorMessage } from '@/components/error-message';
 import { Button } from '@/components/ui/button';
 import { DatePicker } from '@/components/ui/date-picker';
-import { Drawer } from '@/components/ui/drawer';
+import { Drawer, type DrawerHandle } from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SearchSelect } from '@/components/ui/search-select';
@@ -90,16 +90,20 @@ export function WorkEditor({
       });
     }
   }
+  const drawer = useRef<DrawerHandle>(null);
   const mutation = useApiMutation({
     mutationFn: async () => {
       await saveWork(workspaceID, original, values, category);
       await client.invalidateQueries({ queryKey: workKey(workspaceID, category) });
     },
-    onSuccess: onClose,
+    onSuccess: () => {
+      drawer.current?.close();
+    },
   });
   return (
     <>
       <Drawer
+        ref={drawer}
         title={original ? '编辑月度工作' : '新增月度工作'}
         description="日期、工作项目及负责人必填"
         busy={mutation.isPending}
@@ -110,11 +114,7 @@ export function WorkEditor({
             mutation.mutate();
           },
         }}
-        footerDismiss={
-          <Button type="button" variant="cancel" disabled={mutation.isPending} onClick={onClose}>
-            取消
-          </Button>
-        }
+        dismissLabel="取消"
         footer={
           <Button type="submit" loading={mutation.isPending}>
             <Save aria-hidden="true" />
