@@ -253,10 +253,13 @@ COS 和 STS 协议位于 [tencentcos](src/api/internal/apis/tencentcos/)。
 [attachment-preview.ts](src/web/src/lib/attachment-preview.ts) 按需加载 Flyfish 渲染器。
 每次打开预览时调用下载接口完成鉴权和审计，再按 CDN 响应缓存头读取正文。
 预览与下载使用同一个 File。分页 Word、PowerPoint 和 PDF 默认适应整页，连续排版的旧版 Word 适应宽度。Excel 按视口宽度适度缩小，上限为原始比例。图片按视口缩放。
-Vite 将 Flyfish 运行资源发布到 `dist/extra-assets/vendor`，资源清单位于 `dist/extra-assets`。
-项目汇集的预览许可文件输出到 `dist/extra-assets/licenses/file-viewer`。
+Vite 将 Flyfish 运行资源、资源清单及许可文件作为一组发布到
+`dist/extra-assets/file-viewer/<hash>/`，保留 `vendor/` 下的相对路径。
+构建按整组文件的相对路径和内容计算哈希，并将资源目录写入 `config.<hash>.js`。
+开发服务通过 `/extra-assets/file-viewer/` 提供预览资源。
 修改解析器时检查各格式的实际渲染、分页及工作表切换，
-并检查构建产物中的 Worker、WASM、字体及第三方许可，验证超时、请求中止和资源释放。
+并检查配置指向的目录内含 Worker、WASM、字体及第三方许可。验证资源相同时重复构建目录地址一致，
+以及超时、请求中止和资源释放。
 
 ## 业务修改入口
 
@@ -313,7 +316,7 @@ Vite 将 Flyfish 运行资源发布到 `dist/extra-assets/vendor`，资源清单
 同步更新 [config.yaml](src/api/config.yaml)。前端连接
 [lib/config.ts](src/web/src/lib/config.ts) 与 [public/config.js](src/web/public/config.js)。
 [vite.config.ts](src/web/vite.config.ts) 读取构建环境变量并更新配置文件名和 HTML 引用。
-部署字段共用 [地址与邮箱校验](src/web/src/lib/deployment-config.ts)，环境变量及默认值见 [运行配置](README.md#运行配置)。
+前端与构建共用 [部署字段校验](src/web/src/lib/deployment-config.ts)，环境变量及默认值见 [运行配置](README.md#运行配置)。
 
 涉及分页、文件、表单或选项上限时，核对前后端对应参数。
 上传提示由 [file-upload.ts](src/web/src/lib/file-upload.ts) 的 `uploadHint`

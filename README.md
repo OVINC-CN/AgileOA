@@ -81,6 +81,9 @@ API_BASE_URL=https://api.example.com CONTACT_EMAIL=privacy@example.com mise exec
 
 构建会将 `passwordLoginEnabled` 设为 `false`，按最终配置生成 `config.<hash>.js` 并更新 HTML 引用。部署时先上传配置及其他静态资源，再更新 HTML，并保留旧哈希资源供缓存页面使用。
 
+附件预览资源按整组内容生成 `extra-assets/file-viewer/<hash>/` 目录，目录地址随配置发布。
+增量发布时，复用源站已有的同名目录，上传新目录后再更新 HTML。保留旧目录供仍在使用旧页面的用户访问。
+
 将后端 YAML 的 `app.time_zone` 和前端 `displayTimeZone` 配置为相同的 IANA 时区，例如 `Asia/Shanghai`。后端省略该项时使用 `Asia/Shanghai`。审计默认范围和趋势、用户管理自然日统计及奖项导出的申报截止时间按此时区计算。定时任务使用独立的 `scheduler.timezone`。
 
 密码登录由后端 YAML 的 `user.password_login_enabled` 和前端 `config.js` 的 `passwordLoginEnabled` 控制，开发示例均为 `true`，前端构建产物默认为 `false`，后端部署 YAML 按需配置，前后端开关应保持一致。关闭后端开关会拒绝新的密码登录；关闭前端开关会隐藏密码登录及用户密码设置入口，新建用户仅使用邮件登录，编辑已有用户时保留其密码设置。默认会话与 Cookie 有效期为 30 天，由 `user.session_ttl: 720h` 配置，适用于组织账号和学生账号的新会话；已有会话保留原到期时间。
