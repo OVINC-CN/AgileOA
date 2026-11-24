@@ -29,8 +29,8 @@ const row: AuditRow = {
   user_id: '1',
   user_identify_type: 1,
   user_identify_tenant_id: 'system',
-  start_time: Date.parse('2026-11-03T01:00:00Z'),
-  end_time: Date.parse('2026-11-03T01:00:00.012Z'),
+  start_time: Date.parse('2026-11-03T16:00:00Z'),
+  end_time: Date.parse('2026-11-03T16:00:00.012Z'),
   access_type: 1,
   access_source_ip: '192.0.2.1',
   access_user_agent: 'fixture',
@@ -131,7 +131,7 @@ afterEach(() => {
 });
 
 describe('审计操作筛选', () => {
-  it('用户、对象、请求编号经搜索精确提交，枚举变化不提交文本草稿', async () => {
+  it('用户、对象、请求编号和 IP 经搜索精确提交，枚举变化不提交文本草稿', async () => {
     const paths = renderAudit();
     const user = userEvent.setup();
     await waitFor(() => {
@@ -142,6 +142,8 @@ describe('审计操作筛选', () => {
     await user.type(screen.getByRole('textbox', { name: '用户 ID' }), '18446744073709551615');
     await user.type(screen.getByRole('textbox', { name: '对象 ID' }), '0000123');
     await user.type(screen.getByRole('textbox', { name: '请求 ID' }), row.request_id);
+    const ipInput = screen.getByRole('textbox', { name: '客户端 IP' });
+    await user.type(ipInput, ' 2001:db8::1 ');
     expect(paths).toHaveLength(before);
     await user.click(screen.getByRole('combobox', { name: '用户租户' }));
     await user.click(screen.getByRole('option', { name: '系统' }));
@@ -151,12 +153,12 @@ describe('审计操作筛选', () => {
         const path = paths.filter((value) => value.includes(endpoint)).at(-1);
         const query = new URL(path ?? '', 'https://example.com').searchParams;
         expect(query.getAll('user_identify_tenant_id')).toEqual(['system']);
-        for (const key of ['user_id', 'instance_id', 'request_id'])
+        for (const key of ['user_id', 'instance_id', 'request_id', 'access_source_ip'])
           expect(query.has(key)).toBe(false);
       }
     });
     expect(screen.getByRole('status', { name: '筛选生效提示' })).toHaveTextContent('有未应用条件');
-    await user.click(screen.getByRole('button', { name: '搜索' }));
+    await user.type(ipInput, '{Enter}');
     await waitFor(() => {
       for (const endpoint of ['/logs?', '/statistics?']) {
         const path = paths.filter((value) => value.includes(endpoint)).at(-1);
@@ -164,6 +166,7 @@ describe('审计操作筛选', () => {
         expect(query.get('user_id')).toBe('18446744073709551615');
         expect(query.get('instance_id')).toBe('0000123');
         expect(query.get('request_id')).toBe(row.request_id);
+        expect(query.get('access_source_ip')).toBe('2001:db8::1');
         expect(query.getAll('user_identify_tenant_id')).toEqual(['system']);
         expect(query.has('workspace_id')).toBe(false);
         expect(query.has('keyword')).toBe(false);
@@ -173,8 +176,15 @@ describe('审计操作筛选', () => {
     expect(screen.getByRole('textbox', { name: '用户 ID' })).toHaveValue('');
     expect(screen.getByRole('textbox', { name: '对象 ID' })).toHaveValue('');
     expect(screen.getByRole('textbox', { name: '请求 ID' })).toHaveValue('');
+    expect(ipInput).toHaveValue('');
     await waitFor(() => {
       expectAction(paths, 'exclude_audit');
+      for (const endpoint of ['/logs?', '/statistics?']) {
+        const path = paths.filter((value) => value.includes(endpoint)).at(-1);
+        expect(
+          new URL(path ?? '', 'https://example.com').searchParams.has('access_source_ip'),
+        ).toBe(false);
+      }
     });
   });
 
@@ -292,10 +302,17 @@ describe('审计操作筛选', () => {
     const headers = table.getAllByRole('columnheader');
     const headerNames = headers.map((header) => header.textContent);
     expect(headerNames[headerNames.indexOf('操作结果') + 1]).toBe('操作来源');
+    expect(headerNames).toContain('客户端 IP');
+    expect(table.getByRole('cell', { name: row.access_source_ip })).toBeVisible();
+    expect(headerNames).toContain('耗时');
+    expect(table.getByRole('cell', { name: '12 ms' })).toBeVisible();
+    for (const name of ['请求 ID', '开始时间', '结束时间']) {
+      expect(headerNames).not.toContain(name);
+    }
     expect(headers[0]).toHaveTextContent('ID');
     expect(headers[0]).toHaveClass('table-pinned');
     expect(headers.at(-1)).toHaveClass('table-pinned-end', 'right-0');
-    const idButton = table.getByRole('button', { name: row.id });
+    const idButton = table.getByRole('button', { name: `${row.id} (11/04 00:00)` });
     expect(idButton.closest('td')).toHaveClass('table-pinned');
     const detailButton = table.getByRole('button', { name: '查看编辑党建人员详情' });
     expect(detailButton.closest('td')).toHaveClass('table-pinned-end', 'right-0');
@@ -320,6 +337,7 @@ describe('审计操作筛选', () => {
     expect(snapshot.getByText('系统管理员')).toBeVisible();
     expect(detail.getByText(`示例空间（${workspaceID}）`)).toBeInTheDocument();
     expect(detail.getByText('Web')).toBeInTheDocument();
+    expect(detail.getByText(row.request_id)).toBeInTheDocument();
     expect(detail.getByText('有')).toBeInTheDocument();
     const detailPath = `/v1/system/audit/logs/${row.event_id}?event_date=${row.event_date}`;
     expect(paths.filter((path) => path === detailPath)).toHaveLength(1);

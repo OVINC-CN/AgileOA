@@ -66,6 +66,7 @@ export function AuditPage() {
     const next = {
       ...values,
       user_id: values.user_id.trim(),
+      access_source_ip: values.access_source_ip.trim(),
       request_id: values.request_id.trim(),
     };
     // 所有查询复用同一份提交条件；编号文本不做模糊或前缀匹配。
@@ -100,7 +101,11 @@ export function AuditPage() {
   );
   const columns = useMemo<ColumnDef<AuditRow>[]>(
     () => [
-      { accessorKey: 'id', header: 'ID' },
+      {
+        id: 'id',
+        header: 'ID',
+        accessorFn: (row) => `${row.id} (${formatDate(row.start_time, { includeYear: false })})`,
+      },
       {
         id: 'user',
         header: '操作用户',
@@ -161,22 +166,13 @@ export function AuditPage() {
         header: '操作来源',
         cell: ({ row }) => (row.original.access_type === 1 ? 'Web' : 'MCP'),
       },
-      { accessorKey: 'request_id', header: '请求 ID' },
+      { accessorKey: 'access_source_ip', header: '客户端 IP' },
       {
-        accessorKey: 'start_time',
-        header: '开始时间',
+        id: 'duration',
+        header: '耗时',
         cell: ({ row }) => (
           <span className="text-xs text-muted-foreground tabular-nums">
-            {formatDate(new Date(row.original.start_time).toISOString())}
-          </span>
-        ),
-      },
-      {
-        accessorKey: 'end_time',
-        header: '结束时间',
-        cell: ({ row }) => (
-          <span className="text-xs text-muted-foreground tabular-nums">
-            {formatDate(new Date(row.original.end_time).toISOString())}
+            {row.original.end_time - row.original.start_time} ms
           </span>
         ),
       },
@@ -235,6 +231,18 @@ export function AuditPage() {
                 ]}
                 onValueChange={(access_type) => {
                   changeFilters({ access_type });
+                }}
+              />
+            </FilterField>
+            <FilterField label="客户端 IP" htmlFor="audit-client-ip">
+              <Input
+                id="audit-client-ip"
+                aria-label="客户端 IP"
+                placeholder="完整 IP 地址"
+                maxLength={45}
+                value={draft.access_source_ip}
+                onChange={(event) => {
+                  setDraft({ ...draft, access_source_ip: event.target.value });
                 }}
               />
             </FilterField>

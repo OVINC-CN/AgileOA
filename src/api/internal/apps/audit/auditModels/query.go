@@ -8,19 +8,20 @@ import (
 	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
 )
 
-// Query 只接受十项标量条件，两个时间边界均筛选开始时刻。
+// Query 只接受固定标量条件，两个时间边界均筛选开始时刻。
 type Query struct {
 	pagination.Query
-	UserTenants  []string
-	UserID       *uint64
-	WorkspaceIDs []string
-	Actions      []string
-	ResultCodes  []int
-	AccessTypes  []uint8
-	InstanceID   *string
-	RequestID    string
-	From         time.Time
-	Until        time.Time
+	UserTenants    []string
+	UserID         *uint64
+	WorkspaceIDs   []string
+	Actions        []string
+	ResultCodes    []int
+	AccessTypes    []uint8
+	AccessSourceIP string
+	InstanceID     *string
+	RequestID      string
+	From           time.Time
+	Until          time.Time
 }
 
 // Option 提供筛选代码及中文显示名称。

@@ -8582,6 +8582,10 @@ paths:
           type: integer
         name: access_type
         type: array
+      - description: 客户端 IPv4 或 IPv6，按记录中的地址文本精确匹配，空值不限
+        in: query
+        name: access_source_ip
+        type: string
       - description: 对象编号精确匹配；显式空值匹配空编号
         in: query
         name: instance_id
@@ -8675,6 +8679,10 @@ paths:
           type: integer
         name: access_type
         type: array
+      - description: 客户端 IPv4 或 IPv6，按记录中的地址文本精确匹配，空值不限
+        in: query
+        name: access_source_ip
+        type: string
       - description: 对象编号精确匹配；显式空值匹配空编号
         in: query
         name: instance_id

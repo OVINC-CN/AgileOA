@@ -230,6 +230,9 @@ func queryScope(tx *gorm.DB, query auditModels.Query) *gorm.DB {
 	if len(query.AccessTypes) > 0 {
 		scope = scope.Where("access_type IN ?", query.AccessTypes)
 	}
+	if query.AccessSourceIP != "" {
+		scope = scope.Where("access_source_ip = ?", query.AccessSourceIP)
+	}
 	if query.InstanceID != nil {
 		scope = scope.Where("instance_id = ?", *query.InstanceID)
 	}

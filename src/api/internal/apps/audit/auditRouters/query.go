@@ -3,6 +3,7 @@ package auditRouters
 import (
 	"encoding/hex"
 	"errors"
+	"net"
 	"strconv"
 	"strings"
 	"time"
@@ -36,6 +37,7 @@ var errInvalidFilter = errors.New("invalid audit filter")
 // @Param action_id query []string false "操作；省略默认 exclude_audit，显式空值为全部" collectionFormat(multi)
 // @Param result_code query []int false "数字结果码，成功为 0" collectionFormat(multi)
 // @Param access_type query []int false "来源，web 为 1、mcp 为 2" collectionFormat(multi)
+// @Param access_source_ip query string false "客户端 IPv4 或 IPv6，按记录中的地址文本精确匹配，空值不限"
 // @Param instance_id query string false "对象编号精确匹配；显式空值匹配空编号"
 // @Param request_id query string false "32 位 Trace ID 精确匹配"
 // @Param start_time query string false "开始时刻下界，UTC Unix 毫秒，包含"
@@ -65,6 +67,7 @@ func List(c echo.Context) error {
 // @Param action_id query []string false "操作；省略默认 exclude_audit，显式空值为全部" collectionFormat(multi)
 // @Param result_code query []int false "数字结果码，成功为 0" collectionFormat(multi)
 // @Param access_type query []int false "来源，web 为 1、mcp 为 2" collectionFormat(multi)
+// @Param access_source_ip query string false "客户端 IPv4 或 IPv6，按记录中的地址文本精确匹配，空值不限"
 // @Param instance_id query string false "对象编号精确匹配；显式空值匹配空编号"
 // @Param request_id query string false "32 位 Trace ID 精确匹配"
 // @Param start_time query string false "开始时刻下界，UTC Unix 毫秒，包含"
@@ -111,7 +114,8 @@ func parse(c echo.Context) (auditModels.Query, error) {
 	allowed := map[string]bool{
 		"page": true, "page_size": true,
 		"user_identify_tenant_id": true, "user_id": true, "workspace_id": true,
-		"action_id": true, "result_code": true, "access_type": true,
+		"action_id": true, "result_code": true,
+		"access_type": true, "access_source_ip": true,
 		"instance_id": true, "request_id": true, "start_time": true, "end_time": true,
 	}
 	parameters := c.QueryParams()
@@ -121,7 +125,7 @@ func parse(c echo.Context) (auditModels.Query, error) {
 		}
 	}
 	for _, name := range []string{
-		"user_id", "instance_id", "request_id", "start_time", "end_time",
+		"user_id", "access_source_ip", "instance_id", "request_id", "start_time", "end_time",
 	} {
 		if len(parameters[name]) > 1 {
 			return auditModels.Query{}, errInvalidFilter
@@ -170,6 +174,12 @@ func parse(c echo.Context) (auditModels.Query, error) {
 			return query, errInvalidFilter
 		}
 		query.UserID = &id
+	}
+	if ip := strings.TrimSpace(c.QueryParam("access_source_ip")); ip != "" {
+		if net.ParseIP(ip) == nil {
+			return query, errInvalidFilter
+		}
+		query.AccessSourceIP = ip
 	}
 	if parameters.Has("instance_id") {
 		value := c.QueryParam("instance_id")

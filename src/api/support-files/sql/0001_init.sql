@@ -891,6 +891,7 @@ CREATE TABLE `audit_events`
   KEY `idx_audit_events_user` (`user_id`, `user_identify_tenant_id`, `start_time`, `id`, `workspace_id`, `action_id`, `result_code`, `access_type`),
   KEY `idx_audit_events_workspace` (`workspace_id`, `start_time`, `id`, `user_identify_tenant_id`, `user_id`, `action_id`, `result_code`, `access_type`),
   KEY `idx_audit_events_action` (`action_id`, `start_time`, `id`, `user_identify_tenant_id`, `user_id`, `workspace_id`, `result_code`, `access_type`),
+  KEY `idx_audit_events_ip` (`access_source_ip`, `start_time`, `id`, `action_id`, `result_code`, `access_type`),
   KEY `idx_audit_events_instance` (`instance_id`, `start_time`, `id`, `user_identify_tenant_id`, `user_id`, `workspace_id`, `action_id`, `result_code`, `access_type`, `request_id`),
   KEY `idx_audit_events_request` (`request_id`, `start_time`, `id`, `user_identify_tenant_id`, `user_id`, `workspace_id`, `action_id`, `result_code`, `access_type`, `instance_id`),
   KEY `idx_audit_events_login` (`is_login_event`, `user_id`, `end_time`),

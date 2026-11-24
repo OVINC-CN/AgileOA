@@ -28,13 +28,16 @@ func TestFirstPageWithTotalReturnsRowsFromDatabaseJoin(t *testing.T) {
 			t.Fatal(err)
 		}
 		query := auditModels.Query{
-			Query: pagination.Query{Page: 1, PageSize: 5},
-			From:  time.Date(2026, 11, 3, 0, 0, 0, 0, time.UTC),
-			Until: time.Date(2026, 11, 17, 0, 0, 0, 0, time.UTC),
+			Query:          pagination.Query{Page: 1, PageSize: 5},
+			From:           time.Date(2026, 11, 3, 0, 0, 0, 0, time.UTC),
+			Until:          time.Date(2026, 11, 17, 0, 0, 0, 0, time.UTC),
+			AccessSourceIP: "2001:db8::1",
 		}
 
 		// 复现 total=8217、第一页每页 5 条；日期以 MySQL 驱动的 time.Time 返回。
-		mock.ExpectQuery("SELECT count\\(\\*\\) FROM `audit_events`").
+		mock.ExpectQuery("SELECT count\\(\\*\\) FROM `audit_events` .*access_source_ip = \\?").
+			WithArgs("2026-11-03", "2026-11-16", query.From.UnixMilli(), query.Until.UnixMilli(),
+				query.AccessSourceIP).
 			WillReturnRows(sqlmock.NewRows([]string{"count(*)"}).AddRow(8217))
 		rows := sqlmock.NewRows([]string{
 			"id", "event_date", "event_id", "user_id", "snapshot_user_info",
@@ -45,9 +48,11 @@ func TestFirstPageWithTotalReturnsRowsFromDatabaseJoin(t *testing.T) {
 					`{"id":7,"username":"fixture"}`)
 			}
 		}
-		mock.ExpectQuery("FROM \\(SELECT id,event_date FROM `audit_events` .*ORDER BY id DESC LIMIT \\?\\) AS audit_page JOIN audit_events AS entries ON entries.id = audit_page.id AND entries.event_date = audit_page.event_date").
+		mock.ExpectQuery("FROM \\(SELECT id,event_date FROM `audit_events` .*access_source_ip = \\? "+
+			"ORDER BY id DESC LIMIT \\?\\) AS audit_page JOIN audit_events AS entries "+
+			"ON entries.id = audit_page.id AND entries.event_date = audit_page.event_date").
 			WithArgs("2026-11-03", "2026-11-16", query.From.UnixMilli(), query.Until.UnixMilli(),
-				5, "2026-11-03", "2026-11-16").
+				query.AccessSourceIP, 5, "2026-11-03", "2026-11-16").
 			WillReturnRows(rows)
 		result := auditModels.ListData{Items: []auditModels.Summary{}}
 		err = readPage(database.WithContext(t.Context()), query, &result)

@@ -27,8 +27,8 @@ export function formatIdentity(
   return code ? `${label}(${code})` : label;
 }
 
-export function formatDate(value: string | null | undefined) {
-  if (!value?.trim()) {
+export function formatDate(value: string | number | null | undefined, { includeYear = true } = {}) {
+  if (value === null || value === undefined || (typeof value === 'string' && !value.trim())) {
     return emptyValueLabel;
   }
   const date = new Date(value);
@@ -51,7 +51,8 @@ export function formatDate(value: string | null | undefined) {
     hour = '',
     minute = '',
   } = Object.fromEntries(parts.map((part) => [part.type, part.value]));
-  return `${year}/${month}/${day} ${hour}:${minute}`;
+  const monthDayTime = `${month}/${day} ${hour}:${minute}`;
+  return includeYear ? `${year}/${monthDayTime}` : monthDayTime;
 }
 
 export function formatNumber(value: number) {
