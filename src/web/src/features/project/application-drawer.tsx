@@ -36,7 +36,7 @@ import { ApplicationContentVersions } from '@/features/project/application-conte
 import { ApplicationFlow, ApplicationHistory } from '@/features/project/application-timeline';
 import { validateUniqueDetailNames } from '@/features/project/detail-validation';
 import { useApiAction } from '@/lib/api-action';
-import { uploadHint, validateUploadFile } from '@/lib/file-upload';
+import { uploadHint, type UploadUpdate, validateUploadFile } from '@/lib/file-upload';
 import { formatValue } from '@/lib/format';
 
 const emptyValues: ApplicationValues = { statement: '', rank: null, score: null };
@@ -96,7 +96,9 @@ export function ApplicationDrawer({
   const [decision, setDecision] = useState<'approve' | 'reject' | null>(null);
   const [comment, setComment] = useState('');
   const [deleting, setDeleting] = useState<ApplicationAttachment | null>(null);
-  const [uploadTarget, setUploadTarget] = useState<string | null>(null);
+  const [uploadTarget, setUploadTarget] = useState<{ key: string; completed: boolean } | null>(
+    null,
+  );
   // 项目配置刷新立即生效，编辑草稿及原并发版本保留到保存时复核。
   const record =
     savedRecord &&
@@ -216,7 +218,7 @@ export function ApplicationDrawer({
     setItems(detailsOf(record));
     setEditing(false);
   };
-  const upload = (key: string, file: File) => {
+  const upload = (key: string, file: File, updateUpload: UploadUpdate) => {
     if (record && !record.can_edit) return;
     void files.run(`upload:${key}`, async () => {
       validateUploadFile(file);
@@ -236,9 +238,11 @@ export function ApplicationDrawer({
         }
         setRecord(working);
         await accept(
-          await uploadApplicationAttachment(workspaceID, scope, working, key, file),
+          await uploadApplicationAttachment(workspaceID, scope, working, key, file, updateUpload),
           false,
         );
+        updateUpload('complete');
+        setUploadTarget((current) => (current?.key === key ? { key, completed: true } : current));
       } catch (cause) {
         if (working) {
           try {
@@ -251,13 +255,12 @@ export function ApplicationDrawer({
             // 保留原始上传错误，后续刷新可重新读取待完成附件。
           }
         }
+        setUploadTarget(null);
         if (contentSaved) {
           const message = cause instanceof Error ? cause.message : '上传失败，请重试';
           throw new Error(`申报内容已保存，附件上传未完成。${message}`);
         }
         throw cause;
-      } finally {
-        setUploadTarget(null);
       }
     });
   };
@@ -513,12 +516,12 @@ export function ApplicationDrawer({
               filesFor={(key) => ({
                 ...fileProps,
                 uploading: files.isPending(`upload:${key}`),
-                onUpload: (file) => {
-                  upload(key, file);
+                onUpload: (file, updateUpload) => {
+                  upload(key, file, updateUpload);
                 },
                 onPrepareUpload: needsSave
                   ? () => {
-                      setUploadTarget(key);
+                      setUploadTarget({ key, completed: false });
                     }
                   : undefined,
                 onDelete: setDeleting,
@@ -553,7 +556,7 @@ export function ApplicationDrawer({
       {uploadTarget ? (
         <Drawer
           title="保存内容并上传附件"
-          description={items.find((item) => item.key === uploadTarget)?.name ?? '申报子项附件'}
+          description={items.find((item) => item.key === uploadTarget.key)?.name ?? '申报子项附件'}
           onClose={() => {
             setUploadTarget(null);
           }}
@@ -566,16 +569,16 @@ export function ApplicationDrawer({
                 setUploadTarget(null);
               }}
             >
-              取消
+              {uploadTarget.completed ? '关闭' : '取消'}
             </Button>
           }
           footer={
             <FileUploadButton
               label="选择文件并保存上传"
-              loading={files.isPending(`upload:${uploadTarget}`)}
-              disabled={busy}
-              onFileSelect={(file) => {
-                upload(uploadTarget, file);
+              loading={files.isPending(`upload:${uploadTarget.key}`)}
+              disabled={busy || uploadTarget.completed}
+              onFileSelect={(file, updateUpload) => {
+                upload(uploadTarget.key, file, updateUpload);
               }}
             />
           }

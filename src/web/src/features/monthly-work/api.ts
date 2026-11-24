@@ -5,6 +5,7 @@ import type { WorkCategory } from '@/features/monthly-work/category';
 import { apiDelete, apiGet, apiPost, apiPut } from '@/lib/api';
 import { getConfig } from '@/lib/config';
 import { uploadFile } from '@/lib/cos-upload';
+import type { UploadProgress } from '@/lib/file-upload';
 import { filterParams } from '@/lib/filter-params';
 import { spreadsheetFileSchema } from '@/lib/spreadsheet';
 
@@ -169,11 +170,13 @@ export function uploadWorkAttachment(
   workID: number,
   file: File,
   category: WorkCategory = 'student',
+  onProgress?: UploadProgress,
 ) {
   return uploadFile(
     `${base(workspaceID)}/${resource(category)}/${String(workID)}/attachments`,
     workFileSchema(category),
     file,
+    { onProgress },
   );
 }
 
@@ -209,11 +212,13 @@ export function importWork(
   workspaceID: string,
   content: string,
   category: WorkCategory = 'student',
+  onProgress?: UploadProgress,
 ) {
   return apiPost(
     `${base(workspaceID)}/${resource(category)}/import`,
     z.object({ created: z.number().int().positive() }),
     { content },
+    onProgress,
   );
 }
 

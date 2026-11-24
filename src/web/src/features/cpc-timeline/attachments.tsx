@@ -125,19 +125,26 @@ function AttachmentPanel({
                 <FileUploadButton
                   disabled={!available || remove.pending}
                   loading={upload.pending}
-                  onFileSelect={(file) => {
+                  onFileSelect={(file, updateUpload) => {
                     void upload.run('upload', async () => {
                       if (!available) return;
                       if (file.size < 1 || file.size > getConfig().fileMaxUploadBytes) {
                         throw new Error('文件不能为空或超过上传大小限制');
                       }
                       try {
-                        await uploadTimelineAttachment(workspaceID, templateID, node.id, file);
+                        await uploadTimelineAttachment(
+                          workspaceID,
+                          templateID,
+                          node.id,
+                          file,
+                          updateUpload,
+                        );
                         showMessage('附件上传成功');
                       } finally {
                         pagination.setPage(1);
                         await invalidate(1);
                       }
+                      updateUpload('complete');
                     });
                   }}
                 />

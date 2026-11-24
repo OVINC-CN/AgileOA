@@ -8,7 +8,7 @@ import { TimelineNodeAttachments } from '@/features/cpc-timeline/attachments';
 import { newNode } from '@/features/cpc-timeline/model';
 import { TemplateEditor } from '@/features/cpc-timeline/template-editor';
 import { loadingExitDelayMs } from '@/lib/motion';
-import { preparedUpload } from '@/test/mock-cos';
+import { cosMock, preparedUpload } from '@/test/mock-cos';
 
 const workspaceID = 'w7m2k9p4s6n8c3x5';
 const template = { id: 7, name: '虚构模板' };
@@ -104,8 +104,30 @@ it('选择文件后直接按节点路径上传，上传期间保护关闭且不�
   const pendingResponse = new Promise<Response>((resolve) => {
     finish = resolve;
   });
+  let confirm: () => void = () => {
+    throw new Error('尚未请求确认上传');
+  };
+  let finishTransfer: () => void = () => {
+    throw new Error('尚未开始传输');
+  };
+  cosMock.putObject.mockImplementationOnce(
+    ({ onProgress }: { onProgress: (event: { loaded: number }) => void }) => {
+      onProgress({ loaded: 4 });
+      return new Promise((resolve) => {
+        finishTransfer = () => {
+          resolve({ statusCode: 200 });
+        };
+      });
+    },
+  );
   const fetch = vi.fn((url: string, options: RequestInit) => {
-    if (url.endsWith('/complete')) return Promise.resolve(respond(attachment));
+    if (url.endsWith('/complete')) {
+      return new Promise<Response>((resolve) => {
+        confirm = () => {
+          resolve(respond(attachment));
+        };
+      });
+    }
     expect(url).toBe(path);
     expect(options.method).toBe('POST');
     expect(JSON.parse(typeof options.body === 'string' ? options.body : '')).toEqual({
@@ -140,6 +162,7 @@ it('选择文件后直接按节点路径上传，上传期间保护关闭且不�
   const user = userEvent.setup();
   await user.upload(screen.getByLabelText('上传附件'), new File(['fixture'], '虚构材料.pdf'));
   expect(screen.getByRole('button', { name: '上传' })).toHaveAttribute('aria-busy', 'true');
+  expect(screen.getByText('准备上传')).toBeVisible();
   expect(screen.getByRole('button', { name: '关闭抽屉' })).toBeDisabled();
   await user.keyboard('{Escape}');
   expect(closed).not.toHaveBeenCalled();
@@ -148,14 +171,40 @@ it('选择文件后直接按节点路径上传，上传期间保护关闭且不�
     finish(respond(preparedUpload()));
     await pendingResponse;
   });
+  expect(screen.getByRole('progressbar', { name: '文件上传进度' })).toHaveAttribute(
+    'aria-valuenow',
+    '57',
+  );
+  expect(screen.getByText('57%')).toBeVisible();
+  await act(async () => {
+    finishTransfer();
+    await Promise.resolve();
+  });
+  expect(screen.getByText('已上传，正在处理')).toBeVisible();
+  expect(screen.getByRole('button', { name: '上传' })).toBeDisabled();
+  await act(async () => {
+    confirm();
+    await Promise.resolve();
+  });
+  expect(screen.getByText('上传完成')).toBeVisible();
   expect(screen.getByRole('button', { name: '上传' })).toBeEnabled();
   expect(screen.getByRole('button', { name: '关闭抽屉' })).toBeEnabled();
 
   // 用虚拟时钟推进指示器退出延迟，避免 CI 调度影响真实计时等待。
   await act(async () => {
-    await vi.advanceTimersByTimeAsync(loadingExitDelayMs);
+    await vi.advanceTimersByTimeAsync(loadingExitDelayMs * 10);
   });
   expect(screen.getByRole('button', { name: '上传' })).not.toHaveAttribute('aria-busy', 'true');
+  expect(screen.getByRole('progressbar', { name: '文件上传进度' })).toHaveAttribute(
+    'aria-valuenow',
+    '100',
+  );
+  vi.useRealTimers();
+  await user.click(screen.getByRole('heading', { name: '节点附件' }));
+  expect(screen.getByText('上传完成')).toBeVisible();
+  await user.click(screen.getByRole('button', { name: '关闭上传进度' }));
+  expect(screen.queryByRole('group', { name: '文件上传状态' })).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '上传' })).toHaveFocus();
   expect(fetch).toHaveBeenCalledTimes(2);
 });
 

@@ -8,6 +8,7 @@ import { AppLayout } from '@/components/app-layout';
 import { emptyStudent } from '@/features/student/api';
 import { birthDateFromIdentityNumber, sensitiveAction } from '@/features/student/fields';
 import { StudentAvatar } from '@/features/student/student-avatar';
+import { StudentEditor } from '@/features/student/student-editor';
 import { StudentPage } from '@/features/student/student-page';
 import { currentUserKey } from '@/features/user/api';
 import { xlsxContentType } from '@/lib/spreadsheet';
@@ -715,6 +716,7 @@ describe('工作空间学生信息', () => {
     expect(dialog.getAllByRole('button', { name: '上传头像' })).toHaveLength(1);
     await userEvent.upload(dialog.getByLabelText('上传头像'), file);
     await waitFor(() => expect(dialog.getByRole('button', { name: '保存' })).toBeEnabled());
+    expect(screen.getByText('上传完成')).toBeVisible();
     expect(dialog.getByRole('img', { name: `${student.name}的头像` })).toHaveAttribute(
       'src',
       updatedAvatarURL,
@@ -740,6 +742,52 @@ describe('工作空间学生信息', () => {
       const body = calls.find(({ options }) => options.method === 'PUT')?.options.body;
       expect(typeof body === 'string' ? JSON.parse(body) : null).toMatchObject({ revision: 2 });
     });
+  });
+
+  it('删除未完成头像时只显示删除按钮的加载状态', async () => {
+    let finishDeletion: (response: Response) => void = () => {
+      throw new Error('尚未请求删除头像');
+    };
+    const deletion = new Promise<Response>((resolve) => {
+      finishDeletion = resolve;
+    });
+    const request = vi.fn((_url: string, options: RequestInit) =>
+      options.method === 'DELETE'
+        ? deletion
+        : Promise.resolve(
+            respond({
+              ...student,
+              avatar_url: '',
+              avatar_uploads: [
+                { id: 7, filename: '未完成头像.png', state: 'pending', revision: 1 },
+              ],
+            }),
+          ),
+    );
+    vi.stubGlobal('fetch', request);
+    render(
+      <QueryClientProvider client={queryClient()}>
+        <StudentEditor
+          workspaceID={first}
+          student={student}
+          canBasic
+          canDetail
+          canQuery={false}
+          canSensitive={false}
+          onClose={vi.fn()}
+        />
+      </QueryClientProvider>,
+    );
+    const dialog = within(screen.getByRole('dialog', { name: '编辑学生' }));
+    const remove = await dialog.findByRole('button', { name: '删除' });
+    await userEvent.click(remove);
+    const upload = dialog.getByRole('button', { name: '上传头像' });
+    expect(remove).toHaveAttribute('aria-busy', 'true');
+    expect(upload).toBeDisabled();
+    expect(upload).not.toHaveAttribute('aria-busy');
+    expect(screen.queryByRole('group', { name: '文件上传状态' })).not.toBeInTheDocument();
+    finishDeletion(respond(null));
+    await waitFor(() => expect(upload).toBeEnabled());
   });
 
   it('只有处理敏感信息权限时，编辑只展示敏感表单并全量保存', async () => {

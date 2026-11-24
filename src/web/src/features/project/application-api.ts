@@ -12,6 +12,7 @@ import {
 import { apiDelete, apiGet, apiPost, apiPut } from '@/lib/api';
 import { getConfig } from '@/lib/config';
 import { uploadFile } from '@/lib/cos-upload';
+import type { UploadProgress } from '@/lib/file-upload';
 import { filterParams } from '@/lib/filter-params';
 import { spreadsheetFileSchema } from '@/lib/spreadsheet';
 
@@ -327,12 +328,13 @@ export function uploadApplicationAttachment(
   record: Application,
   key: string,
   file: File,
+  onProgress?: UploadProgress,
 ) {
   return uploadFile(
     `${base(workspaceID)}/${scopePath(scope)}/${String(record.id)}/attachments`,
     applicationSchema,
     file,
-    { detail_key: key, application_revision: record.revision },
+    { fields: { detail_key: key, application_revision: record.revision }, onProgress },
   );
 }
 

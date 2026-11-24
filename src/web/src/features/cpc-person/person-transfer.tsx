@@ -1,14 +1,16 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { FileDown, Upload } from 'lucide-react';
+import { FileDown } from 'lucide-react';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Drawer } from '@/components/ui/drawer';
 import { FileInput } from '@/components/ui/file-input';
 import { Label } from '@/components/ui/label';
+import { UploadButton } from '@/components/ui/upload-button';
 import { importPeople, personKey, personTemplate, savePersonFile } from '@/features/cpc-person/api';
 import { useApiAction } from '@/lib/api-action';
 import { getConfig } from '@/lib/config';
+import type { UploadStatus } from '@/lib/file-upload';
 import { readSpreadsheetImport, spreadsheetAccept } from '@/lib/spreadsheet';
 
 export function PersonTransfer({
@@ -19,6 +21,7 @@ export function PersonTransfer({
   onClose: () => void;
 }) {
   const [file, setFile] = useState<File | null>(null);
+  const [progress, setProgress] = useState<UploadStatus>(null);
   const [created, setCreated] = useState<number | null>(null);
   const [fileKey, setFileKey] = useState(0);
   const template = useApiAction();
@@ -31,26 +34,32 @@ export function PersonTransfer({
       busy={template.pending || upload.pending}
       onClose={onClose}
       footer={
-        <Button
+        <UploadButton
           loading={upload.pending}
+          progress={progress}
+          onDismiss={() => {
+            setProgress(null);
+          }}
           disabled={!file || template.pending}
           onClick={() => {
             void upload.run('import', async () => {
+              setProgress(null);
               if (!file) return;
               const result = await importPeople(
                 workspaceID,
                 await readSpreadsheetImport(file, getConfig().cpcPersonMaxFileBytes),
+                setProgress,
               );
               await client.invalidateQueries({ queryKey: personKey(workspaceID) });
               setCreated(result.created);
+              setProgress('complete');
               setFile(null);
               setFileKey((key) => key + 1);
             });
           }}
         >
-          <Upload aria-hidden="true" />
           导入
-        </Button>
+        </UploadButton>
       }
     >
       <div className="space-y-5 p-6">

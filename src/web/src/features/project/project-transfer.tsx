@@ -1,15 +1,17 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { FileDown, Upload } from 'lucide-react';
+import { FileDown } from 'lucide-react';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Drawer } from '@/components/ui/drawer';
 import { FileInput } from '@/components/ui/file-input';
 import { Label } from '@/components/ui/label';
+import { UploadButton } from '@/components/ui/upload-button';
 import { downloadTemplate, importRecords, projectKey } from '@/features/project/api';
 import { saveStudentFile } from '@/features/student/api';
 import { useApiAction } from '@/lib/api-action';
 import { getConfig } from '@/lib/config';
+import type { UploadStatus } from '@/lib/file-upload';
 import { readSpreadsheetImport, spreadsheetAccept } from '@/lib/spreadsheet';
 
 export function ProjectTransfer({
@@ -22,6 +24,7 @@ export function ProjectTransfer({
   onClose: () => void;
 }) {
   const [file, setFile] = useState<File | null>(null);
+  const [progress, setProgress] = useState<UploadStatus>(null);
   const [created, setCreated] = useState<number | null>(null);
   const template = useApiAction();
   const upload = useApiAction();
@@ -33,26 +36,32 @@ export function ProjectTransfer({
       busy={upload.pending || template.pending}
       onClose={onClose}
       footer={
-        <Button
+        <UploadButton
           loading={upload.pending}
+          progress={progress}
+          onDismiss={() => {
+            setProgress(null);
+          }}
           disabled={!file}
           onClick={() => {
             void upload.run('import', async () => {
+              setProgress(null);
               if (!file) return;
               const result = await importRecords(
                 workspaceID,
                 participation,
                 await readSpreadsheetImport(file, getConfig().projectMaxFileBytes),
+                setProgress,
               );
               await client.invalidateQueries({ queryKey: projectKey(workspaceID) });
               setCreated(result.created);
+              setProgress('complete');
               setFile(null);
             });
           }}
         >
-          <Upload aria-hidden="true" />
           导入
-        </Button>
+        </UploadButton>
       }
     >
       <div className="space-y-5 p-6">

@@ -7,6 +7,7 @@ import { nodeSchema } from '@/features/cpc-timeline/model';
 import { apiDelete, apiGet, apiPost, apiPut } from '@/lib/api';
 import { getConfig } from '@/lib/config';
 import { uploadFile } from '@/lib/cos-upload';
+import type { UploadProgress } from '@/lib/file-upload';
 
 const personAttachmentSchema = attachmentSchema.omit({ timeline_template_id: true }).extend({
   person_id: z.number().int().positive(),
@@ -162,6 +163,7 @@ export function uploadPersonTimelineAttachment(
   personID: number,
   nodeID: string,
   file: File,
+  onProgress?: UploadProgress,
 ) {
   return uploadFile(
     `${timelineBase(workspaceID, personID)}/nodes/${encodeURIComponent(nodeID)}/attachments`,
@@ -169,6 +171,7 @@ export function uploadPersonTimelineAttachment(
       (value) => value.person_id === personID && value.node_id === nodeID,
     ),
     file,
+    { onProgress },
   );
 }
 export const deletePersonTimelineAttachment = (

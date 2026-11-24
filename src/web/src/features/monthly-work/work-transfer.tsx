@@ -1,16 +1,18 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { FileDown, Upload } from 'lucide-react';
+import { FileDown } from 'lucide-react';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Drawer } from '@/components/ui/drawer';
 import { FileInput } from '@/components/ui/file-input';
 import { Label } from '@/components/ui/label';
+import { UploadButton } from '@/components/ui/upload-button';
 import { importWork, workKey, workTemplate } from '@/features/monthly-work/api';
 import type { WorkCategory } from '@/features/monthly-work/category';
 import { saveStudentFile } from '@/features/student/api';
 import { useApiAction } from '@/lib/api-action';
 import { getConfig } from '@/lib/config';
+import type { UploadStatus } from '@/lib/file-upload';
 import { readSpreadsheetImport, spreadsheetAccept } from '@/lib/spreadsheet';
 
 export function WorkTransfer({
@@ -23,6 +25,7 @@ export function WorkTransfer({
   onClose: () => void;
 }) {
   const [file, setFile] = useState<File | null>(null);
+  const [progress, setProgress] = useState<UploadStatus>(null);
   const [created, setCreated] = useState<number | null>(null);
   const template = useApiAction();
   const upload = useApiAction();
@@ -34,26 +37,32 @@ export function WorkTransfer({
       busy={upload.pending || template.pending}
       onClose={onClose}
       footer={
-        <Button
+        <UploadButton
           loading={upload.pending}
+          progress={progress}
+          onDismiss={() => {
+            setProgress(null);
+          }}
           disabled={!file}
           onClick={() => {
             void upload.run('import', async () => {
+              setProgress(null);
               if (!file) return;
               const result = await importWork(
                 workspaceID,
                 await readSpreadsheetImport(file, getConfig().monthlyWorkMaxFileBytes),
                 category,
+                setProgress,
               );
               await client.invalidateQueries({ queryKey: workKey(workspaceID, category) });
               setCreated(result.created);
+              setProgress('complete');
               setFile(null);
             });
           }}
         >
-          <Upload aria-hidden="true" />
           导入
-        </Button>
+        </UploadButton>
       }
     >
       <div className="space-y-5 p-6">

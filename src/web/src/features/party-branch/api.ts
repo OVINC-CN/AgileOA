@@ -7,6 +7,7 @@ import {
   cleanAdmissionRule,
 } from '@/features/party-branch/admission-rule';
 import { apiDelete, apiGet, apiPost, apiPut } from '@/lib/api';
+import type { UploadProgress } from '@/lib/file-upload';
 import { spreadsheetFileSchema } from '@/lib/spreadsheet';
 
 export const priorityLimits = { min: -2147483648, max: 2147483647 } as const;
@@ -110,11 +111,16 @@ export function partyBranchTemplate(workspaceID: string) {
   );
 }
 
-export function importPartyBranches(workspaceID: string, content: string) {
+export function importPartyBranches(
+  workspaceID: string,
+  content: string,
+  onProgress?: UploadProgress,
+) {
   return apiPost(
     `${base(workspaceID)}/import`,
     z.object({ created: z.number().int().positive() }),
     { content },
+    onProgress,
   );
 }
 

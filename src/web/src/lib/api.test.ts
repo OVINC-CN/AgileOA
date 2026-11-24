@@ -14,6 +14,42 @@ function mockResponse(body: unknown, status = 200) {
 }
 
 describe('接口响应协议', () => {
+  it('报告导入请求的实际上传进度并沿用会话和响应协议', async () => {
+    const request = new XMLHttpRequest();
+    const open = vi.spyOn(request, 'open').mockImplementation(() => undefined);
+    const setHeader = vi.spyOn(request, 'setRequestHeader').mockImplementation(() => undefined);
+    const send = vi.spyOn(request, 'send').mockImplementation(() => undefined);
+    vi.stubGlobal(
+      'XMLHttpRequest',
+      vi.fn(function () {
+        return request;
+      }),
+    );
+    const onProgress = vi.fn();
+    const result = apiPost(
+      '/fixture/import',
+      z.object({ created: z.number() }),
+      { content: 'YQ==' },
+      onProgress,
+    );
+
+    expect(open).toHaveBeenCalledWith('POST', '/fixture/import');
+    expect(request.withCredentials).toBe(true);
+    expect(request.timeout).toBe(getConfig().apiTimeoutMs);
+    expect(setHeader).toHaveBeenCalledWith('x-csrf-protection', '1');
+    expect(send).toHaveBeenCalledWith('{"content":"YQ=="}');
+    request.upload.dispatchEvent(new ProgressEvent('progress', { loaded: 5, total: 20 }));
+    request.upload.dispatchEvent(new ProgressEvent('load', { loaded: 20, total: 20 }));
+    expect(onProgress.mock.calls).toEqual([[0], [25], [100]]);
+
+    vi.spyOn(request, 'status', 'get').mockReturnValue(200);
+    vi.spyOn(request, 'responseText', 'get').mockReturnValue(
+      JSON.stringify({ trace, error_msg: '', data: { created: 1 } }),
+    );
+    request.dispatchEvent(new ProgressEvent('load'));
+    await expect(result).resolves.toEqual({ created: 1 });
+  });
+
   it('公开节假日接口携带日期参数时，失败不会撤销已有会话', async () => {
     const expired = vi.fn();
     window.addEventListener('auth:expired', expired);

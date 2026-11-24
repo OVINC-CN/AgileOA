@@ -2,7 +2,12 @@ import { z } from 'zod';
 
 import { apiPost } from '@/lib/api';
 import { getConfig } from '@/lib/config';
-import { fileContentType, validateUploadFile } from '@/lib/file-upload';
+import {
+  fileContentType,
+  uploadPercent,
+  type UploadProgress,
+  validateUploadFile,
+} from '@/lib/file-upload';
 
 const uploadSchema = z.object({
   upload_id: z.number().int().positive(),
@@ -25,9 +30,13 @@ export async function uploadFile<T>(
   path: string,
   schema: z.ZodType<T>,
   file: File,
-  fields: Record<string, unknown> = {},
-  inline = false,
+  options: {
+    fields?: Record<string, unknown>;
+    inline?: boolean;
+    onProgress?: UploadProgress | undefined;
+  } = {},
 ): Promise<T> {
+  const { fields, inline, onProgress } = options;
   validateUploadFile(file);
   const prepared = await apiPost(path, uploadSchema, {
     ...fields,
@@ -49,6 +58,7 @@ export async function uploadFile<T>(
     Timeout: getConfig().apiTimeoutMs,
   });
   try {
+    onProgress?.(0);
     await client.putObject({
       Bucket: upload.bucket,
       Region: upload.region,
@@ -56,12 +66,18 @@ export async function uploadFile<T>(
       Body: file,
       ContentType: upload.content_type,
       ContentDisposition: inline ? 'inline' : 'attachment',
+      ...(onProgress && {
+        onProgress: ({ loaded }) => {
+          onProgress(uploadPercent(loaded, file.size));
+        },
+      }),
     });
   } catch {
     // SDK 原始错误可能含签名或对象地址，仅向用户提供固定提示。
     throw new Error('文件上传失败，请重试');
   }
 
+  onProgress?.(100);
   return apiPost(`${path}/complete`, schema, {
     upload_id: prepared.upload_id,
     revision: prepared.revision,

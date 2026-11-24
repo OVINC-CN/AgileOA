@@ -839,6 +839,11 @@ it.each([false, true])(
       confirmation.getByLabelText('选择文件并保存上传'),
       new File(['fixture'], '材料.pdf', { type: 'application/pdf' }),
     );
+    if (!failed) {
+      expect(await screen.findByText('上传完成')).toBeVisible();
+      expect(screen.getByRole('dialog', { name: '保存内容并上传附件' })).toBeVisible();
+      await user.click(confirmation.getByRole('button', { name: '关闭' }));
+    }
     await waitFor(() =>
       expect(screen.queryByRole('dialog', { name: '保存内容并上传附件' })).not.toBeInTheDocument(),
     );

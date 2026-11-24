@@ -10,6 +10,7 @@ import {
 import { apiDelete, apiGet, apiPost, apiPut } from '@/lib/api';
 import { getConfig } from '@/lib/config';
 import { uploadFile } from '@/lib/cos-upload';
+import type { UploadProgress } from '@/lib/file-upload';
 import { filterParams } from '@/lib/filter-params';
 import { spreadsheetFileSchema } from '@/lib/spreadsheet';
 
@@ -292,11 +293,17 @@ export function deleteRecord(
     z.null(),
   );
 }
-export function uploadAttachment(workspaceID: string, projectID: number, file: File) {
+export function uploadAttachment(
+  workspaceID: string,
+  projectID: number,
+  file: File,
+  onProgress?: UploadProgress,
+) {
   return uploadFile(
     `${base(workspaceID)}/projects/${String(projectID)}/attachments`,
     fileSchema,
     file,
+    { onProgress },
   );
 }
 export function deleteAttachment(workspaceID: string, file: Attachment) {
@@ -308,11 +315,17 @@ export function deleteAttachment(workspaceID: string, file: Attachment) {
 export function attachmentDownload(workspaceID: string, id: number) {
   return `${getConfig().apiBaseURL.replace(/\/$/, '')}${base(workspaceID)}/attachments/${String(id)}/download`;
 }
-export function importRecords(workspaceID: string, participation: boolean, content: string) {
+export function importRecords(
+  workspaceID: string,
+  participation: boolean,
+  content: string,
+  onProgress?: UploadProgress,
+) {
   return apiPost(
     `${base(workspaceID)}/${participation ? 'project-participations' : 'projects'}/import`,
     z.object({ created: z.number().int().positive() }),
     { content },
+    onProgress,
   );
 }
 export function downloadTemplate(workspaceID: string, participation: boolean) {

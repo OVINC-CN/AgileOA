@@ -362,8 +362,8 @@ function StudentEditorForm({
                   label="上传头像"
                   accept="image/jpeg,image/png,image/webp"
                   disabled={mutation.isPending}
-                  loading={avatarUpload.pending}
-                  onFileSelect={(file) => {
+                  loading={avatarUpload.isPending('avatar')}
+                  onFileSelect={(file, updateUpload) => {
                     void avatarUpload.run('avatar', async () => {
                       // 上传前校验头像大小，避免发送空文件或超限文件。
                       if (file.size < 1) throw new Error('头像文件不能为空');
@@ -376,11 +376,13 @@ function StudentEditorForm({
                           workspaceID,
                           { id: originalStudent.id, revision },
                           file,
+                          updateUpload,
                         );
                         setRevision(result.revision);
                       } finally {
                         await invalidate();
                       }
+                      updateUpload('complete');
                     });
                   }}
                 />
