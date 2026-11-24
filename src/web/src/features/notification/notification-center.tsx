@@ -1,4 +1,4 @@
-import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, type QueryState, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowUpRight, Bell, Check, CheckCheck } from 'lucide-react';
 import { type MouseEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
@@ -28,9 +28,22 @@ import { useApiAction } from '@/lib/api-action';
 import { getConfig } from '@/lib/config';
 import { formatDate, formatNumber, formatValue } from '@/lib/format';
 import { useTablePagination } from '@/lib/pagination';
+import { randomPollIntervalMs } from '@/lib/polling';
 import { cn } from '@/lib/utils';
 
 const maxBadgeCount = 99;
+const notificationPollDelays = new WeakMap<QueryState, number>();
+
+function notificationRefetchInterval({ state }: { state: QueryState }): number | false {
+  if (state.fetchStatus !== 'idle') return false;
+
+  // 同一次查询结果复用间隔，避免组件重渲染时重新计时。
+  const currentDelay = notificationPollDelays.get(state);
+  if (currentDelay !== undefined) return currentDelay;
+  const delay = randomPollIntervalMs(getConfig().notificationPollIntervalMs);
+  notificationPollDelays.set(state, delay);
+  return delay;
+}
 
 export function NotificationCenter({
   userID,
@@ -49,7 +62,7 @@ export function NotificationCenter({
   const config = getConfig();
   const unread = useQuery({
     ...notificationUnreadOptions(recipient),
-    refetchInterval: open ? false : config.notificationPollIntervalMs,
+    refetchInterval: open ? false : notificationRefetchInterval,
     refetchOnWindowFocus: true,
   });
   const count = unread.data?.unread_count ?? 0;
@@ -118,7 +131,7 @@ function NotificationDrawer({
   const query = useQuery({
     ...notificationListOptions(recipient, pagination.page, pagination.pageSize, status),
     placeholderData: keepPreviousData,
-    refetchInterval: getConfig().notificationPollIntervalMs,
+    refetchInterval: notificationRefetchInterval,
     refetchOnWindowFocus: true,
   });
   const data = query.data;

@@ -6,6 +6,13 @@ const contentTypeSchema = z
   .string()
   .regex(/^[a-z0-9][a-z0-9!#$&^_.+-]*\/(?:[a-z0-9][a-z0-9!#$&^_.+-]*|\*)$/u);
 
+const pollIntervalSchema = z
+  .object({
+    min: z.number().int().positive(),
+    max: z.number().int().positive(),
+  })
+  .refine(({ min, max }) => min <= max, { message: '刷新间隔上限不能小于下限' });
+
 const configSchema = z
   .object({
     displayTimeZone: z.string().min(1),
@@ -16,11 +23,11 @@ const configSchema = z
     ...deploymentFields,
     apiTimeoutMs: z.number().int().positive(),
     messageDurationMs: z.number().int().positive(),
-    pageUpdateCheckIntervalMs: z.number().int().positive(),
+    pageUpdateCheckIntervalMs: pollIntervalSchema,
     pageUpdateCheckTimeoutMs: z.number().int().positive(),
     queryStaleTimeMs: z.number().int().nonnegative(),
     queryRetryCount: z.number().int().nonnegative(),
-    notificationPollIntervalMs: z.number().int().positive(),
+    notificationPollIntervalMs: pollIntervalSchema,
     studentMaxFileBytes: z.number().int().positive(),
     fileMaxUploadBytes: z.number().int().positive(),
     filePreviewTimeoutMs: z.number().int().positive(),

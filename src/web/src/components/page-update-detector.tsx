@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 
 import { getConfig } from '@/lib/config';
 import { showMessage } from '@/lib/messages';
+import { randomPollIntervalMs } from '@/lib/polling';
 
 export function PageUpdateDetector() {
   useEffect(() => {
@@ -9,6 +10,7 @@ export function PageUpdateDetector() {
     let baseline: string | null = null;
     let pending: AbortController | null = null;
     let stopped = false;
+    let nextCheck: number;
 
     const check = async () => {
       // 所有页面共用首次有效 ETag，请求未结束时跳过本轮。
@@ -37,7 +39,7 @@ export function PageUpdateDetector() {
 
         // 检测到更新后保留唯一的常驻提示，等待用户刷新。
         stopped = true;
-        window.clearInterval(interval);
+        window.clearTimeout(nextCheck);
         showMessage('发现新版本，请刷新页面以使用最新版本', 'page-update', {
           durationMs: 0,
           dismissible: false,
@@ -56,15 +58,20 @@ export function PageUpdateDetector() {
       }
     };
 
-    const interval = window.setInterval(() => {
-      void check();
-    }, config.pageUpdateCheckIntervalMs);
+    // 每轮独立抽取间隔，分散多个页面的定时请求。
+    const scheduleCheck = () => {
+      nextCheck = window.setTimeout(() => {
+        scheduleCheck();
+        void check();
+      }, randomPollIntervalMs(config.pageUpdateCheckIntervalMs));
+    };
+    scheduleCheck();
     void check();
 
     // 卸载时取消请求和定时器，避免过期响应触发提示。
     return () => {
       stopped = true;
-      window.clearInterval(interval);
+      window.clearTimeout(nextCheck);
       pending?.abort();
     };
   }, []);
