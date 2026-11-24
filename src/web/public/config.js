@@ -32,7 +32,7 @@ globalThis.AGILE_WORKSPACE_CONFIG = {
 
   // 所有附件、头像及导入入口的单文件上限，与 YAML 的 cos.max_upload_bytes 一致。
   fileMaxUploadBytes: 5242880,
-  // Office 文档解析器的单次处理时限，单位为毫秒。
+  // 附件预览解析时限，单位为毫秒。
   filePreviewTimeoutMs: 60000,
   // 审计 JSON 差异计算的单次时限，单位为毫秒。
   auditDiffTimeoutMs: 2000,

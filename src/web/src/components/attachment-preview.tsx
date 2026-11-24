@@ -4,6 +4,8 @@ import {
   FileQuestion,
   Maximize2,
   RefreshCw,
+  RotateCcw,
+  RotateCw,
   ZoomIn,
   ZoomOut,
 } from 'lucide-react';
@@ -12,33 +14,30 @@ import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { LoadingIcon } from '@/components/ui/loading-icon';
 import { SearchSelect } from '@/components/ui/search-select';
-import type { OfficePreviewKind } from '@/lib/file-preview';
-import { showMessage } from '@/lib/messages';
 import {
-  createOfficePreviewViewer,
-  officePreviewErrorMessage,
-  type OfficePreviewPosition,
-  type OfficePreviewViewer,
-} from '@/lib/office-preview';
+  attachmentPreviewErrorMessage,
+  type AttachmentPreviewPosition,
+  type AttachmentPreviewViewer,
+  createAttachmentPreviewViewer,
+  emptyPosition,
+  maximumImageZoom,
+  minimumImageZoom,
+} from '@/lib/attachment-preview';
+import { attachmentPreviewKind } from '@/lib/file-preview';
+import { showMessage } from '@/lib/messages';
 import { cn } from '@/lib/utils';
 
-type PreviewAction = 'previous' | 'next' | 'sheet' | 'zoomIn' | 'zoomOut' | 'fitWidth';
+type PreviewAction =
+  'previous' | 'next' | 'sheet' | 'zoomIn' | 'zoomOut' | 'fitWidth' | 'fitPage' | 'rotate';
 
-export function OfficePreview({
-  source,
-  filename,
-  kind,
-}: {
-  source: string;
-  filename: string;
-  kind: OfficePreviewKind;
-}) {
+export function AttachmentPreview({ file, contentType }: { file: File; contentType: string }) {
+  const kind = attachmentPreviewKind(contentType);
   const container = useRef<HTMLDivElement>(null);
-  const viewer = useRef<OfficePreviewViewer | null>(null);
+  const viewer = useRef<AttachmentPreviewViewer | null>(null);
   const fail = useRef<(error: unknown) => void>(() => undefined);
   const [attempt, setAttempt] = useState(0);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
-  const [position, setPosition] = useState<OfficePreviewPosition>({ index: 0, total: 0 });
+  const [position, setPosition] = useState<AttachmentPreviewPosition>(emptyPosition);
   const [action, setAction] = useState<PreviewAction | null>(null);
 
   useEffect(() => {
@@ -47,64 +46,33 @@ export function OfficePreview({
     const controller = new AbortController();
     let failed = false;
     const isActive = () => !controller.signal.aborted && !failed;
-    let current: OfficePreviewViewer | undefined;
-    let resize: ResizeObserver | undefined;
-    const canvas = document.createElement('canvas');
-    canvas.setAttribute('aria-label', filename);
-    canvas.tabIndex = 0;
-    canvas.className = 'outline-none focus-visible:ring-2 focus-visible:ring-ring/30';
-    if (kind === 'xlsx') {
-      canvas.style.width = '100%';
-      canvas.style.height = '100%';
-    }
-    host.appendChild(canvas);
-
+    let current: AttachmentPreviewViewer | undefined;
     // 解析错误和后续翻页错误使用同一提示，保留外层已缓存的原文件供下载。
     const reportError = (error: unknown) => {
       if (!isActive()) return;
       failed = true;
-      resize?.disconnect();
       current?.destroy();
       current = undefined;
       viewer.current = null;
       setStatus('error');
       setAction(null);
-      showMessage(officePreviewErrorMessage(error));
+      showMessage(attachmentPreviewErrorMessage(error));
     };
     fail.current = reportError;
     void (async () => {
       try {
-        const created = await createOfficePreviewViewer(
-          kind,
-          canvas,
-          (value) => {
-            if (isActive()) setPosition(value);
-          },
-          reportError,
-        );
+        const created = await createAttachmentPreviewViewer(kind, host, (value) => {
+          if (isActive()) setPosition(value);
+        });
         if (!isActive()) {
           created.destroy();
           return;
         }
         current = created;
         viewer.current = created;
-        await created.load(source);
-        if (!isActive()) return;
-        await created.fitWidth();
+        await created.load(file, contentType);
         if (!isActive()) return;
         setStatus('ready');
-
-        // 仅按外框宽度重新适配，避免出现滚动条后重置用户缩放。
-        let width = host.getBoundingClientRect().width;
-        resize = new ResizeObserver(() => {
-          const nextWidth = host.getBoundingClientRect().width;
-          if (!isActive() || nextWidth === width) return;
-          width = nextWidth;
-          void Promise.resolve()
-            .then(() => created.fitWidth())
-            .catch(reportError);
-        });
-        resize.observe(host);
       } catch (error) {
         reportError(error);
       }
@@ -113,16 +81,15 @@ export function OfficePreview({
     // 关闭、切换附件或重新预览时销毁解析 Worker、画布和事件监听。
     return () => {
       controller.abort();
-      resize?.disconnect();
       current?.destroy();
       viewer.current = null;
       host.replaceChildren();
     };
-  }, [source, filename, kind, attempt]);
+  }, [file, contentType, kind, attempt]);
 
   async function operate(
     name: PreviewAction,
-    operation: (current: OfficePreviewViewer) => void | Promise<void>,
+    operation: (current: AttachmentPreviewViewer) => void | Promise<void>,
   ) {
     const current = viewer.current;
     if (!current || action) return;
@@ -159,6 +126,10 @@ export function OfficePreview({
               void operate('sheet', (current) => current.goTo(Number(value)));
             }}
           />
+        ) : kind === 'image' ? (
+          <span className="text-xs text-muted-foreground tabular-nums" aria-live="polite">
+            {Math.round((position.zoom ?? 1) * 100)}%
+          </span>
         ) : (
           <>
             <Button
@@ -199,7 +170,7 @@ export function OfficePreview({
             variant="outline"
             size="icon-sm"
             aria-label="缩小"
-            disabled={disabled}
+            disabled={disabled || (kind === 'image' && position.zoom === minimumImageZoom)}
             loading={action === 'zoomOut'}
             onClick={() => {
               void operate('zoomOut', (current) => current.zoomOut());
@@ -212,7 +183,7 @@ export function OfficePreview({
             variant="outline"
             size="icon-sm"
             aria-label="放大"
-            disabled={disabled}
+            disabled={disabled || (kind === 'image' && position.zoom === maximumImageZoom)}
             loading={action === 'zoomIn'}
             onClick={() => {
               void operate('zoomIn', (current) => current.zoomIn());
@@ -220,26 +191,64 @@ export function OfficePreview({
           >
             <ZoomIn aria-hidden="true" />
           </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={disabled}
-            loading={action === 'fitWidth'}
-            onClick={() => {
-              void operate('fitWidth', (current) => current.fitWidth());
-            }}
-          >
-            <Maximize2 aria-hidden="true" />
-            适应宽度
-          </Button>
+          {kind === 'image' || kind === 'pdf' ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              aria-label="顺时针旋转 90 度"
+              disabled={disabled}
+              loading={action === 'rotate'}
+              onClick={() => {
+                void operate('rotate', (current) => current.rotate());
+              }}
+            >
+              <RotateCw aria-hidden="true" />
+              旋转
+            </Button>
+          ) : null}
+          {kind !== 'xlsx' && position.canFitPage !== false ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={disabled}
+              loading={action === 'fitPage'}
+              onClick={() => {
+                void operate('fitPage', (current) => current.fitPage());
+              }}
+            >
+              {kind === 'image' ? (
+                <RotateCcw aria-hidden="true" />
+              ) : (
+                <Maximize2 aria-hidden="true" />
+              )}
+              {kind === 'image' ? '重置' : '适应整页'}
+            </Button>
+          ) : null}
+          {kind !== 'image' ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={disabled}
+              loading={action === 'fitWidth'}
+              onClick={() => {
+                void operate('fitWidth', (current) => current.fitWidth());
+              }}
+            >
+              <Maximize2 aria-hidden="true" />
+              适应宽度
+            </Button>
+          ) : null}
         </div>
       </div>
       <div className="relative min-h-0 flex-1">
         <div
           ref={container}
           role="region"
-          aria-label="文档预览内容"
+          aria-label="附件预览内容"
+          title={file.name}
           className={cn(
             'h-full w-full overflow-auto bg-background outline-none focus-visible:ring-2 focus-visible:ring-ring/30',
             status !== 'ready' && 'invisible',
@@ -262,7 +271,7 @@ export function OfficePreview({
                   onClick={() => {
                     setStatus('loading');
                     setAction(null);
-                    setPosition({ index: 0, total: 0 });
+                    setPosition(emptyPosition);
                     setAttempt((value) => value + 1);
                   }}
                 >

@@ -3,18 +3,18 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it, vi } from 'vitest';
 
 import { AttachmentFilename } from '@/components/attachment-filename';
+import { createAttachmentPreviewViewer } from '@/lib/attachment-preview';
 import { downloadFile } from '@/lib/download';
 import { previewContentType, readPreviewFile } from '@/lib/file-preview';
-import { createOfficePreviewViewer } from '@/lib/office-preview';
 
 vi.mock(import('@/lib/file-preview'), async (importOriginal) => ({
   ...(await importOriginal()),
   readPreviewFile: vi.fn(),
   previewContentType: vi.fn(),
 }));
-vi.mock(import('@/lib/office-preview'), async (importOriginal) => ({
+vi.mock(import('@/lib/attachment-preview'), async (importOriginal) => ({
   ...(await importOriginal()),
-  createOfficePreviewViewer: vi.fn(),
+  createAttachmentPreviewViewer: vi.fn(),
 }));
 vi.mock('@/lib/download', () => ({ downloadFile: vi.fn() }));
 
@@ -24,20 +24,22 @@ afterEach(() => {
   vi.mocked(readPreviewFile).mockReset();
   vi.mocked(previewContentType).mockReset();
   vi.mocked(downloadFile).mockReset();
-  vi.mocked(createOfficePreviewViewer).mockReset();
+  vi.mocked(createAttachmentPreviewViewer).mockReset();
 });
 
-function objectURLs() {
-  const create = vi.fn(() => 'blob:fixture-preview');
-  const revoke = vi.fn();
-  vi.stubGlobal(
-    'URL',
-    class extends URL {
-      static override createObjectURL = create;
-      static override revokeObjectURL = revoke;
-    },
-  );
-  return { create, revoke };
+function mockViewer() {
+  const viewer = {
+    load: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+    goTo: vi.fn(),
+    fitWidth: vi.fn(),
+    fitPage: vi.fn(),
+    rotate: vi.fn(),
+    zoomIn: vi.fn(),
+    zoomOut: vi.fn(),
+    destroy: vi.fn(),
+  };
+  vi.mocked(createAttachmentPreviewViewer).mockResolvedValue(viewer);
+  return viewer;
 }
 
 it('下载复用预览窗口已读取的文件，关闭释放资源，再次打开重新请求下载接口', async () => {
@@ -45,13 +47,15 @@ it('下载复用预览窗口已读取的文件，关闭释放资源，再次打�
   const file = new File(['fixture'], '原始材料.pdf', { type: 'application/pdf' });
   vi.mocked(readPreviewFile).mockResolvedValue(file);
   vi.mocked(previewContentType).mockResolvedValue('application/pdf');
-  const { revoke } = objectURLs();
+  const viewer = mockViewer();
   render(<AttachmentFilename filename="材料.pdf" downloadURL="/attachments/7/download" />);
   expect(screen.queryByRole('button', { name: /预览/u })).not.toBeInTheDocument();
   expect(screen.queryByRole('link')).not.toBeInTheDocument();
   await user.click(screen.getByRole('button', { name: '材料.pdf' }));
   const frame = await screen.findByTitle('原始材料.pdf');
-  expect(frame).toHaveAttribute('src', 'blob:fixture-preview');
+  await waitFor(() => {
+    expect(viewer.load).toHaveBeenCalledWith(file, 'application/pdf');
+  });
   expect(frame.closest('.drawer-panel')).toHaveClass('w-full', 'max-w-none');
   const dialog = within(screen.getByRole('dialog', { name: '文件预览' }));
   const download = dialog.getByRole('button', { name: '下载' });
@@ -65,7 +69,7 @@ it('下载复用预览窗口已读取的文件，关闭释放资源，再次打�
   const signal = vi.mocked(readPreviewFile).mock.calls[0]?.[1];
   await user.click(close);
   await waitFor(() => {
-    expect(revoke).toHaveBeenCalledWith('blob:fixture-preview');
+    expect(viewer.destroy).toHaveBeenCalledOnce();
   });
   expect(signal?.aborted).toBe(true);
 
@@ -117,33 +121,27 @@ it('Office 文档复用已读取文件，预览失败和重试后仍可下载同
   vi.mocked(previewContentType).mockResolvedValue(
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   );
-  const viewer = {
-    load: vi.fn().mockRejectedValue({ code: 'unsupported-content' }),
-    goTo: vi.fn(),
-    fitWidth: vi.fn(),
-    zoomIn: vi.fn(),
-    zoomOut: vi.fn(),
-    destroy: vi.fn(),
-  };
-  vi.mocked(createOfficePreviewViewer).mockResolvedValue(viewer);
-  const { revoke } = objectURLs();
+  const viewer = mockViewer();
+  viewer.load.mockRejectedValue(new Error('renderer failure'));
   render(<AttachmentFilename filename="材料.docx" downloadURL="/attachments/10/download" />);
   await user.click(screen.getByRole('button', { name: '材料.docx' }));
   expect(await screen.findByText('无法显示预览，可下载原文件查看')).toBeVisible();
-  expect(createOfficePreviewViewer).toHaveBeenCalledWith(
+  expect(createAttachmentPreviewViewer).toHaveBeenCalledWith(
     'docx',
-    expect.any(HTMLCanvasElement),
-    expect.any(Function),
+    expect.any(HTMLDivElement),
     expect.any(Function),
   );
   await user.click(screen.getByRole('button', { name: '重新预览' }));
   await waitFor(() => {
     expect(viewer.load).toHaveBeenCalledTimes(2);
   });
-  expect(viewer.load).toHaveBeenLastCalledWith('blob:fixture-preview');
+  expect(viewer.load).toHaveBeenLastCalledWith(
+    file,
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  );
   await user.click(screen.getByRole('button', { name: '下载' }));
   expect(downloadFile).toHaveBeenCalledWith(file.name, file);
   expect(readPreviewFile).toHaveBeenCalledOnce();
   await user.click(screen.getByRole('button', { name: '关闭' }));
-  expect(revoke).toHaveBeenCalledWith('blob:fixture-preview');
+  expect(viewer.destroy).toHaveBeenCalledTimes(2);
 });
