@@ -79,7 +79,7 @@ Docker 工作流在推送 Git tag 时构建并发布 `linux/amd64` 后端镜像�
 API_BASE_URL=https://api.example.com CONTACT_EMAIL=privacy@example.com mise exec -- pnpm --dir src/web build
 ```
 
-构建会将 `passwordLoginEnabled` 设为 `false`，按最终配置生成 `config.<hash>.js` 并更新 HTML 引用。部署时先上传配置及其他静态资源，再更新 HTML，并保留旧哈希资源供缓存页面使用。
+生产构建将 `passwordLoginEnabled` 设为 `false`，去掉配置注释，按最终内容生成 `config.<hash>.js` 并更新 HTML 引用。部署时先上传配置及其他静态资源，再更新 HTML，并保留旧哈希资源供缓存页面使用。
 
 附件预览资源按整组内容生成 `extra-assets/file-viewer/<hash>/` 目录，目录地址随配置发布。
 增量发布时，复用源站已有的同名目录，上传新目录后再更新 HTML。保留旧目录供仍在使用旧页面的用户访问。
@@ -225,7 +225,9 @@ mise exec -- make cdn-urls CDN_ORIGIN=https://workspace.example.com > "$cdn_mani
 
 `CDN_ORIGIN` 是前端协议及域名，`CDN_WEB_DIST` 默认 `src/web/dist`。清单逐行包含固定页面、重定向和本次构建的静态资源 URL，可提交 CDN 刷新。
 
-页面 HTML 的缓存键忽略查询参数，兼容入口 `/login/email` 回源到 `index.html` 并禁止 HTML 缓存，立即替换历史项返回验证码登录页，访问日志不保存旧链接中的原始登录码。页面 GET 响应提供与当前 `index.html` 一致的 ETag，前端通过 `pageUpdateCheckIntervalMs` 和 `pageUpdateCheckTimeoutMs` 检查版本，发现变化后提示刷新。发布图标时一并上传 `apple-touch-icon.png`、Manifest 图标及 `site.webmanifest`。
+页面 HTML 的缓存键忽略查询参数，兼容入口 `/login/email` 回源到 `index.html` 并禁止 HTML 缓存，立即替换历史项返回验证码登录页，访问日志不保存旧链接中的原始登录码。页面 GET 响应提供与当前 `index.html` 一致的 ETag，前端检测到变化后提示刷新。发布图标时一并上传 `apple-touch-icon.png`、Manifest 图标及 `site.webmanifest`。
+
+前端 `config.js` 的 `pageUpdateCheckIntervalMs` 和 `notificationPollIntervalMs` 分别配置版本检测和通知刷新的随机间隔。两项均使用毫秒为单位的 `min` 和 `max`，默认每轮在 50 至 100 秒之间重新取值。版本检测单次请求超时由 `pageUpdateCheckTimeoutMs` 配置，默认 15 秒。
 
 ### API 与探针
 

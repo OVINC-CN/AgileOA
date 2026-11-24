@@ -160,6 +160,10 @@ API 侧先在业务事务中保存任务所需状态和操作审计，由 app �
 按钮 loading 和请求后缓存刷新通过
 [useApiAction/useApiMutation](src/web/src/lib/api-action.ts) 连接。
 
+[版本检测](src/web/src/components/page-update-detector.tsx)与
+[通知中心](src/web/src/features/notification/notification-center.tsx)共用
+[随机间隔取样](src/web/src/lib/polling.ts)。通知抽屉关闭时轮询未读数量，打开时轮询当前列表并同步角标。
+
 ### 公共组件
 
 | 内容 | 入口 |
@@ -315,7 +319,7 @@ Vite 将 Flyfish 运行资源、资源清单及许可文件作为一组发布到
 后端字段从 [internal/config](src/api/internal/config/) 的定义、解析和校验进入，
 同步更新 [config.yaml](src/api/config.yaml)。前端连接
 [lib/config.ts](src/web/src/lib/config.ts) 与 [public/config.js](src/web/public/config.js)。
-[vite.config.ts](src/web/vite.config.ts) 读取构建环境变量并更新配置文件名和 HTML 引用。
+[vite.config.ts](src/web/vite.config.ts) 应用构建环境变量，移除产物注释，并按实际发布内容更新配置文件名和 HTML 引用。
 前端与构建共用 [部署字段校验](src/web/src/lib/deployment-config.ts)，环境变量及默认值见 [运行配置](README.md#运行配置)。
 
 涉及分页、文件、表单或选项上限时，核对前后端对应参数。

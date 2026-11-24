@@ -22,6 +22,7 @@ async function advanceTime(milliseconds: number) {
 
 beforeEach(() => {
   vi.useFakeTimers();
+  vi.spyOn(Math, 'random').mockReturnValue(0.2);
 });
 
 afterEach(() => {
@@ -32,7 +33,8 @@ afterEach(() => {
 });
 
 describe('页面更新检测', () => {
-  it('进入时建立基准，每分钟请求当前地址，跨页面变化后只显示一次常驻提示', async () => {
+  it('进入时建立基准，每轮重新抽取检测间隔，跨页面变化后只显示一次常驻提示', async () => {
+    const random = vi.mocked(Math.random).mockReturnValue(0);
     const fetchMock = vi
       .fn<typeof fetch>()
       .mockResolvedValueOnce(pageResponse('"initial"'))
@@ -48,14 +50,17 @@ describe('页面更新检测', () => {
     );
     expect(fetchMock.mock.calls[0]?.[1]?.signal).toBeInstanceOf(AbortSignal);
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-    await advanceTime(59999);
+    await advanceTime(49999);
     expect(fetchMock).toHaveBeenCalledOnce();
 
+    random.mockReturnValue(0.999999);
     window.history.replaceState(null, '', '/cpc/roster?workspace=another');
     await advanceTime(1);
     expect(fetchMock).toHaveBeenLastCalledWith(window.location.href, expect.any(Object));
+    await advanceTime(99999);
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-    await advanceTime(60000);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    await advanceTime(1);
     expect(screen.getByRole('alert')).toHaveTextContent('发现新版本');
     expect(screen.getByRole('button', { name: '一键刷新' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '关闭消息' })).not.toBeInTheDocument();

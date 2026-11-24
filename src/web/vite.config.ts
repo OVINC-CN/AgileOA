@@ -17,7 +17,7 @@ import { fileURLToPath, URL } from 'node:url';
 import { fileViewerRenderers } from '@file-viewer/vite-plugin';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
-import type { Plugin, UserConfig } from 'vite';
+import { minifySync, type Plugin, type UserConfig } from 'vite';
 import { defineConfig } from 'vitest/config';
 
 import {
@@ -139,8 +139,18 @@ function buildRuntimeConfig(): Plugin {
           );
         }
 
-        // 按最终配置内容生成文件名，并同步更新 HTML 中的独立脚本引用。
-        const configHash = createHash('sha256').update(productionConfig).digest('hex').slice(0, 12);
+        // 去除发布配置中的注释，保留字段名和可读格式。
+        const { code, errors } = minifySync(configPath, productionConfig, {
+          compress: false,
+          mangle: false,
+          codegen: { removeWhitespace: false, legalComments: 'none' },
+        });
+        if (errors.length > 0) {
+          this.error('生产配置脚本语法无效');
+        }
+
+        // 按发布配置的实际内容生成文件名，并更新 HTML 中的独立脚本引用。
+        const configHash = createHash('sha256').update(code).digest('hex').slice(0, 12);
         const configFilename = `config.${configHash}.js`;
         const htmlPath = resolve(outputDirectory, 'index.html');
         const html = await readFile(htmlPath, 'utf8');
@@ -150,7 +160,7 @@ function buildRuntimeConfig(): Plugin {
         }
 
         // 先写入配置再更新页面，移除不再使用的无哈希产物。
-        await writeFile(resolve(outputDirectory, configFilename), productionConfig);
+        await writeFile(resolve(outputDirectory, configFilename), code);
         await writeFile(htmlPath, html.replace(configReference, `src="/${configFilename}"`));
         await rm(configPath);
       },

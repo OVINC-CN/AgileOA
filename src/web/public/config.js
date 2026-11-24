@@ -20,15 +20,15 @@ globalThis.AGILE_WORKSPACE_CONFIG = {
   apiTimeoutMs: 15000,
   // 顶部异常消息自动关闭前的显示时长，单位为毫秒。
   messageDurationMs: 5000,
-  // 页面更新检测的请求间隔和单次请求时限，单位为毫秒。
-  pageUpdateCheckIntervalMs: 60000,
+  // 页面更新检测的随机间隔范围和单次请求时限，单位为毫秒。
+  pageUpdateCheckIntervalMs: { min: 50000, max: 100000 },
   pageUpdateCheckTimeoutMs: 15000,
   // 查询结果在缓存中保持新鲜的时长，单位为毫秒。
   queryStaleTimeMs: 30000,
   // 查询失败后的额外重试次数，填 0 则不重试。
   queryRetryCount: 1,
-  // 已登录账号的通知刷新间隔，单位为毫秒。
-  notificationPollIntervalMs: 60000,
+  // 已登录账号的通知刷新随机间隔范围，单位为毫秒。
+  notificationPollIntervalMs: { min: 50000, max: 100000 },
 
   // 所有附件、头像及导入入口的单文件上限，与 YAML 的 cos.max_upload_bytes 一致。
   fileMaxUploadBytes: 5242880,

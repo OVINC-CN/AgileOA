@@ -12,7 +12,6 @@ import { notificationKey, notificationUnreadKey } from '@/features/notification/
 import { isNotificationURL } from '@/features/notification/navigation';
 import { NotificationCenter } from '@/features/notification/notification-center';
 import { projectKey } from '@/features/project/api';
-import { getConfig } from '@/lib/config';
 
 interface Notice {
   id: number;
@@ -433,24 +432,42 @@ describe('个人通知', () => {
     expect(posts[0]?.[1].body).toBe(JSON.stringify({ ids: [7, 6, 5, 4, 3] }));
   });
 
-  it('按配置自动轮询未读数量，无需刷新页面即可出现新通知角标', async () => {
+  it('未读数量每轮重新抽取轮询间隔，并更新通知角标', async () => {
     vi.useFakeTimers();
-    const { add, client } = setup([]);
+    const random = vi.spyOn(Math, 'random').mockReturnValue(0);
+    const { add, client, fetchMock } = setup([]);
     await vi.waitFor(() => {
       expect(client.getQueryData(notificationUnreadKey(1))).toEqual({ unread_count: 0 });
     });
     add(notice(2));
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(getConfig().notificationPollIntervalMs);
+      await vi.advanceTimersByTimeAsync(49000);
+    });
+    expect(fetchMock).toHaveBeenCalledOnce();
+    random.mockReturnValue(0.999999);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
     });
     await vi.waitFor(() => {
       expect(screen.getByRole('button', { name: '通知（1 条未读）' })).toBeVisible();
+    });
+    add(notice(3));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(99000);
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+    await vi.waitFor(() => {
+      expect(screen.getByRole('button', { name: '通知（2 条未读）' })).toBeVisible();
     });
   });
 
   it('抽屉打开时自动查询新通知并展示正文，保留已有消息', async () => {
     vi.useFakeTimers();
-    const { add } = setup();
+    vi.spyOn(Math, 'random').mockReturnValue(0.999999);
+    const { add, fetchMock } = setup();
     await vi.waitFor(() => {
       expect(screen.getByRole('button', { name: '通知（1 条未读）' })).toBeVisible();
     });
@@ -462,13 +479,20 @@ describe('个人通知', () => {
     const drawer = screen.getByRole('dialog', { name: '通知' });
     add(notice(2));
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(getConfig().notificationPollIntervalMs);
+      await vi.advanceTimersByTimeAsync(99000);
+    });
+    expect(within(drawer).queryByText(notice(2).content)).not.toBeInTheDocument();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
     });
     await vi.waitFor(() => {
       expect(within(drawer).getByText(notice(2).content)).toBeVisible();
       expect(within(drawer).getByText(notice(1).content)).toBeVisible();
       expect(within(drawer).getByText('共 2 条未读通知')).toBeVisible();
     });
+    expect(
+      fetchMock.mock.calls.filter(([url]) => url.endsWith('/notifications/unread')),
+    ).toHaveLength(1);
   });
 
   it('账号切换时关闭旧抽屉，查询缓存按账号隔离', async () => {
