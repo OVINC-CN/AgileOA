@@ -34,6 +34,8 @@ globalThis.AGILE_WORKSPACE_CONFIG = {
   fileMaxUploadBytes: 5242880,
   // 附件预览解析时限，单位为毫秒。
   filePreviewTimeoutMs: 60000,
+  // 附件预览资源目录，生产构建自动写入内容哈希。
+  fileViewerAssetsPath: 'extra-assets/file-viewer',
   // 审计 JSON 差异计算的单次时限，单位为毫秒。
   auditDiffTimeoutMs: 2000,
   // 附件允许的 MIME 类型，支持 image/* 通配符；与 cos.allowed_content_types 一致。

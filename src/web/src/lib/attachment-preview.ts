@@ -1,7 +1,6 @@
 import type { FileViewerOptions } from '@file-viewer/core';
 
 import { getConfig } from '@/lib/config';
-import { extraAssetsDirectory } from '@/lib/deployment-config';
 import { attachmentPreviewExtension, type AttachmentPreviewKind } from '@/lib/file-preview';
 
 export interface AttachmentPreviewPosition {
@@ -103,8 +102,8 @@ export async function createAttachmentPreviewViewer(
 ): Promise<AttachmentPreviewViewer> {
   const [{ createViewer, setDefaultFileViewerAssetBaseUrl }, { default: renderer }] =
     await Promise.all([import('@file-viewer/core'), rendererImports[kind]()]);
-  setDefaultFileViewerAssetBaseUrl(`${import.meta.env.BASE_URL}${extraAssetsDirectory}/`);
-  const timeout = getConfig().filePreviewTimeoutMs;
+  const { fileViewerAssetsPath, filePreviewTimeoutMs: timeout } = getConfig();
+  setDefaultFileViewerAssetBaseUrl(`${import.meta.env.BASE_URL}${fileViewerAssetsPath}/`);
   const controller = new AbortController();
   // 工作表自动适配时只在列宽超出视口时缩小，窄表保持原始比例。
   const fitMode = kind === 'image' ? 'scale-down' : kind === 'xlsx' ? 'auto' : 'contain';
