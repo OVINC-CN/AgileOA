@@ -11,7 +11,7 @@ import react from '@vitejs/plugin-react';
 import type { UserConfig } from 'vite';
 import { defineConfig } from 'vitest/config';
 
-import { deploymentFields } from './src/lib/deployment-config.ts';
+import { deploymentFields, extraAssetsDirectory } from './src/lib/deployment-config.ts';
 
 const productionPasswordLoginEnabled = false;
 
@@ -120,7 +120,10 @@ export default defineConfig(({ command, mode }): UserConfig => {
         renderers: ['word', 'spreadsheet', 'presentation', 'pdf', 'image'],
         inject: false,
         chunkStrategy: 'none',
-        copyAssets: previewAssets ? { publicDir: previewAssets } : true,
+        copyAssets: {
+          baseDir: extraAssetsDirectory,
+          ...(previewAssets ? { publicDir: previewAssets } : {}),
+        },
       }),
       {
         name: 'publish-preview-licenses',
@@ -136,7 +139,7 @@ export default defineConfig(({ command, mode }): UserConfig => {
             const entry = import.meta.resolve(`@file-viewer/${name}`);
             this.emitFile({
               type: 'asset',
-              fileName: `licenses/file-viewer/${name}/${notice}`,
+              fileName: `${extraAssetsDirectory}/licenses/file-viewer/${name}/${notice}`,
               source: await readFile(new URL(`../${notice}`, entry)),
             });
           }

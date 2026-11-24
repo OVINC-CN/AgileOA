@@ -241,7 +241,9 @@ COS 和 STS 协议位于 [tencentcos](src/api/internal/apis/tencentcos/)。
 [attachment-preview.ts](src/web/src/lib/attachment-preview.ts) 按需加载 Flyfish 渲染器。
 每次打开预览时调用下载接口完成鉴权和审计，再按 CDN 响应缓存头读取正文。
 预览与下载使用同一个 File。分页 Word、PowerPoint 和 PDF 默认适应整页，连续排版的旧版 Word 适应宽度。Excel 按视口宽度适度缩小，上限为原始比例。图片按视口缩放。
-Vite 按启用的渲染器发布本地资源。修改解析器时检查各格式的实际渲染、分页及工作表切换，
+Vite 将 Flyfish 运行资源发布到 `dist/extra-assets/vendor`，资源清单位于 `dist/extra-assets`。
+项目汇集的预览许可文件输出到 `dist/extra-assets/licenses/file-viewer`。
+修改解析器时检查各格式的实际渲染、分页及工作表切换，
 并检查构建产物中的 Worker、WASM、字体及第三方许可，验证超时、请求中止和资源释放。
 
 ## 业务修改入口

@@ -1,6 +1,7 @@
 import type { FileViewerOptions } from '@file-viewer/core';
 
 import { getConfig } from '@/lib/config';
+import { extraAssetsDirectory } from '@/lib/deployment-config';
 import { attachmentPreviewExtension, type AttachmentPreviewKind } from '@/lib/file-preview';
 
 export interface AttachmentPreviewPosition {
@@ -100,10 +101,9 @@ export async function createAttachmentPreviewViewer(
   host: HTMLDivElement,
   onPosition: (position: AttachmentPreviewPosition) => void,
 ): Promise<AttachmentPreviewViewer> {
-  const [{ createViewer }, { default: renderer }] = await Promise.all([
-    import('@file-viewer/core'),
-    rendererImports[kind](),
-  ]);
+  const [{ createViewer, setDefaultFileViewerAssetBaseUrl }, { default: renderer }] =
+    await Promise.all([import('@file-viewer/core'), rendererImports[kind]()]);
+  setDefaultFileViewerAssetBaseUrl(`${import.meta.env.BASE_URL}${extraAssetsDirectory}/`);
   const timeout = getConfig().filePreviewTimeoutMs;
   const controller = new AbortController();
   // 工作表自动适配时只在列宽超出视口时缩小，窄表保持原始比例。
