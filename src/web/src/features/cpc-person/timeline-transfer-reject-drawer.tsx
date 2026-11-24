@@ -1,8 +1,8 @@
 import { X } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
-import { Drawer } from '@/components/ui/drawer';
+import { Drawer, type DrawerHandle } from '@/components/ui/drawer';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { rejectTimelineTransfer } from '@/features/cpc-person/timeline-transfer-api';
@@ -26,10 +26,12 @@ export function TimelineTransferRejectDrawer({
   onClose: () => void;
 }) {
   const [reason, setReason] = useState('');
+  const drawer = useRef<DrawerHandle>(null);
   const reject = useApiAction();
 
   return (
     <Drawer
+      ref={drawer}
       title="驳回时间线转移"
       description={personLabel}
       truncateDescription
@@ -49,15 +51,11 @@ export function TimelineTransferRejectDrawer({
             }
             await rejectTimelineTransfer(workspaceID, personID, revision, value);
             await invalidate();
-            onClose();
+            drawer.current?.close();
           });
         },
       }}
-      footerDismiss={
-        <Button type="button" variant="cancel" disabled={reject.pending} onClick={onClose}>
-          取消
-        </Button>
-      }
+      dismissLabel="取消"
       footer={
         <Button type="submit" loading={reject.pending}>
           <X aria-hidden="true" />

@@ -1,12 +1,12 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { Plus, Save } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { z } from 'zod';
 
 import { ErrorMessage } from '@/components/error-message';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Drawer } from '@/components/ui/drawer';
+import { Drawer, type DrawerHandle } from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -35,6 +35,7 @@ export function WorkspaceEditor({
     description: workspace?.description ?? '',
     is_enabled: workspace?.is_enabled ?? true,
   });
+  const drawer = useRef<DrawerHandle>(null);
   const mutation = useApiMutation({
     mutationFn: async (input: z.infer<typeof schema>) => {
       const result = await (workspace
@@ -48,22 +49,21 @@ export function WorkspaceEditor({
       return result;
     },
     onSuccess: (result) => {
-      onSaved(`已${workspace ? '更新' : '创建'}工作空间 ${result.name}`);
+      drawer.current?.close(() => {
+        onSaved(`已${workspace ? '更新' : '创建'}工作空间 ${result.name}`);
+      });
     },
   });
   return (
     <Drawer
+      ref={drawer}
       title={workspace ? '编辑工作空间' : '创建工作空间'}
       busy={mutation.isPending}
       description={workspace ? workspace.name : '创建后在权限管理中为用户勾选操作权限。'}
       onClose={() => {
         if (!mutation.isPending) onClose();
       }}
-      footerDismiss={
-        <Button type="button" variant="cancel" disabled={mutation.isPending} onClick={onClose}>
-          取消
-        </Button>
-      }
+      dismissLabel="取消"
       footer={
         <Button type="submit" loading={mutation.isPending}>
           {workspace ? <Save aria-hidden="true" /> : <Plus aria-hidden="true" />}

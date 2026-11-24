@@ -1,6 +1,6 @@
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, Plus, Search, Unplug, X } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { ErrorMessage } from '@/components/error-message';
 import { FilterField, FilterPanel } from '@/components/filter-panel';
@@ -10,7 +10,7 @@ import { RefreshButton } from '@/components/refresh-button';
 import { SearchResetButton } from '@/components/search-reset-button';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Drawer } from '@/components/ui/drawer';
+import { Drawer, type DrawerHandle } from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
 import { SearchSelect } from '@/components/ui/search-select';
 import {
@@ -43,6 +43,7 @@ function RevokeUserSessions({
   onDone: (message: string) => void;
 }) {
   const client = useQueryClient();
+  const drawer = useRef<DrawerHandle>(null);
   const mutation = useApiMutation({
     mutationFn: async () => {
       await revokeSessions(user.id);
@@ -52,11 +53,14 @@ function RevokeUserSessions({
       ]);
     },
     onSuccess: () => {
-      onDone(`已撤销 ${user.username} 的会话`);
+      drawer.current?.close(() => {
+        onDone(`已撤销 ${user.username} 的会话`);
+      });
     },
   });
   return (
     <Drawer
+      ref={drawer}
       title="撤销用户会话"
       busy={mutation.isPending}
       truncateDescription
@@ -66,11 +70,7 @@ function RevokeUserSessions({
           onClose();
         }
       }}
-      footerDismiss={
-        <Button variant="cancel" disabled={mutation.isPending} onClick={onClose}>
-          取消
-        </Button>
-      }
+      dismissLabel="取消"
       footer={
         <Button
           loading={mutation.isPending}

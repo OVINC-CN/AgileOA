@@ -1,10 +1,10 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Save } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { ErrorMessage } from '@/components/error-message';
 import { Button } from '@/components/ui/button';
-import { Drawer } from '@/components/ui/drawer';
+import { Drawer, type DrawerHandle } from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SearchSelect } from '@/components/ui/search-select';
@@ -66,16 +66,20 @@ export function BranchEditor({
       label: `${formatIdentity(original.secretary_name, original.secretary_username)}（原管理员）`,
     });
   }
+  const drawer = useRef<DrawerHandle>(null);
   const mutation = useApiMutation({
     mutationFn: async () => {
       await savePartyBranch(workspaceID, original, values, admissionRule ? { rule } : undefined);
       await client.invalidateQueries({ queryKey: partyBranchKey(workspaceID) });
       await client.invalidateQueries({ queryKey: personKey(workspaceID) });
     },
-    onSuccess: onClose,
+    onSuccess: () => {
+      drawer.current?.close();
+    },
   });
   return (
     <Drawer
+      ref={drawer}
       title={original ? '编辑党支部' : '新增党支部'}
       description="简称、全称必填，分别在当前空间内唯一；管理员可选"
       busy={mutation.isPending}
@@ -86,11 +90,7 @@ export function BranchEditor({
           mutation.mutate();
         },
       }}
-      footerDismiss={
-        <Button type="button" variant="cancel" disabled={mutation.isPending} onClick={onClose}>
-          取消
-        </Button>
-      }
+      dismissLabel="取消"
       footer={
         <Button type="submit" loading={mutation.isPending}>
           <Save aria-hidden="true" />

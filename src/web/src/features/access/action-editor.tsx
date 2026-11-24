@@ -205,11 +205,7 @@ function ActionForm({
           mutation.mutate();
         },
       }}
-      footerDismiss={
-        <Button type="button" variant="cancel" disabled={mutation.isPending} onClick={onClose}>
-          取消
-        </Button>
-      }
+      dismissLabel="取消"
       footer={
         <>
           <div className="mr-auto flex flex-wrap items-center gap-3">

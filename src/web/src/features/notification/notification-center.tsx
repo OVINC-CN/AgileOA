@@ -1,12 +1,12 @@
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowUpRight, Bell, Check, CheckCheck } from 'lucide-react';
-import { type MouseEvent, useEffect, useMemo, useState } from 'react';
+import { type MouseEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 
 import { ManagementPagination } from '@/components/management-pagination';
 import { RefreshButton } from '@/components/refresh-button';
 import { Button } from '@/components/ui/button';
-import { Drawer } from '@/components/ui/drawer';
+import { Drawer, type DrawerHandle } from '@/components/ui/drawer';
 import { LoadingIcon } from '@/components/ui/loading-icon';
 import {
   NavigationButtonGroup,
@@ -152,6 +152,7 @@ function NotificationDrawer({
     if (size !== pagination.pageSize) pagination.setPageSize(size);
     else pagination.setPage(page);
   };
+  const drawer = useRef<DrawerHandle>(null);
   const viewDetails = async (
     event: MouseEvent<HTMLAnchorElement>,
     notification: NotificationInfo,
@@ -174,14 +175,17 @@ function NotificationDrawer({
       if (!result.ok) return;
     }
 
-    // 同步关闭通知并跳转，避免目标抽屉被页面过渡快照覆盖。
+    // 通知退出后再打开目标，避免两个抽屉同时过渡。
     if (openHere) {
-      onClose();
-      void navigate(notification.url, { flushSync: true });
+      drawer.current?.close(() => {
+        onClose();
+        void navigate(notification.url, { flushSync: true });
+      });
     }
   };
   return (
     <Drawer
+      ref={drawer}
       title="通知"
       description={`共 ${formatNumber(data?.unread_count ?? 0)} 条未读通知`}
       busy={mark.pending}

@@ -68,17 +68,6 @@ export function LoginAgreements({ checked, onCheckedChange, disabled = false }: 
           onClose={() => {
             setOpened(null);
           }}
-          footerDismiss={
-            <Button
-              type="button"
-              variant="cancel"
-              onClick={() => {
-                setOpened(null);
-              }}
-            >
-              关闭
-            </Button>
-          }
         >
           <article className="space-y-6 p-6 text-sm leading-7 wrap-anywhere">
             <p>{content.introduction}</p>

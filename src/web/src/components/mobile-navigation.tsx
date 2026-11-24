@@ -3,7 +3,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { Link } from 'react-router';
 
 import { Button } from '@/components/ui/button';
-import { Drawer } from '@/components/ui/drawer';
+import { Drawer, type DrawerHandle } from '@/components/ui/drawer';
 import { cn } from '@/lib/utils';
 
 export interface MobileNavigationItem {
@@ -27,6 +27,7 @@ export function MobileNavigation({
   const [open, setOpen] = useState(false);
   const navigationID = useId();
   const trigger = useRef<HTMLButtonElement>(null);
+  const drawer = useRef<DrawerHandle>(null);
 
   useEffect(() => {
     // 与 lg 断点保持一致，放大到桌面后释放全屏菜单和滚动锁。
@@ -64,6 +65,7 @@ export function MobileNavigation({
       </Button>
       {open ? (
         <Drawer
+          ref={drawer}
           title="导航菜单"
           description={workspaceName}
           closeLabel="关闭导航菜单"
@@ -82,7 +84,7 @@ export function MobileNavigation({
               items={items}
               depth={0}
               onNavigate={() => {
-                setOpen(false);
+                drawer.current?.close();
               }}
             />
           </nav>

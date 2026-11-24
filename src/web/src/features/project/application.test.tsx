@@ -584,7 +584,7 @@ it('我的申报和我的审核通过各自首列打开详情，新建申报使�
   expect(request.mock.calls.some(([path]) => path === mineDetail)).toBe(true);
   await user.click(mine.getByRole('button', { name: '关闭抽屉' }));
 
-  await user.click(screen.getByRole('link', { name: '我的审核' }));
+  await user.click(await screen.findByRole('link', { name: '我的审核' }));
   expect(screen.queryByRole('button', { name: '新建申报' })).not.toBeInTheDocument();
   expect(screen.getByRole('navigation', { name: '面包屑' })).toHaveTextContent(
     '学生服务/评奖评优/我的审核',

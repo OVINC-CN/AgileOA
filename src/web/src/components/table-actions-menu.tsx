@@ -112,7 +112,7 @@ export function TableActionsMenu({
                   key={String(confirming)}
                   className={
                     confirming
-                      ? 'motion-safe:animate-in motion-safe:duration-(--motion-delete-confirmation-duration) motion-safe:fade-in'
+                      ? 'motion-safe:animate-in motion-safe:duration-(--motion-delete-confirmation-duration) motion-safe:ease-standard motion-safe:fade-in'
                       : undefined
                   }
                 >

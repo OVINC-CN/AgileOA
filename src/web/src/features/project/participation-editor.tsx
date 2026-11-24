@@ -1,11 +1,11 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowDown, ArrowUp, Plus, RefreshCw, Save, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { ErrorMessage } from '@/components/error-message';
 import { SearchResetButton } from '@/components/search-reset-button';
 import { Button } from '@/components/ui/button';
-import { Drawer } from '@/components/ui/drawer';
+import { Drawer, type DrawerHandle } from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SearchSelect } from '@/components/ui/search-select';
@@ -45,6 +45,7 @@ export function ParticipationEditor({
     (record?.details ?? []).map((value) => ({ key: crypto.randomUUID(), ...value })),
   );
   const client = useQueryClient();
+  const drawer = useRef<DrawerHandle>(null);
   const mutation = useApiMutation({
     mutationFn: async () => {
       if (!values.project_id || !values.student_id) throw new Error('请选择项目和学生');
@@ -57,7 +58,9 @@ export function ParticipationEditor({
       await client.invalidateQueries({ queryKey: projectKey(workspaceID) });
       return result;
     },
-    onSuccess: onClose,
+    onSuccess: () => {
+      drawer.current?.close();
+    },
   });
   const changeItem = (key: string, patch: Partial<ScoreItem>) => {
     setItems((current) => current.map((item) => (item.key === key ? { ...item, ...patch } : item)));
@@ -72,6 +75,7 @@ export function ParticipationEditor({
   };
   return (
     <Drawer
+      ref={drawer}
       title={record ? '编辑参与评分' : '绑定学生项目'}
       truncateDescription={!!record}
       description={
@@ -81,11 +85,7 @@ export function ParticipationEditor({
       }
       busy={mutation.isPending}
       onClose={onClose}
-      footerDismiss={
-        <Button type="button" variant="cancel" disabled={mutation.isPending} onClick={onClose}>
-          取消
-        </Button>
-      }
+      dismissLabel="取消"
       footer={
         <Button type="submit" loading={mutation.isPending}>
           <Save aria-hidden="true" />

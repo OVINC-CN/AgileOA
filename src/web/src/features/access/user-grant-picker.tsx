@@ -88,11 +88,7 @@ export function UserGrantPicker({
       description={workspaceName}
       busy={selection.pending}
       onClose={onClose}
-      footerDismiss={
-        <Button variant="cancel" disabled={selection.pending} onClick={onClose}>
-          取消
-        </Button>
-      }
+      dismissLabel="取消"
     >
       <div className="space-y-4 p-5">
         <p className="text-sm text-muted-foreground">选择尚未授权的用户，再配置操作权限。</p>

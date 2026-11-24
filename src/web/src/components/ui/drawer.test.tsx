@@ -1,5 +1,6 @@
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { RefreshCw, Save } from 'lucide-react';
+import { useState } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
 
 import { Button } from '@/components/ui/button';
@@ -9,7 +10,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-it('右上角显示无边框关闭图标，底部默认显示关闭文字，忙碌时均禁用', () => {
+it('右上角显示无边框关闭图标，底部默认显示关闭文字，忙碌时均禁用', async () => {
   const onClose = vi.fn();
   const view = render(
     <Drawer title="详情" onClose={onClose} busy>
@@ -35,9 +36,68 @@ it('右上角显示无边框关闭图标，底部默认显示关闭文字，忙�
     </Drawer>,
   );
   fireEvent.click(close);
-  expect(onClose).toHaveBeenCalledOnce();
+  await waitFor(() => {
+    expect(onClose).toHaveBeenCalledOnce();
+  });
   fireEvent.click(headerClose);
-  expect(onClose).toHaveBeenCalledTimes(2);
+  await waitFor(() => {
+    expect(onClose).toHaveBeenCalledTimes(2);
+  });
+});
+
+it('关闭时禁用面板交互，并等面板和遮罩过渡结束后退出', async () => {
+  const onClose = vi.fn();
+  let finishPanel: (() => void) | undefined;
+  let finishOverlay: (() => void) | undefined;
+  const panelFinished = new Promise<void>((resolve) => {
+    finishPanel = resolve;
+  });
+  const overlayFinished = new Promise<void>((resolve) => {
+    finishOverlay = resolve;
+  });
+  function Example() {
+    const [open, setOpen] = useState(true);
+    return open ? (
+      <Drawer
+        title="编辑记录"
+        dismissLabel="取消"
+        onClose={() => {
+          onClose();
+          setOpen(false);
+        }}
+      >
+        正文
+      </Drawer>
+    ) : null;
+  }
+  render(<Example />);
+  const dialog = screen.getByRole('dialog', { name: '编辑记录' });
+  const panel = dialog.querySelector('.drawer-panel');
+  const overlay = dialog.previousElementSibling;
+  if (!panel || !overlay) throw new Error('缺少抽屉面板或遮罩');
+  Object.defineProperty(panel, 'getAnimations', {
+    value: () => [{ finished: panelFinished }],
+  });
+  Object.defineProperty(overlay, 'getAnimations', {
+    value: () => [{ finished: overlayFinished }],
+  });
+
+  fireEvent.click(within(dialog).getByRole('button', { name: '取消' }));
+  expect(dialog).toHaveAttribute('data-closing', 'true');
+  expect(overlay).toHaveAttribute('data-closing', 'true');
+  expect(panel).toHaveAttribute('inert');
+  expect(onClose).not.toHaveBeenCalled();
+  await act(() => {
+    finishOverlay?.();
+    return overlayFinished;
+  });
+  expect(onClose).not.toHaveBeenCalled();
+  await act(() => {
+    finishPanel?.();
+    return panelFinished;
+  });
+  expect(onClose).toHaveBeenCalledOnce();
+  expect(dialog).not.toBeInTheDocument();
 });
 
 it('底部按钮按退出、刷新、业务操作排列', () => {

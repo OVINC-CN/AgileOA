@@ -116,11 +116,6 @@ function PreviewWindow({
       description={storedName}
       onClose={onClose}
       contentClassName="flex overflow-hidden bg-muted/70"
-      footerDismiss={
-        <Button type="button" variant="cancel" onClick={onClose}>
-          关闭
-        </Button>
-      }
       footer={
         <Button
           type="button"

@@ -1,10 +1,10 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { Eye, Pencil, Save } from 'lucide-react';
-import { useId, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { DeleteConfirmation } from '@/components/ui/delete-confirmation';
-import { Drawer } from '@/components/ui/drawer';
+import { Drawer, type DrawerHandle } from '@/components/ui/drawer';
 import { DrawerTabs } from '@/components/ui/drawer-tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -53,6 +53,7 @@ export function TemplateEditor({
   const [checkingNode, setCheckingNode] = useState(false);
   const [attachmentBusy, setAttachmentBusy] = useState(false);
   const tabsID = useId();
+  const drawer = useRef<DrawerHandle>(null);
   const save = useApiAction();
   const client = useQueryClient();
   const nodes = values.definition.nodes;
@@ -77,7 +78,7 @@ export function TemplateEditor({
         client.invalidateQueries({ queryKey: timelineKey(workspaceID) }),
         client.invalidateQueries({ queryKey: personKey(workspaceID) }),
       ]);
-      onClose();
+      drawer.current?.close();
     });
     return result.ok;
   };
@@ -90,6 +91,7 @@ export function TemplateEditor({
   );
   return (
     <Drawer
+      ref={drawer}
       title={original ? '编辑时间线模板' : '新增时间线模板'}
       description="配置有序节点、自定义字段和非阻断时间提示规则"
       onClose={onClose}
@@ -119,11 +121,7 @@ export function TemplateEditor({
           }}
         />
       }
-      footerDismiss={
-        <Button type="button" variant="cancel" disabled={busy} onClick={onClose}>
-          取消
-        </Button>
-      }
+      dismissLabel="取消"
       footer={
         <>
           {section === 'nodes' ? (

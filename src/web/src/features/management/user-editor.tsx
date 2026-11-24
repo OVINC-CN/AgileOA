@@ -2,14 +2,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
 import { Check, Copy, KeyRound, Plus, Save } from 'lucide-react';
 import { Switch } from 'radix-ui';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { ErrorMessage } from '@/components/error-message';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Drawer } from '@/components/ui/drawer';
+import { Drawer, type DrawerHandle } from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { updateUser, type UserRow } from '@/features/management/api';
@@ -87,6 +87,7 @@ export function UserEditor({
   });
   const enabled = watch('is_enabled');
   const passwordLoginEnabled = watch('password_login_enabled');
+  const drawer = useRef<DrawerHandle>(null);
   const mutation = useApiMutation({
     mutationFn: async (values: Values) => {
       const result = await (user ? updateUser(user, values) : createUser(values));
@@ -101,7 +102,9 @@ export function UserEditor({
     },
     onSuccess: (result) => {
       if (user) {
-        onSaved(`已更新用户 ${result.username}`);
+        drawer.current?.close(() => {
+          onSaved(`已更新用户 ${result.username}`);
+        });
       } else {
         setCreated(result);
       }
@@ -128,6 +131,7 @@ export function UserEditor({
     };
     return (
       <Drawer
+        ref={drawer}
         title="用户已创建"
         description={
           created.password_login_enabled
@@ -183,6 +187,7 @@ export function UserEditor({
   }
   return (
     <Drawer
+      ref={drawer}
       title={user ? '编辑用户' : '添加用户'}
       truncateDescription={!!user}
       busy={mutation.isPending}
@@ -198,11 +203,7 @@ export function UserEditor({
           onClose();
         }
       }}
-      footerDismiss={
-        <Button type="button" variant="cancel" disabled={mutation.isPending} onClick={onClose}>
-          取消
-        </Button>
-      }
+      dismissLabel="取消"
       footer={
         <Button type="submit" loading={mutation.isPending}>
           {user ? <Save aria-hidden="true" /> : <Plus aria-hidden="true" />}

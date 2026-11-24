@@ -1,11 +1,11 @@
 import { Pencil, Save } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { TableActionButton } from '@/components/table-action-button';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DeleteConfirmation } from '@/components/ui/delete-confirmation';
-import { Drawer } from '@/components/ui/drawer';
+import { Drawer, type DrawerHandle } from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tooltip } from '@/components/ui/tooltip';
@@ -27,6 +27,7 @@ export function TimelinePresetEditorDrawer({
   onSave: (name: string, includeValues: boolean) => void;
   onClose: () => void;
 }) {
+  const drawer = useRef<DrawerHandle>(null);
   const [name, setName] = useState(editor.preset?.name ?? '');
   const [includeValues, setIncludeValues] = useState(editor.preset?.includeValues ?? true);
   const titles = {
@@ -36,6 +37,7 @@ export function TimelinePresetEditorDrawer({
   };
   return (
     <Drawer
+      ref={drawer}
       title={titles[editor.mode]}
       description={
         editor.mode === 'rename'
@@ -52,17 +54,13 @@ export function TimelinePresetEditorDrawer({
           event.stopPropagation();
           try {
             onSave(name, includeValues);
-            onClose();
+            drawer.current?.close();
           } catch (cause) {
             showMessage(cause instanceof Error ? cause.message : '保存方案失败，请重试');
           }
         },
       }}
-      footerDismiss={
-        <Button type="button" variant="cancel" onClick={onClose}>
-          取消
-        </Button>
-      }
+      dismissLabel="取消"
       footer={
         <Button type="submit">
           <Save aria-hidden="true" />
@@ -122,11 +120,6 @@ export function TimelinePresetManagerDrawer({
       title="管理常用筛选方案"
       description="方案仅保存在当前浏览器，清除浏览器数据后需要重新保存"
       onClose={onClose}
-      footerDismiss={
-        <Button type="button" variant="cancel" onClick={onClose}>
-          关闭
-        </Button>
-      }
     >
       <ul className="space-y-3 p-6">
         {presets.length === 0 ? (

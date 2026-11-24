@@ -1,9 +1,9 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowRightLeft, Eye, RefreshCw } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
-import { Drawer } from '@/components/ui/drawer';
+import { Drawer, type DrawerHandle } from '@/components/ui/drawer';
 import { Label } from '@/components/ui/label';
 import { SearchSelect } from '@/components/ui/search-select';
 import { personKey } from '@/features/cpc-person/api';
@@ -46,6 +46,7 @@ export function TimelineTransferDrawer({
     transfer.mode === 'review' ? transfer.preview : null,
   );
   const [stalePreview, setStalePreview] = useState(false);
+  const drawer = useRef<DrawerHandle>(null);
   const prepare = useApiAction();
   const confirm = useApiAction();
   const busy = prepare.pending || confirm.pending;
@@ -58,16 +59,13 @@ export function TimelineTransferDrawer({
       : personLabel;
   return (
     <Drawer
+      ref={drawer}
       title={reviewing ? '审核时间线转移' : '转移人员时间线'}
       description={description}
       truncateDescription
       onClose={onClose}
       busy={busy}
-      footerDismiss={
-        <Button variant="cancel" disabled={busy} onClick={onClose}>
-          取消
-        </Button>
-      }
+      dismissLabel="取消"
       footer={
         <>
           <Button
@@ -114,7 +112,7 @@ export function TimelineTransferDrawer({
                     client.invalidateQueries({ queryKey: ['management', 'audit'] }),
                     client.invalidateQueries({ queryKey: ['notifications'] }),
                   ]);
-                  onClose();
+                  drawer.current?.close();
                 });
               }}
             >

@@ -75,6 +75,9 @@
   --shadow-drawer: var(--drawer-shadow);
   --default-transition-duration: 160ms;
   --default-transition-timing-function: var(--motion-easing-standard);
+  --ease-standard: var(--motion-easing-standard);
+  --animate-spin: spin 1s var(--motion-easing-continuous) infinite;
+  --animate-pulse: pulse 2s var(--motion-easing-standard) infinite;
 }
 
 :root {
@@ -87,7 +90,8 @@
   --motion-navigation-duration: 200ms;
   --motion-sidebar-duration: 220ms;
   --motion-delete-confirmation-duration: 350ms;
-  --motion-easing-standard: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-easing-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --motion-easing-continuous: cubic-bezier(0.42, 0.22, 0.58, 0.78);
   --radius: 0.5rem;
   --background: #fff;
   --foreground: oklch(0.145 0 0);
@@ -347,10 +351,28 @@
     animation: menu-close 120ms var(--motion-easing-standard);
   }
   .drawer-overlay[data-state='open'] {
-    animation: drawer-overlay-in 180ms var(--motion-easing-standard);
+    opacity: 1;
+    transition: opacity 230ms var(--motion-easing-standard);
   }
   .drawer-root[data-state='open'] > .drawer-panel {
-    animation: drawer-in 240ms var(--motion-easing-standard);
+    transform: translateX(0);
+    transition: transform 300ms var(--motion-easing-standard);
+  }
+  @starting-style {
+    .drawer-overlay[data-state='open'] {
+      opacity: 0;
+    }
+    .drawer-root[data-state='open'] > .drawer-panel {
+      transform: translateX(100%);
+    }
+  }
+  .drawer-overlay[data-closing='true'] {
+    opacity: 0;
+    transition-duration: 190ms;
+  }
+  .drawer-root[data-closing='true'] > .drawer-panel {
+    transform: translateX(100%);
+    transition-duration: 240ms;
   }
   .message-motion[data-state='open'] {
     animation: message-in 220ms var(--motion-easing-standard);
@@ -510,24 +532,6 @@
   }
 }
 
-@keyframes drawer-in {
-  from {
-    transform: translateX(100%);
-  }
-  to {
-    transform: translateX(0);
-  }
-}
-
-@keyframes drawer-overlay-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
 @keyframes message-in {
   from {
     opacity: 0;
@@ -551,16 +555,19 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  :root {
+    --default-transition-duration: 0ms;
+  }
   .form-control,
   .side-navigation-layout,
   .side-navigation-label,
   .navigation-motion-indicator[data-ready='true'],
-  .navigation-motion > [role='tab'] {
+  .navigation-motion > [role='tab'],
+  .drawer-overlay[data-state],
+  .drawer-root[data-state] > .drawer-panel {
     transition: none;
   }
   .menu-motion[data-state],
-  .drawer-overlay[data-state],
-  .drawer-root[data-state] > .drawer-panel,
   .message-motion[data-state] {
     animation: none;
   }

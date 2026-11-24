@@ -1,10 +1,10 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Save } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { ErrorMessage } from '@/components/error-message';
 import { Button } from '@/components/ui/button';
-import { Drawer } from '@/components/ui/drawer';
+import { Drawer, type DrawerHandle } from '@/components/ui/drawer';
 import { Label } from '@/components/ui/label';
 import { SearchSelect } from '@/components/ui/search-select';
 import {
@@ -93,6 +93,7 @@ export function PersonEditor({
     enabled: statusOpen,
   });
   const client = useQueryClient();
+  const drawer = useRef<DrawerHandle>(null);
   const mutation = useApiMutation({
     mutationFn: async () => {
       await savePerson(workspaceID, original, values);
@@ -101,7 +102,9 @@ export function PersonEditor({
         client.invalidateQueries({ queryKey: ['management', 'audit'] }),
       ]);
     },
-    onSuccess: onClose,
+    onSuccess: () => {
+      drawer.current?.close();
+    },
   });
   const blocked = [candidates.error, positions.error, statuses.error].some(
     (error) => error instanceof ApiError && [401, 403, 404].includes(error.status),
@@ -126,6 +129,7 @@ export function PersonEditor({
     (original !== null || values.timeline_template_id !== null);
   return (
     <Drawer
+      ref={drawer}
       title={original ? '编辑党建人员' : '新增党建人员'}
       busy={mutation.isPending}
       onClose={onClose}
@@ -139,11 +143,7 @@ export function PersonEditor({
           if (canSave && !mutation.isPending) mutation.mutate();
         },
       }}
-      footerDismiss={
-        <Button type="button" variant="cancel" disabled={mutation.isPending} onClick={onClose}>
-          取消
-        </Button>
-      }
+      dismissLabel="取消"
       footer={
         <Button type="submit" loading={mutation.isPending} disabled={!canSave}>
           <Save aria-hidden="true" />

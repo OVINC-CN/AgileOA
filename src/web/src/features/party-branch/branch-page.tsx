@@ -11,7 +11,7 @@ import {
   Trash2,
   Upload,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { ErrorMessage } from '@/components/error-message';
 import { FilterField, FilterPanel } from '@/components/filter-panel';
@@ -21,7 +21,7 @@ import { TableActionButton } from '@/components/table-action-button';
 import { TableActionsMenu } from '@/components/table-actions-menu';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Drawer } from '@/components/ui/drawer';
+import { Drawer, type DrawerHandle } from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
 import { personKey } from '@/features/cpc-person/api';
 import type { AdmissionRuleNode } from '@/features/party-branch/admission-rule';
@@ -69,6 +69,7 @@ function BranchWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
   const refresh = useApiAction();
   const search = useApiAction();
   const reorder = useApiAction();
+  const reorderDrawer = useRef<DrawerHandle>(null);
   const download = useApiAction();
   const loadEdit = useApiAction();
   const loadDetail = useApiAction();
@@ -393,23 +394,14 @@ function BranchWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
       ) : null}
       {canList && reordering && can('update') ? (
         <Drawer
+          ref={reorderDrawer}
           title="确认重排人员"
           description="重新计算当前工作空间在编人员的所属党支部"
           busy={reorder.pending}
           onClose={() => {
             setReordering(false);
           }}
-          footerDismiss={
-            <Button
-              variant="cancel"
-              disabled={reorder.pending}
-              onClick={() => {
-                setReordering(false);
-              }}
-            >
-              取消
-            </Button>
-          }
+          dismissLabel="取消"
           footer={
             <Button
               loading={reorder.pending}
@@ -421,7 +413,7 @@ function BranchWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
                     refetchType: 'none',
                   });
                   await client.invalidateQueries({ queryKey: ['management', 'audit'] });
-                  setReordering(false);
+                  reorderDrawer.current?.close();
                   showMessage(
                     result.queued
                       ? '重排任务已提交，执行结果将通过站内通知发送'
