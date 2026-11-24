@@ -1,15 +1,19 @@
-import { Upload } from 'lucide-react';
-import { type ComponentProps, useRef } from 'react';
+import { type ComponentProps, useRef, useState } from 'react';
 
-import { Button } from '@/components/ui/button';
-import { uploadAccept, validateUploadFile } from '@/lib/file-upload';
+import { UploadButton } from '@/components/ui/upload-button';
+import {
+  uploadAccept,
+  type UploadStatus,
+  type UploadUpdate,
+  validateUploadFile,
+} from '@/lib/file-upload';
 import { showMessage } from '@/lib/messages';
 
 type Props = Pick<ComponentProps<'button'>, 'className' | 'disabled' | 'title'> & {
   accept?: string;
   label?: string;
   loading?: boolean;
-  onFileSelect: (file: File) => void;
+  onFileSelect: (file: File, updateUpload: UploadUpdate) => void;
 };
 
 export function FileUploadButton({
@@ -21,6 +25,7 @@ export function FileUploadButton({
   ...props
 }: Props) {
   const input = useRef<HTMLInputElement>(null);
+  const [progress, setProgress] = useState<UploadStatus>(null);
   return (
     <>
       <input
@@ -42,24 +47,27 @@ export function FileUploadButton({
               if (error instanceof Error) showMessage(error.message);
               return;
             }
-            onFileSelect(file);
+            setProgress(null);
+            onFileSelect(file, setProgress);
           }
         }}
       />
-      <Button
+      <UploadButton
         {...props}
-        type="button"
         variant="outline"
         size="sm"
         disabled={disabled}
         loading={loading}
+        progress={progress}
+        onDismiss={() => {
+          setProgress(null);
+        }}
         onClick={() => {
           input.current?.click();
         }}
       >
-        <Upload aria-hidden="true" />
         {label === '上传附件' ? '上传' : label}
-      </Button>
+      </UploadButton>
     </>
   );
 }

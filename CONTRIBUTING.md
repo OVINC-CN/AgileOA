@@ -230,6 +230,10 @@ COS 和 STS 协议位于 [tencentcos](src/api/internal/apis/tencentcos/)。
 [cdn.go](src/api/internal/storage/cdn.go) 生成签名下载地址，并在 Redis 配置后复用缓存签名。
 前端 [cos-upload.ts](src/web/src/lib/cos-upload.ts) 统一申请、COS 简单直传和完成确认，
 申请响应不可写入查询缓存或浏览器存储。上传失败保留 pending 并占用名额，沿用显式删除。
+附件、头像、表格和模板导入复用 [UploadButton](src/web/src/components/ui/upload-button.tsx)，
+提交期间保留按钮文案并在浮层显示传输进度。COS 直传使用 SDK 的进度事件，
+导入使用 [API 请求](src/web/src/lib/api.ts) 的请求体上传事件，文件发完后继续等待服务端结果及相关刷新。
+操作成功后在原入口保留 100% 进度，用户可手动关闭。关闭抽屉或开始下一次上传时清除上一条进度。
 [ApplicationDrawer](src/web/src/features/project/application-drawer.tsx) 在有未保存内容时，
 通过确认抽屉说明保存范围，再由公共文件按钮选择文件并立即执行保存、上传；
 内容未修改时直接上传。取消确认或选文件不保存，保存后的上传失败保留已保存内容并明确提示。

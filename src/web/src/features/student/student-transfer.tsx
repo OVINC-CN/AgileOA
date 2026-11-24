@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { Download, FileDown, Upload } from 'lucide-react';
+import { Download, FileDown } from 'lucide-react';
 import { useState } from 'react';
 
 import { ErrorMessage } from '@/components/error-message';
@@ -8,6 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Drawer } from '@/components/ui/drawer';
 import { FileInput } from '@/components/ui/file-input';
 import { Label } from '@/components/ui/label';
+import { UploadButton } from '@/components/ui/upload-button';
 import { personKey } from '@/features/cpc-person/api';
 import { graduationKey } from '@/features/graduation/api';
 import {
@@ -21,6 +22,7 @@ import {
 import { sensitiveAction } from '@/features/student/fields';
 import { useApiAction, useApiMutation } from '@/lib/api-action';
 import { getConfig } from '@/lib/config';
+import type { UploadStatus } from '@/lib/file-upload';
 import { readSpreadsheetImport, spreadsheetAccept } from '@/lib/spreadsheet';
 
 export function StudentTransfer({
@@ -38,18 +40,21 @@ export function StudentTransfer({
 }) {
   const [includeSensitive, setIncludeSensitive] = useState(false);
   const [file, setFile] = useState<File | null>(null);
+  const [progress, setProgress] = useState<UploadStatus>(null);
   const [created, setCreated] = useState<number | null>(null);
   const template = useApiAction();
   const download = useApiAction();
   const client = useQueryClient();
   const mutation = useApiMutation({
     mutationFn: async () => {
+      setProgress(null);
       if (!file) {
         throw new Error('请选择 XLSX 文件');
       }
       const result = await importStudents(
         workspaceID,
         await readSpreadsheetImport(file, getConfig().studentMaxFileBytes),
+        setProgress,
       );
       await Promise.all([
         client.invalidateQueries({ queryKey: studentKey(workspaceID) }),
@@ -61,6 +66,7 @@ export function StudentTransfer({
     },
     onSuccess: (result) => {
       setCreated(result.created);
+      setProgress('complete');
       setFile(null);
     },
   });
@@ -74,16 +80,19 @@ export function StudentTransfer({
       onClose={onClose}
       footer={
         mode === 'import' ? (
-          <Button
+          <UploadButton
             loading={mutation.isPending}
+            progress={progress}
+            onDismiss={() => {
+              setProgress(null);
+            }}
             disabled={!file || template.pending}
             onClick={() => {
               mutation.mutate();
             }}
           >
-            <Upload aria-hidden="true" />
             导入
-          </Button>
+          </UploadButton>
         ) : (
           <span className="inline-flex items-center gap-2">
             <Button

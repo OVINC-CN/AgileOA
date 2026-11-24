@@ -181,14 +181,15 @@ export function AttachmentManager({
               <FileUploadButton
                 loading={upload.pending}
                 disabled={!targetProject || remove.pending}
-                onFileSelect={(file) => {
+                onFileSelect={(file, updateUpload) => {
                   void upload.run('upload', async () => {
                     validateUploadFile(file);
                     try {
-                      await uploadAttachment(workspaceID, targetProject, file);
+                      await uploadAttachment(workspaceID, targetProject, file, updateUpload);
                     } finally {
                       await invalidate();
                     }
+                    updateUpload('complete');
                   });
                 }}
               />

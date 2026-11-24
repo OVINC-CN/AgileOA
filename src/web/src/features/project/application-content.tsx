@@ -21,7 +21,7 @@ import {
 } from '@/features/project/application-api';
 import { ApplicationStatusBadge } from '@/features/project/application-status';
 import { getConfig } from '@/lib/config';
-import { uploadHint, uploadStateLabels } from '@/lib/file-upload';
+import { uploadHint, uploadStateLabels, type UploadUpdate } from '@/lib/file-upload';
 import { formatIdentity, formatScore, formatValue } from '@/lib/format';
 
 export type ApplicationValues = Pick<ApplicationContent, 'statement' | 'rank' | 'score'>;
@@ -36,7 +36,7 @@ interface FileProps {
   busy: boolean;
   uploading: boolean;
   deleting: (id: number) => boolean;
-  onUpload?: (file: File) => void;
+  onUpload?: (file: File, updateUpload: UploadUpdate) => void;
   onPrepareUpload?: (() => void) | undefined;
   onDelete?: (file: ApplicationAttachment) => void;
 }

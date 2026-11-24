@@ -157,14 +157,21 @@ function AttachmentPanel({
               <FileUploadButton
                 loading={upload.pending}
                 disabled={remove.pending}
-                onFileSelect={(file) => {
+                onFileSelect={(file, updateUpload) => {
                   void upload.run('upload', async () => {
                     validateUploadFile(file);
                     try {
-                      await uploadWorkAttachment(workspaceID, record.id, file, category);
+                      await uploadWorkAttachment(
+                        workspaceID,
+                        record.id,
+                        file,
+                        category,
+                        updateUpload,
+                      );
                     } finally {
                       await invalidate();
                     }
+                    updateUpload('complete');
                   });
                 }}
               />

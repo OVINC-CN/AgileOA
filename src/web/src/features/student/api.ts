@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { studentFields } from '@/features/student/fields';
 import { apiDelete, apiGet, apiPost, apiPut } from '@/lib/api';
 import { uploadFile } from '@/lib/cos-upload';
+import type { UploadProgress } from '@/lib/file-upload';
 import { filterParams } from '@/lib/filter-params';
 import { saveSpreadsheetFile, spreadsheetFileSchema } from '@/lib/spreadsheet';
 
@@ -305,14 +306,13 @@ export function uploadStudentAvatar(
   workspaceID: string,
   student: Pick<Student, 'id' | 'revision'>,
   file: File,
+  onProgress?: UploadProgress,
 ) {
-  return uploadFile(
-    `${base(workspaceID)}/${String(student.id)}/avatar`,
-    mutationSchema,
-    file,
-    { revision: student.revision },
-    true,
-  );
+  return uploadFile(`${base(workspaceID)}/${String(student.id)}/avatar`, mutationSchema, file, {
+    fields: { revision: student.revision },
+    inline: true,
+    onProgress,
+  });
 }
 export function deleteStudent(workspaceID: string, student: Student) {
   return apiDelete(
@@ -337,11 +337,12 @@ export function studentTemplate(workspaceID: string, includeSensitive: boolean) 
     fileSchema,
   );
 }
-export function importStudents(workspaceID: string, content: string) {
+export function importStudents(workspaceID: string, content: string, onProgress?: UploadProgress) {
   return apiPost(
     `${base(workspaceID)}/import`,
     z.object({ created: z.number().int().positive() }),
     { content },
+    onProgress,
   );
 }
 export function exportStudents(

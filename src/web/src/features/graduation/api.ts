@@ -2,6 +2,7 @@ import { queryOptions } from '@tanstack/react-query';
 import { z } from 'zod';
 
 import { apiDelete, apiGet, apiPost, apiPut } from '@/lib/api';
+import type { UploadProgress } from '@/lib/file-upload';
 import { filterParams } from '@/lib/filter-params';
 import { spreadsheetFileSchema } from '@/lib/spreadsheet';
 
@@ -168,10 +169,15 @@ export function exportGraduations(workspaceID: string, filters: GraduationFilter
   );
 }
 
-export function importGraduations(workspaceID: string, content: string) {
+export function importGraduations(
+  workspaceID: string,
+  content: string,
+  onProgress?: UploadProgress,
+) {
   return apiPost(
     `${base(workspaceID)}/import`,
     z.object({ created: z.number().int().positive() }),
     { content },
+    onProgress,
   );
 }

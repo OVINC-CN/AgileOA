@@ -1,5 +1,13 @@
 import { getConfig } from '@/lib/config';
 
+export type UploadProgress = (percent: number) => void;
+export type UploadStatus = number | 'complete' | null;
+export type UploadUpdate = (status: Exclude<UploadStatus, null>) => void;
+
+export function uploadPercent(loaded: number, total: number) {
+  return Math.floor((Math.min(Math.max(loaded, 0), total) / total) * 100);
+}
+
 export const uploadStateLabels = {
   pending: '上传未完成',
   ready: '可用',

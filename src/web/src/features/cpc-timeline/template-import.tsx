@@ -1,15 +1,16 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { FileDown, Upload } from 'lucide-react';
+import { FileDown } from 'lucide-react';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Drawer } from '@/components/ui/drawer';
 import { FileInput } from '@/components/ui/file-input';
 import { Label } from '@/components/ui/label';
+import { UploadButton } from '@/components/ui/upload-button';
 import { importTimeline, timelineImportTemplate, timelineKey } from '@/features/cpc-timeline/api';
 import { useApiAction } from '@/lib/api-action';
 import { downloadFile } from '@/lib/download';
-import { validateFileSize } from '@/lib/file-upload';
+import { type UploadStatus, validateFileSize } from '@/lib/file-upload';
 
 export function TemplateImport({
   workspaceID,
@@ -19,6 +20,7 @@ export function TemplateImport({
   onClose: () => void;
 }) {
   const [file, setFile] = useState<File | null>(null);
+  const [progress, setProgress] = useState<UploadStatus>(null);
   const template = useApiAction();
   const upload = useApiAction();
   const client = useQueryClient();
@@ -29,11 +31,16 @@ export function TemplateImport({
       busy={template.pending || upload.pending}
       onClose={onClose}
       footer={
-        <Button
+        <UploadButton
           disabled={!file || template.pending}
           loading={upload.pending}
+          progress={progress}
+          onDismiss={() => {
+            setProgress(null);
+          }}
           onClick={() => {
             void upload.run('import', async () => {
+              setProgress(null);
               if (!file) return;
               validateFileSize(file);
               if (!/\.json$/iu.test(file.name)) throw new Error('请选择 JSON 文件');
@@ -43,15 +50,15 @@ export function TemplateImport({
               } catch {
                 throw new Error('请上传有效的 JSON 模板文件');
               }
-              await importTimeline(workspaceID, value);
+              await importTimeline(workspaceID, value, setProgress);
               await client.invalidateQueries({ queryKey: timelineKey(workspaceID) });
-              onClose();
+              setProgress('complete');
+              setFile(null);
             });
           }}
         >
-          <Upload aria-hidden="true" />
           导入
-        </Button>
+        </UploadButton>
       }
     >
       <div className="space-y-5 p-6">

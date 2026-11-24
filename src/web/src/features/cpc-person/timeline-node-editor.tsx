@@ -239,16 +239,23 @@ export function PersonTimelineNodeEditor({
             <FileUploadButton
               loading={upload.pending}
               disabled={save.pending || skip.pending || reset.pending || remove.pending}
-              onFileSelect={(file) => {
+              onFileSelect={(file, updateUpload) => {
                 if (busy) return;
                 void upload.run('upload', async () => {
                   if (file.size < 1 || file.size > getConfig().fileMaxUploadBytes)
                     throw new Error('文件为空或超过大小限制');
                   try {
-                    await uploadPersonTimelineAttachment(workspaceID, personID, original.id, file);
+                    await uploadPersonTimelineAttachment(
+                      workspaceID,
+                      personID,
+                      original.id,
+                      file,
+                      updateUpload,
+                    );
                   } finally {
                     await invalidate();
                   }
+                  updateUpload('complete');
                 });
               }}
             />

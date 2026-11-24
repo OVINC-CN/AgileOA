@@ -7,6 +7,7 @@ import {
   timelineFilterFieldSchema,
 } from '@/features/cpc-person/timeline-filter-model';
 import { apiDelete, apiGet, apiPost, apiPut } from '@/lib/api';
+import type { UploadProgress } from '@/lib/file-upload';
 import { filterParams } from '@/lib/filter-params';
 import { saveSpreadsheetFile, spreadsheetFileSchema } from '@/lib/spreadsheet';
 
@@ -243,10 +244,13 @@ export const deletePerson = (workspaceID: string, person: Person) =>
   );
 export const personTemplate = (workspaceID: string) =>
   apiGet(`${base(workspaceID)}/template`, fileSchema);
-export const importPeople = (workspaceID: string, content: string) =>
-  apiPost(`${base(workspaceID)}/import`, z.object({ created: z.number().int().positive() }), {
-    content,
-  });
+export const importPeople = (workspaceID: string, content: string, onProgress?: UploadProgress) =>
+  apiPost(
+    `${base(workspaceID)}/import`,
+    z.object({ created: z.number().int().positive() }),
+    { content },
+    onProgress,
+  );
 export const exportPeople = (
   workspaceID: string,
   filters: PersonFilters,

@@ -10,6 +10,7 @@ import {
 import { apiDelete, apiGet, apiPost, apiPut } from '@/lib/api';
 import { getConfig } from '@/lib/config';
 import { uploadFile } from '@/lib/cos-upload';
+import type { UploadProgress } from '@/lib/file-upload';
 
 const summarySchema = z.object({
   id: z.number().int().positive(),
@@ -120,8 +121,8 @@ export function cloneTimeline(workspaceID: string, record: TimelineSummary) {
   });
 }
 
-export function importTimeline(workspaceID: string, value: unknown) {
-  return apiPost(`${base(workspaceID)}/import`, infoSchema, parseTimelineInput(value));
+export function importTimeline(workspaceID: string, value: unknown, onProgress?: UploadProgress) {
+  return apiPost(`${base(workspaceID)}/import`, infoSchema, parseTimelineInput(value), onProgress);
 }
 
 export function timelineImportTemplate(workspaceID: string) {
@@ -193,6 +194,7 @@ export function uploadTimelineAttachment(
   templateID: number,
   nodeID: string,
   file: File,
+  onProgress?: UploadProgress,
 ) {
   return uploadFile(
     nodeAttachments(workspaceID, templateID, nodeID),
@@ -200,6 +202,7 @@ export function uploadTimelineAttachment(
       (item) => item.timeline_template_id === templateID && item.node_id === nodeID,
     ),
     file,
+    { onProgress },
   );
 }
 
