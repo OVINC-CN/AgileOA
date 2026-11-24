@@ -1066,10 +1066,14 @@ describe('工作空间学生信息', () => {
         name: `查看 ${student.name}(${student.student_no}) 的详情`,
       }),
     );
-    expect(await screen.findByRole('dialog', { name: '学生详情' })).toBeVisible();
+    const detail = await screen.findByRole('dialog', { name: '学生详情' });
+    expect(detail).toBeVisible();
     expect(router.state.location.search).toContain('source=fixture');
     expect(router.state.location.hash).toBe('#student-list');
-    await user.click(screen.getByRole('button', { name: '关闭抽屉' }));
+    await user.click(within(detail).getByRole('button', { name: '关闭抽屉' }));
+    await waitFor(() => {
+      expect(detail).not.toBeInTheDocument();
+    });
     expect(router.state.location.hash).toBe('#student-list');
     expect(screen.queryByRole('button', { name: '删除' })).not.toBeInTheDocument();
     await user.click(
