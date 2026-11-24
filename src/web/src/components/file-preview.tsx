@@ -1,15 +1,14 @@
 import { Download, FileQuestion, RefreshCw } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-import { ImagePreview } from '@/components/image-preview';
-import { OfficePreview } from '@/components/office-preview';
+import { AttachmentPreview } from '@/components/attachment-preview';
 import { Button } from '@/components/ui/button';
 import { Drawer } from '@/components/ui/drawer';
 import { LoadingIcon } from '@/components/ui/loading-icon';
 import { Tooltip } from '@/components/ui/tooltip';
 import { ApiError } from '@/lib/api';
 import { downloadFile } from '@/lib/download';
-import { officePreviewKind, previewContentType, readPreviewFile } from '@/lib/file-preview';
+import { previewContentType, readPreviewFile } from '@/lib/file-preview';
 import { showMessage } from '@/lib/messages';
 import { cn } from '@/lib/utils';
 
@@ -67,7 +66,7 @@ export function FilePreviewLink({
 
 type PreviewState =
   | { status: 'loading' | 'unsupported' | 'error'; blob?: Blob }
-  | { status: 'ready'; blob: Blob; url: string; type: string };
+  | { status: 'ready'; blob: File; type: string };
 
 function PreviewWindow({
   filename,
@@ -83,10 +82,8 @@ function PreviewWindow({
   const [attempt, setAttempt] = useState(0);
   const [state, setState] = useState<PreviewState>({ status: 'loading' });
   const storedName = state.blob instanceof File ? state.blob.name : filename;
-  const officeKind = state.status === 'ready' ? officePreviewKind(state.type) : null;
   useEffect(() => {
     const controller = new AbortController();
-    let objectURL: string | undefined;
     let storedBlob: Blob | undefined;
     void (async () => {
       try {
@@ -98,8 +95,7 @@ function PreviewWindow({
           setState({ status: 'unsupported', blob });
           return;
         }
-        objectURL = URL.createObjectURL(new Blob([blob], { type }));
-        setState({ status: 'ready', blob, url: objectURL, type });
+        setState({ status: 'ready', blob, type });
       } catch (error) {
         if (controller.signal.aborted) return;
         if (!(error instanceof ApiError)) showMessage('文件读取失败，请重试');
@@ -109,9 +105,8 @@ function PreviewWindow({
       }
     })();
     return () => {
-      // 关闭、切换文件或工作空间后中止读取，并释放预览使用的对象 URL。
+      // 关闭、切换文件或工作空间后中止读取。
       controller.abort();
-      if (objectURL) URL.revokeObjectURL(objectURL);
     };
   }, [downloadURL, attempt, onLoading]);
   return (
@@ -146,25 +141,7 @@ function PreviewWindow({
       }
     >
       {state.status === 'ready' ? (
-        officeKind ? (
-          <OfficePreview
-            key={state.url}
-            source={state.url}
-            filename={storedName}
-            kind={officeKind}
-          />
-        ) : state.type === 'application/pdf' ? (
-          <iframe title={storedName} src={state.url} className="h-full w-full border-0" />
-        ) : (
-          <ImagePreview
-            key={state.url}
-            source={state.url}
-            filename={storedName}
-            onError={() => {
-              setState({ status: 'unsupported', blob: state.blob });
-            }}
-          />
-        )
+        <AttachmentPreview file={state.blob} contentType={state.type} />
       ) : (
         <div className="flex w-full flex-col items-center justify-center gap-3 p-6 text-sm text-muted-foreground">
           {state.status === 'loading' ? (

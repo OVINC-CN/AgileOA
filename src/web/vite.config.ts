@@ -1,17 +1,21 @@
 import { createHash } from 'node:crypto';
+import { mkdtempSync, rmSync } from 'node:fs';
 import { readFile, rm, writeFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 import { fileURLToPath, URL } from 'node:url';
 
+import { fileViewerRenderers } from '@file-viewer/vite-plugin';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
+import type { UserConfig } from 'vite';
 import { defineConfig } from 'vitest/config';
 
-import { deploymentFields } from './src/lib/deployment-config.ts';
+import { deploymentFields, extraAssetsDirectory } from './src/lib/deployment-config.ts';
 
 const productionPasswordLoginEnabled = false;
 
-export default defineConfig({
+const config = defineConfig({
   plugins: [
     react(),
     tailwindcss(),
@@ -100,4 +104,57 @@ export default defineConfig({
     unstubGlobals: true,
     css: false,
   },
+});
+
+export default defineConfig(({ command, mode }): UserConfig => {
+  if (mode === 'test') return config;
+
+  // 开发服务独立生成资源，避免并行启动或升级依赖时复用旧文件。
+  const previewAssets =
+    command === 'serve' ? mkdtempSync(join(tmpdir(), 'agileoa-file-viewer-')) : undefined;
+  return {
+    ...config,
+    plugins: [
+      ...(config.plugins ?? []),
+      fileViewerRenderers({
+        renderers: ['word', 'spreadsheet', 'presentation', 'pdf', 'image'],
+        inject: false,
+        chunkStrategy: 'none',
+        copyAssets: {
+          baseDir: extraAssetsDirectory,
+          ...(previewAssets ? { publicDir: previewAssets } : {}),
+        },
+      }),
+      {
+        name: 'publish-preview-licenses',
+        apply: 'build',
+        async generateBundle() {
+          const notices = [
+            ['core', 'LICENSE'],
+            ['renderer-image', 'THIRD_PARTY_NOTICES.md'],
+            ['renderer-pdf', 'THIRD_PARTY_NOTICES.md'],
+            ['renderer-spreadsheet', 'THIRD_PARTY_NOTICES.md'],
+          ] as const;
+          for (const [name, notice] of notices) {
+            const entry = import.meta.resolve(`@file-viewer/${name}`);
+            this.emitFile({
+              type: 'asset',
+              fileName: `${extraAssetsDirectory}/licenses/file-viewer/${name}/${notice}`,
+              source: await readFile(new URL(`../${notice}`, entry)),
+            });
+          }
+        },
+      },
+      previewAssets
+        ? {
+            name: 'clean-preview-assets',
+            configureServer(server) {
+              server.httpServer?.once('close', () => {
+                rmSync(previewAssets, { recursive: true, force: true });
+              });
+            },
+          }
+        : undefined,
+    ],
+  };
 });

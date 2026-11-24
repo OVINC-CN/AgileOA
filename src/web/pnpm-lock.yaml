@@ -175,15 +175,27 @@ importers:
 
   .:
     dependencies:
+      '@file-viewer/core':
+        specifier: 3.3.6
+        version: 3.3.6
+      '@file-viewer/renderer-image':
+        specifier: 3.3.6
+        version: 3.3.6
+      '@file-viewer/renderer-pdf':
+        specifier: 3.3.6
+        version: 3.3.6
+      '@file-viewer/renderer-presentation':
+        specifier: 3.3.6
+        version: 3.3.6
+      '@file-viewer/renderer-spreadsheet':
+        specifier: 3.3.6
+        version: 3.3.6
+      '@file-viewer/renderer-word':
+        specifier: 3.3.6
+        version: 3.3.6
       '@hookform/resolvers':
         specifier: ^7.0.1
         version: 7.0.1(@standard-schema/spec@1.1.0)(react-hook-form@7.91.0(@types/react@19.3.0)(react@19.3.1))(zod@4.6.7)
-      '@silurus/ooxml':
-        specifier: 0.89.10
-        version: 0.89.10
-      '@silurus/ooxml-legacy-office':
-        specifier: 0.89.10
-        version: 0.89.10(@silurus/ooxml@0.89.10)
       '@tanstack/react-query':
         specifier: ^5.105.1
         version: 5.105.1(@types/react@19.3.0)(react@19.3.1)
@@ -245,6 +257,15 @@ importers:
       '@eslint/js':
         specifier: 9.39.5
         version: 9.39.5
+      '@file-viewer/assets-ppt':
+        specifier: 3.3.6
+        version: 3.3.6
+      '@file-viewer/assets-standard':
+        specifier: 3.3.6
+        version: 3.3.6
+      '@file-viewer/vite-plugin':
+        specifier: 3.3.6
+        version: 3.3.6(vite@8.3.5(@types/node@24.19.2)(jiti@2.7.0))
       '@tailwindcss/vite':
         specifier: 4.3.3
         version: 4.3.3(vite@8.3.5(@types/node@24.19.2)(jiti@2.7.0))
@@ -504,6 +525,68 @@ packages:
   '@fast-csv/parse@4.3.6':
     resolution: {integrity: sha512-uRsLYksqpbDmWaSmzvJcuApSEe38+6NQZBUsuAyMZKqHxH0g1wcJgsKUvN3WC8tewaqFjBMMGrkHmC+T7k8LvA==}
 
+  '@file-viewer/asset-installer@3.3.6':
+    resolution: {integrity: sha512-3CJYfAs9dm5fQo2gtTfnBYHmspug0ihR9ffdcfhJ3RJoVCLWjsUlDZC4NL8gbzm2pjnHWdcd3t+XIidhNYs6xA==}
+    engines: {node: '>=20'}
+    hasBin: true
+
+  '@file-viewer/assets-ppt@3.3.6':
+    resolution: {integrity: sha512-KySBU+ljb4WQTUyM4jDIsstNhL0v+APLZ8WVxKvmQ4qOhdWsuJfpBrWQStJImSfGcsHOk7W7iQQV0dSVdJ+UlQ==}
+    engines: {node: '>=20'}
+    hasBin: true
+
+  '@file-viewer/assets-standard@3.3.6':
+    resolution: {integrity: sha512-tP86bfB7KiNV4Y7UEOgmnHjvB3lyRI8o/5WqV+bNxuCsceVXIj29uHjLiz67DTqiP48xWtbsP5Kv9ouXW1+NQQ==}
+    engines: {node: '>=20'}
+    hasBin: true
+
+  '@file-viewer/core@3.3.6':
+    resolution: {integrity: sha512-yyu/rFJEPjZ9IBZeJAdFeHRKR7tPFN2dNAVkaQCa/9BNM3UqQdqA8kq3TEOrKwcC6JE5VTtjWt7Ad0IbiHt/yg==}
+
+  '@file-viewer/doc@3.3.6':
+    resolution: {integrity: sha512-FKSi3Ji73n6MfZUR12Xi02COBhKWoMvNCNl0zukWdY9U0woE5p6cqNb9/y/VrB0A4WTct5D/Z7SAt4jfdOYrjg==}
+
+  '@file-viewer/docx@0.3.42':
+    resolution: {integrity: sha512-tmqxWONZ6Z3jX9IF8YrdnkC+4V+3aiT06H9e6ashxngaBZWP5Ay2hRL54qujNahC401znbTxUdg+6WAvNYpT2A==}
+
+  '@file-viewer/ppt@1.0.2':
+    resolution: {integrity: sha512-dyq341piRU3vjeImNwkyb+OWAn26SyUqhFNiOxyrsYfDMTGEZgVdk/AmCxlmbCXeIMGRM2zHdzUUWRBRxfSQdg==}
+    engines: {node: '>=20'}
+
+  '@file-viewer/pptx@3.3.6':
+    resolution: {integrity: sha512-IUTvi4/7HCnSWdIyHXCtZBBZ1uzEbLGq74wXNEnQJVguRhXxQw2XJ+fzGXRSB1AwzBLkj697AMj2XVleOi/qcA==}
+
+  '@file-viewer/renderer-image@3.3.6':
+    resolution: {integrity: sha512-BxhvwZU/cLSW3C257pqSQUaLixIubCAAuHA5J4wJUxGT2e8/b7ebsPMISVRsY0A2e7lSkSB9Ec+BpDLFVAm0ZA==}
+
+  '@file-viewer/renderer-pdf@3.3.6':
+    resolution: {integrity: sha512-+hRuzrzAkp66rW6eXK3/iYtqxkiIVPeO3icD1HQGuF/XmReahuW5yUqH2WMcuFDb4LXWsmexInT74mrrEPUYCQ==}
+    peerDependencies:
+      pdf-lib: 1.17.1
+    peerDependenciesMeta:
+      pdf-lib:
+        optional: true
+
+  '@file-viewer/renderer-ppt@3.3.6':
+    resolution: {integrity: sha512-X5GiFHqAABJg5BLCXX+Wwya14rACRuJHOLpOlJv2NfRhS8cxJPeGr1eISz5WU6GRRIwpDdUZ7DdLYLkJ8AUFHg==}
+
+  '@file-viewer/renderer-pptx@3.3.6':
+    resolution: {integrity: sha512-Xi52WXzquD3q7jj2V2lW3afCvjENGD2kNnwBojoB1KB5b0VRuqhliV/AdM5oucSIJcUURn4xp7Fz+0kJ0JLeKw==}
+
+  '@file-viewer/renderer-presentation@3.3.6':
+    resolution: {integrity: sha512-pJxncq/utkbVPxnMwbX0x3z/eXdGVt56GswHMfFMuDaf+MkbiSMgG5NviIBEUWd0OUVu8wKVcqe5fv4eXIho1Q==}
+
+  '@file-viewer/renderer-spreadsheet@3.3.6':
+    resolution: {integrity: sha512-pfDe8GVlJgIGbPY0ckYj2voEdvODqBaeNbcmeztu9eSzQJ4TWTTh+u14KqgLTuQQza8X+B6nJuuE46BDjKcsiA==}
+
+  '@file-viewer/renderer-word@3.3.6':
+    resolution: {integrity: sha512-pXaj0VCW8qbcJBBucHY6FG2H42T4RXPHV+YksnkfW+fU5OjxZ5uTzDxTA+yem76Qh4AwZCEh6uQyEZRAfhpaRA==}
+
+  '@file-viewer/vite-plugin@3.3.6':
+    resolution: {integrity: sha512-tpFWqkCWGMxncHrwyTZ1Sg3GRp1dEsb+FJTs8I0fh5WkMe5/+ZNE2j+CZwMenL1ahOT1c3W7O92v+4CS/W5xWg==}
+    peerDependencies:
+      vite: '>=5 <9'
+
   '@floating-ui/core@1.8.0':
     resolution: {integrity: sha512-0CIZ5itps/8x7BG8dEIhs53BvCUH2PCoogtakwRTut+Arm58sJooJ0AuZhLw2HJYIR5cMLNPBSS728sPho2khQ==}
 
@@ -518,6 +601,9 @@ packages:
 
   '@floating-ui/utils@0.2.12':
     resolution: {integrity: sha512-HpCo8tmWzLVad5s2d19EhAz5zqrrQ6s69qd6moPMQvkOuSwDT1YgRfWSVuc4ennqrgv3OHppiOGMQ7oC13yIww==}
+
+  '@fontsource-variable/noto-sans-sc@5.3.1':
+    resolution: {integrity: sha512-UB96JJ17HyD5ehEU7Em0hDdh7fvTMB4B4Hzmq5c4QaNwwSLqTrdM2S+coySeBqCkXwh0DxqXT0b0wMrmzorFpQ==}
 
   '@hookform/resolvers@7.0.1':
     resolution: {integrity: sha512-F3aM0dDWsRGmFjnnXjogaGLwP7gY2HA6/c5qp4v4Im/UV7pTNkX+WAjcOlM1V0PE0zoMzuPqCyaYtMzUhoFToA==}
@@ -1442,14 +1528,6 @@ packages:
   '@rolldown/pluginutils@1.0.1':
     resolution: {integrity: sha512-2j9bGt5Jh8hj+vPtgzPtl72j0yRxHAyumoo6TNfAjsLB04UtpSvPbPcDcBMxz7n+9CYB0c1GxQFxYRg2jimqGw==}
 
-  '@silurus/ooxml-legacy-office@0.89.10':
-    resolution: {integrity: sha512-ddVj1XHs1lUUKnMu5FU8YnKLTvslZC6HYFk264jH41NIricS06NE9z5ZtQoM1Y1FcbEVLnElBj9UBCUAxB+KPQ==}
-    peerDependencies:
-      '@silurus/ooxml': 0.89.10
-
-  '@silurus/ooxml@0.89.10':
-    resolution: {integrity: sha512-9mmY1C10E9iZzrFW7GBDfu5xgOr51Yy+nTPiScIqFf4lLQGOmRxu1GOkGqOUKQBOLvifTT2FjnWpTC5d7sj0Fg==}
-
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
 
@@ -1673,6 +1751,9 @@ packages:
   '@types/react@19.3.0':
     resolution: {integrity: sha512-N0rFCuH9YoxG9/m61l9MfpJKfmLOVU0em7ipIz6TRgSSkvReLB9vL85GB+yr8Bs5leqpvg96JSwF4ZS1s4viQg==}
 
+  '@types/trusted-types@2.0.7':
+    resolution: {integrity: sha512-ScaPdn1dQczgbl0QFTeTOmVHFULt394XJgOQNoyVhZ6r2vLnMLJfBPd53SB52T/3G36VI1/g2MZaX0cwDuXsfw==}
+
   '@types/use-sync-external-store@0.0.6':
     resolution: {integrity: sha512-zFDAD+tlpf2r4asuHEj0XH6pY6i0g5NeAHPn+15wk3BV6JA69eERFXC1gyGThDkVa1zCyKr5jox1+2LbV/AMLg==}
 
@@ -1879,6 +1960,10 @@ packages:
 
   '@vitest/spy@5.0.5':
     resolution: {integrity: sha512-lwJRExuH417257Q5wv9QYugN9IMJkoxcrKrYxGPQkBzl7wlNpTUxD/5yNX4ESKVUIShKPgkGchYPFMWOOk0wzw==}
+
+  '@xmldom/xmldom@0.9.12':
+    resolution: {integrity: sha512-5AXjrcMClTryPe9LgZrygpB1lj7s0S9E0+W+AHaVKAVyHanafK86iPSvG5xHVSp/jC+VH1UXu0TAEmY279xH7A==}
+    engines: {node: '>=14.6'}
 
   acorn-jsx@5.3.2:
     resolution: {integrity: sha512-rq9s+JNhf0IChjtDXxllJ7g41oZk5SlXtp0LHwyA5cejwn7vKmKp4pPri6YEePv2PU65sAsegbXtIinmDFDXgQ==}
@@ -2245,6 +2330,9 @@ packages:
     resolution: {integrity: sha512-svtcdpS8CgJyqAjEQIXdb3OjhFVVYjzGAPO8WGCmRbrml64SPw/jJD4GoE98aR7r25A0XcgrK3F02yw9R/vhQw==}
     engines: {node: '>=0.3.1'}
 
+  dingbat-to-unicode@1.0.2:
+    resolution: {integrity: sha512-R0bRerYzy/EZP6QzD3Hkl6JjUDA1Mnn+pd928w0nWjPzihnbAR6dcjGJGiRyznj5E4S1duEKzWrTqw02DPcdzg==}
+
   doctrine@2.1.0:
     resolution: {integrity: sha512-35mSku4ZXK0vfCuHEDAwt55dg2jNajHZ1odvF+8SSr82EsZY4QmXfuWso8oEd8zRhVObSN18aM0CjSdoBX7zIw==}
     engines: {node: '>=0.10.0'}
@@ -2255,12 +2343,18 @@ packages:
   dom-accessibility-api@0.6.3:
     resolution: {integrity: sha512-7ZgogeTnjuHbo+ct10G9Ffp0mif17idi0IyWNVA/wcwcm7NPOD/WEHVP3n7n3MhXqxoIYm8d6MuZohYWIZ4T3w==}
 
+  dompurify@3.4.18:
+    resolution: {integrity: sha512-ofe3wI/uNm68HInABYFJYqQxRw1EaKAjNdrFVKqjUY+UZurvNd2L/HuQe097s/4RivWiZyP6tT7aoT8atjfhwg==}
+
   dunder-proto@1.0.1:
     resolution: {integrity: sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A==}
     engines: {node: '>= 0.4'}
 
   duplexer2@0.1.4:
     resolution: {integrity: sha512-asLFVfWWtJ90ZyOUHMqk7/S2w2guQKxUI2itj3d92ADHhxUSbCMGi1f1cBcJ7xM1To+pE/Khbwo1yuNbMEPKeA==}
+
+  e-virt-table@1.4.18:
+    resolution: {integrity: sha512-t6EipswGvN/tBzrhZCY1QHv/XkcPNTZDNmO2cuEJQi66nbgMq5YeaaPMfmvNKNRCHHrkNVRr9+fFBefRjHm6mQ==}
 
   electron-to-chromium@1.5.472:
     resolution: {integrity: sha512-s4+nfT29b0FKpVKoaIxl2pWsoNcn7A/nMPSrxayw4T3BsmPeV2lF9Y06BsAQeMGhCTQ4nYJ5XST7jkqe4ZEqFw==}
@@ -2609,6 +2703,9 @@ packages:
   hasown@2.0.4:
     resolution: {integrity: sha512-T2UbfbBEF32wiepXIsMlTW9+dDYC6wMh/t/vYA4tuOMKqWz/n3vr1NFSxQiyP+zk2mXsoMA/i/7qV6LKut1t1A==}
     engines: {node: '>= 0.4'}
+
+  heic2any@0.0.4:
+    resolution: {integrity: sha512-3lLnZiDELfabVH87htnRolZ2iehX9zwpRyGNz22GKXIu0fznlblf0/ftppXKNqS26dqFSeqfIBhAmAj/uSp0cA==}
 
   hermes-estree@0.25.1:
     resolution: {integrity: sha512-0wUoCcLp+5Ev5pDW2OriHC2MJCbwLwuRx+gAqMTOkGKJJiBCLjtrvy4PWUGn6MIVefecRpzoOZ/UV6iGdOr+Cw==}
@@ -3612,6 +3709,11 @@ packages:
   strnum@2.5.1:
     resolution: {integrity: sha512-UM4nTLWzQiDBseVxUGxN0wJzIk0UU89Qi7pKXz9qISo+lhviJikTuikBsK/oFRlpvYHvSdz0TVoLyQ+sEpYwxA==}
 
+  styled-exceljs@0.21.6:
+    resolution: {integrity: sha512-n3lHSH5rKn7wlu6+rBIv1/anXDDJd1+IAWI60iCfXW9QlYRDHQDEN6P2Vq9b/6TxT+hUiLTNFy9Hoo0TGk5t8g==}
+    engines: {node: '>=0.8'}
+    hasBin: true
+
   supports-color@7.2.0:
     resolution: {integrity: sha512-qpCAvRl9stuOHveKsn7HncJRvv501qIacKzQlO/+Lwxc9+0q2wLyv4Dfvt80/DPn2pqOBsJdDiogXGR9+OvwRw==}
     engines: {node: '>=8'}
@@ -3640,6 +3742,9 @@ packages:
   tinybench@6.2.2:
     resolution: {integrity: sha512-nIZ2N2dFpjBsg2hgitKu7mA+FvsIJuGJOwysRngmVRRmWgR/UyPjwJj8c/fT/dhm8EkHnF5EOogRf+0Z2qrimA==}
     engines: {node: '>=20.0.0'}
+
+  tinycolor2@1.6.0:
+    resolution: {integrity: sha512-XPaBkWQJdsf3pLKJV9p4qN/S+fm2Oj8AIPo1BTUhg5oxkvm9+SVEGFdhyOz7tTdUTfvxMiAs4sp6/eZO2Ew+pw==}
 
   tinyexec@1.3.1:
     resolution: {integrity: sha512-GCvB3aoys96IuDFBMcTB46JOR6mdMtAToqwiW8JlWhsoh1mhHi/xn9ss/Dg7N555GiJyEt2qzoG/NHCwM6h1EA==}
@@ -3770,6 +3875,9 @@ packages:
     resolution: {integrity: sha512-6L+EeigHMQhdaIPNIFUKwfWJSwWFQ8gJbJ2DLOs5sDIegTwR9fRxvnM3uciHKjIZhFz+KAv2emhWMRvDmMcY8A==}
     peerDependencies:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+
+  utif@3.1.0:
+    resolution: {integrity: sha512-WEo4D/xOvFW53K5f5QTaTbbiORcm2/pCL9P6qmJnup+17eYfKaEhDeX9PeQkuyEoIxlbGklDuGl8xwuXYMrrXQ==}
 
   util-deprecate@1.0.2:
     resolution: {integrity: sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==}
@@ -4161,6 +4269,87 @@ snapshots:
       lodash.isundefined: 3.0.1
       lodash.uniq: 4.5.0
 
+  '@file-viewer/asset-installer@3.3.6': {}
+
+  '@file-viewer/assets-ppt@3.3.6':
+    dependencies:
+      '@file-viewer/asset-installer': 3.3.6
+
+  '@file-viewer/assets-standard@3.3.6':
+    dependencies:
+      '@file-viewer/asset-installer': 3.3.6
+
+  '@file-viewer/core@3.3.6':
+    dependencies:
+      dompurify: 3.4.18
+
+  '@file-viewer/doc@3.3.6':
+    dependencies:
+      dompurify: 3.4.18
+
+  '@file-viewer/docx@0.3.42':
+    dependencies:
+      '@xmldom/xmldom': 0.9.12
+      jszip: 3.10.2
+
+  '@file-viewer/ppt@1.0.2': {}
+
+  '@file-viewer/pptx@3.3.6':
+    dependencies:
+      dingbat-to-unicode: 1.0.2
+      dompurify: 3.4.18
+      jszip: 3.10.2
+      tinycolor2: 1.6.0
+      utif: 3.1.0
+
+  '@file-viewer/renderer-image@3.3.6':
+    dependencies:
+      '@file-viewer/core': 3.3.6
+      heic2any: 0.0.4
+      utif: 3.1.0
+
+  '@file-viewer/renderer-pdf@3.3.6':
+    dependencies:
+      '@file-viewer/core': 3.3.6
+      '@fontsource-variable/noto-sans-sc': 5.3.1
+
+  '@file-viewer/renderer-ppt@3.3.6':
+    dependencies:
+      '@file-viewer/core': 3.3.6
+      '@file-viewer/ppt': 1.0.2
+
+  '@file-viewer/renderer-pptx@3.3.6':
+    dependencies:
+      '@file-viewer/core': 3.3.6
+      '@file-viewer/pptx': 3.3.6
+
+  '@file-viewer/renderer-presentation@3.3.6':
+    dependencies:
+      '@file-viewer/core': 3.3.6
+      '@file-viewer/renderer-ppt': 3.3.6
+      '@file-viewer/renderer-pptx': 3.3.6
+
+  '@file-viewer/renderer-spreadsheet@3.3.6':
+    dependencies:
+      '@file-viewer/core': 3.3.6
+      '@xmldom/xmldom': 0.9.12
+      e-virt-table: 1.4.18
+      jszip: 3.10.2
+      styled-exceljs: 0.21.6
+      tinycolor2: 1.6.0
+      utif: 3.1.0
+
+  '@file-viewer/renderer-word@3.3.6':
+    dependencies:
+      '@file-viewer/core': 3.3.6
+      '@file-viewer/doc': 3.3.6
+      '@file-viewer/docx': 0.3.42
+      jszip: 3.10.2
+
+  '@file-viewer/vite-plugin@3.3.6(vite@8.3.5(@types/node@24.19.2)(jiti@2.7.0))':
+    dependencies:
+      vite: 8.3.5(@types/node@24.19.2)(jiti@2.7.0)
+
   '@floating-ui/core@1.8.0':
     dependencies:
       '@floating-ui/utils': 0.2.12
@@ -4177,6 +4366,8 @@ snapshots:
       react-dom: 19.3.1(react@19.3.1)
 
   '@floating-ui/utils@0.2.12': {}
+
+  '@fontsource-variable/noto-sans-sc@5.3.1': {}
 
   '@hookform/resolvers@7.0.1(@standard-schema/spec@1.1.0)(react-hook-form@7.91.0(@types/react@19.3.0)(react@19.3.1))(zod@4.6.7)':
     dependencies:
@@ -5040,12 +5231,6 @@ snapshots:
 
   '@rolldown/pluginutils@1.0.1': {}
 
-  '@silurus/ooxml-legacy-office@0.89.10(@silurus/ooxml@0.89.10)':
-    dependencies:
-      '@silurus/ooxml': 0.89.10
-
-  '@silurus/ooxml@0.89.10': {}
-
   '@standard-schema/spec@1.1.0': {}
 
   '@standard-schema/utils@0.3.0': {}
@@ -5232,6 +5417,9 @@ snapshots:
     dependencies:
       csstype: 3.2.3
 
+  '@types/trusted-types@2.0.7':
+    optional: true
+
   '@types/use-sync-external-store@0.0.6': {}
 
   '@typescript-eslint/eslint-plugin@8.72.1(@typescript-eslint/parser@8.72.1(eslint@9.39.5(jiti@2.7.0)(supports-color@7.2.0))(supports-color@7.2.0)(typescript@6.0.3))(eslint@9.39.5(jiti@2.7.0)(supports-color@7.2.0))(supports-color@7.2.0)(typescript@6.0.3)':
@@ -5403,6 +5591,8 @@ snapshots:
       vite: 8.3.5(@types/node@24.19.2)(jiti@2.7.0)
 
   '@vitest/spy@5.0.5': {}
+
+  '@xmldom/xmldom@0.9.12': {}
 
   acorn-jsx@5.3.2(acorn@8.19.0):
     dependencies:
@@ -5793,6 +5983,8 @@ snapshots:
 
   diff@9.0.0: {}
 
+  dingbat-to-unicode@1.0.2: {}
+
   doctrine@2.1.0:
     dependencies:
       esutils: 2.0.3
@@ -5800,6 +5992,10 @@ snapshots:
   dom-accessibility-api@0.5.16: {}
 
   dom-accessibility-api@0.6.3: {}
+
+  dompurify@3.4.18:
+    optionalDependencies:
+      '@types/trusted-types': 2.0.7
 
   dunder-proto@1.0.1:
     dependencies:
@@ -5810,6 +6006,10 @@ snapshots:
   duplexer2@0.1.4:
     dependencies:
       readable-stream: 2.3.8
+
+  e-virt-table@1.4.18:
+    dependencies:
+      '@floating-ui/dom': 1.8.0
 
   electron-to-chromium@1.5.472: {}
 
@@ -6296,6 +6496,8 @@ snapshots:
   hasown@2.0.4:
     dependencies:
       function-bind: 1.1.2
+
+  heic2any@0.0.4: {}
 
   hermes-estree@0.25.1: {}
 
@@ -7298,6 +7500,8 @@ snapshots:
     dependencies:
       anynum: 1.0.1
 
+  styled-exceljs@0.21.6: {}
+
   supports-color@7.2.0:
     dependencies:
       has-flag: 4.0.0
@@ -7321,6 +7525,8 @@ snapshots:
   tiny-invariant@1.3.3: {}
 
   tinybench@6.2.2: {}
+
+  tinycolor2@1.6.0: {}
 
   tinyexec@1.3.1: {}
 
@@ -7499,6 +7705,10 @@ snapshots:
   use-sync-external-store@1.7.0(react@19.3.1):
     dependencies:
       react: 19.3.1
+
+  utif@3.1.0:
+    dependencies:
+      pako: 1.0.11
 
   util-deprecate@1.0.2: {}
 

@@ -197,7 +197,9 @@ COS、STS 使用腾讯云官方 SDK 和固定 HTTPS 端点，配置的 `request_
 缓存时间须短于 [EdgeOne 鉴权有效期](https://edgeone.ai/zh/document/46164)，给浏览器请求留出时间。
 Redis 未配置或缓存访问失败时按需签发。
 
-`cos.max_upload_bytes` 与前端 `fileMaxUploadBytes`、业务导入字节上限保持一致，默认 5242880；允许类型通过 `cos.allowed_content_types` 与前端 `fileAllowedContentTypes` 配套配置。Office 预览需要完整发布构建目录中的 WASM、Worker 资源，并正确提供 JavaScript 与 WASM 内容类型，处理时限由 `filePreviewTimeoutMs` 控制。
+`cos.max_upload_bytes` 与前端 `fileMaxUploadBytes`、业务导入字节上限保持一致，默认 5242880；允许类型通过 `cos.allowed_content_types` 与前端 `fileAllowedContentTypes` 配套配置。
+
+附件预览在浏览器中处理 Word、Excel、PowerPoint、PDF 和图片。完整发布前端构建目录中的 Worker、WASM、字体和第三方许可文件，并为 JavaScript 与 WASM 提供正确的内容类型。解析时限由 `filePreviewTimeoutMs` 控制。
 
 前端上传提示通过 [config.js](src/web/public/config.js) 的 `fileContentTypeGroups` 配置一对多分组，例如 `Word: ['application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']`、`PPT: ['application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation']`。`fileAllowedContentTypes` 中每项（含通配符）都必须出现在一个分组内，同一类型不能重复归组。提示按分组配置顺序展示命中白名单的组名，每组只显示一次，例如“支持 PDF、图片、Word、Excel、PPT”。更新已有部署配置时需补充分组，再重新构建发布；上传校验继续使用 MIME 白名单。
 

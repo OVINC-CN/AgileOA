@@ -18,6 +18,27 @@ const officeContentTypes = {
 } as const;
 
 export type OfficePreviewKind = 'docx' | 'xlsx' | 'pptx';
+export type AttachmentPreviewKind = OfficePreviewKind | 'pdf' | 'image';
+
+export function attachmentPreviewKind(contentType: string): AttachmentPreviewKind {
+  if (contentType === 'application/pdf') return 'pdf';
+  return officePreviewKind(contentType) ?? 'image';
+}
+
+export function attachmentPreviewExtension(contentType: string): string {
+  for (const [extension, mime] of Object.entries(officeContentTypes)) {
+    if (contentType === mime) return extension;
+  }
+  switch (contentType) {
+    case 'image/svg+xml':
+      return 'svg';
+    case 'image/vnd.microsoft.icon':
+    case 'image/x-icon':
+      return 'ico';
+    default:
+      return contentType.split('/')[1] ?? '';
+  }
+}
 
 export function officePreviewKind(contentType: string): OfficePreviewKind | null {
   switch (contentType) {

@@ -237,11 +237,14 @@ COS 和 STS 协议位于 [tencentcos](src/api/internal/apis/tencentcos/)。
 [pnpm 配置](src/web/pnpm-workspace.yaml) 固定的 XML 解析器版本。
 头像入口为 [avatar.go](src/api/internal/apps/student/studentSvc/avatar.go)，
 待完成记录保存在 `student_avatar_uploads`，完成前保留旧头像。前端使用公共文件按钮，
-预览连接 [file-preview.ts](src/web/src/lib/file-preview.ts) 和
-[office-preview.ts](src/web/src/lib/office-preview.ts)。
+预览由 [file-preview.ts](src/web/src/lib/file-preview.ts) 识别类型，
+[attachment-preview.ts](src/web/src/lib/attachment-preview.ts) 按需加载 Flyfish 渲染器。
 每次打开预览时调用下载接口完成鉴权和审计，再按 CDN 响应缓存头读取正文。
-窗口内下载复用已读取的 Blob。
-修改解析器时检查构建后的 WASM、Worker 资源、超时、请求中止及 Blob URL 释放。
+预览与下载使用同一个 File。分页 Word、PowerPoint 和 PDF 默认适应整页，连续排版的旧版 Word 适应宽度。Excel 按视口宽度适度缩小，上限为原始比例。图片按视口缩放。
+Vite 将 Flyfish 运行资源发布到 `dist/extra-assets/vendor`，资源清单位于 `dist/extra-assets`。
+项目汇集的预览许可文件输出到 `dist/extra-assets/licenses/file-viewer`。
+修改解析器时检查各格式的实际渲染、分页及工作表切换，
+并检查构建产物中的 Worker、WASM、字体及第三方许可，验证超时、请求中止和资源释放。
 
 ## 业务修改入口
 

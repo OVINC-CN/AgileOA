@@ -20,8 +20,6 @@ patchedDependencies:
 
 minimumReleaseAgeExclude:
   - '@vitejs/plugin-react@6.2.1'
-  - '@silurus/ooxml-legacy-office@0.89.10'
-  - '@silurus/ooxml@0.89.10'
 
 allowBuilds:
   '@tailwindcss/oxide': true
