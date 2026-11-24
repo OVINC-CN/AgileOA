@@ -5,6 +5,7 @@ const ConfigFlagName = "config"
 
 const (
 	defaultConfigFilename = "config.yaml"
+	defaultTimeZone       = "Asia/Shanghai"
 	minimumTCPPort        = 1
 	maximumTCPPort        = 65535
 )

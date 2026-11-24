@@ -5,6 +5,7 @@ import { MemoryRouter } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { AuditRow, AuditStatistics } from '@/features/management/api';
+import { getConfig } from '@/lib/config';
 import { AuditPage } from '@/pages/audit-page';
 
 vi.mock('@/components/management-charts', () => ({
@@ -454,6 +455,10 @@ describe('审计操作筛选', () => {
   });
 
   it('日期时间确认后一次同步列表和统计，编辑草稿不触发查询', async () => {
+    vi.stubGlobal('AGILE_WORKSPACE_CONFIG', {
+      ...getConfig(),
+      displayTimeZone: 'America/New_York',
+    });
     const paths = renderAudit();
     await waitFor(() => {
       expect(screen.getByRole('button', { name: '搜索' })).toBeEnabled();
@@ -461,8 +466,8 @@ describe('审计操作筛选', () => {
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: '更多筛选' }));
     for (const [label, value, hour, minute] of [
-      ['开始时间', '2026-01-01', '08', '30'],
-      ['结束时间', '2026-01-31', '10', '45'],
+      ['开始时间', '2026-03-07', '08', '30'],
+      ['结束时间', '2026-03-08', '10', '45'],
     ] as const) {
       const before = paths.length;
       await user.click(screen.getByRole('combobox', { name: label }));
@@ -482,8 +487,8 @@ describe('审计操作筛选', () => {
       for (const endpoint of ['/logs?', '/statistics?']) {
         const path = paths.filter((value) => value.includes(endpoint)).at(-1);
         const parameters = new URL(path ?? '', 'https://example.com').searchParams;
-        expect(parameters.get('start_time')).toBe(String(Date.parse('2026-01-01T08:30:00Z')));
-        expect(parameters.get('end_time')).toBe(String(Date.parse('2026-01-31T10:45:00Z')));
+        expect(parameters.get('start_time')).toBe(String(Date.parse('2026-03-07T13:30:00Z')));
+        expect(parameters.get('end_time')).toBe(String(Date.parse('2026-03-08T14:45:00Z')));
         expect(parameters.get('page') ?? '1').toBe('1');
       }
     });
@@ -491,10 +496,10 @@ describe('审计操作筛选', () => {
     expect(screen.queryByRole('combobox', { name: '开始时间' })).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '更多筛选' }));
     expect(screen.getByRole('combobox', { name: '开始时间' })).toHaveTextContent(
-      '2026年1月1日 08:30',
+      '2026年3月7日 08:30',
     );
     expect(screen.getByRole('combobox', { name: '结束时间' })).toHaveTextContent(
-      '2026年1月31日 10:45',
+      '2026年3月8日 10:45',
     );
   });
 });

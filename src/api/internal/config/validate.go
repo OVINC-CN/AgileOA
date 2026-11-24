@@ -260,7 +260,14 @@ func (c *config) validate() error {
 		}
 	}
 
-	// 缓存全局时区，供调度器直接使用。
+	// 分别加载展示与调度时区。
+	if c.App.TimeZone == "" || c.App.TimeZone == "Local" {
+		return errors.New("app.time_zone must use an IANA time zone")
+	}
+	c.App.Location, err = time.LoadLocation(c.App.TimeZone)
+	if err != nil {
+		return fmt.Errorf("invalid app.time_zone: %w", err)
+	}
 	if strings.TrimSpace(c.Scheduler.Timezone) == "" {
 		return errors.New("scheduler.timezone is required")
 	}

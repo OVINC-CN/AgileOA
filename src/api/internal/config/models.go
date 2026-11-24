@@ -179,12 +179,14 @@ type captchaConfig struct {
 }
 
 type appConfig struct {
-	Debug           bool          `yaml:"debug"`
-	Name            string        `yaml:"name"`
-	Environment     string        `yaml:"environment"`
-	Addr            string        `yaml:"addr"`
-	LogLevel        string        `yaml:"log_level"`
-	ShutdownTimeout time.Duration `yaml:"shutdown_timeout"`
+	Debug           bool           `yaml:"debug"`
+	Name            string         `yaml:"name"`
+	Environment     string         `yaml:"environment"`
+	Addr            string         `yaml:"addr"`
+	LogLevel        string         `yaml:"log_level"`
+	ShutdownTimeout time.Duration  `yaml:"shutdown_timeout"`
+	TimeZone        string         `yaml:"time_zone"`
+	Location        *time.Location `yaml:"-"`
 }
 
 type httpConfig struct {

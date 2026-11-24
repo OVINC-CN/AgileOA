@@ -81,6 +81,8 @@ API_BASE_URL=https://api.example.com CONTACT_EMAIL=privacy@example.com mise exec
 
 构建会将 `passwordLoginEnabled` 设为 `false`，按最终配置生成 `config.<hash>.js` 并更新 HTML 引用。部署时先上传配置及其他静态资源，再更新 HTML，并保留旧哈希资源供缓存页面使用。
 
+将后端 YAML 的 `app.time_zone` 和前端 `displayTimeZone` 配置为相同的 IANA 时区，例如 `Asia/Shanghai`。后端省略该项时使用 `Asia/Shanghai`。审计默认范围和趋势、用户管理自然日统计及奖项导出的申报截止时间按此时区计算。定时任务使用独立的 `scheduler.timezone`。
+
 密码登录由后端 YAML 的 `user.password_login_enabled` 和前端 `config.js` 的 `passwordLoginEnabled` 控制，开发示例均为 `true`，前端构建产物默认为 `false`，后端部署 YAML 按需配置，前后端开关应保持一致。关闭后端开关会拒绝新的密码登录；关闭前端开关会隐藏密码登录及用户密码设置入口，新建用户仅使用邮件登录，编辑已有用户时保留其密码设置。默认会话与 Cookie 有效期为 30 天，由 `user.session_ttl: 720h` 配置，适用于组织账号和学生账号的新会话；已有会话保留原到期时间。
 
 静态服务器将前端页面路由回退到 `index.html`。同源部署时，将 `apiBaseURL` 留空并把 `/v1`、`/health` 和 `/ready` 转发到 Go API。跨源部署使用同站地址，并在 `http.cors_allow_origins` 中配置前端的完整来源，以支持会话 Cookie。
@@ -94,6 +96,7 @@ API_BASE_URL=https://api.example.com CONTACT_EMAIL=privacy@example.com mise exec
 由数据库维护账号人工执行，遇错立即停止核对，不使用忽略错误的执行选项。
 应用运行账号仅需 DML 权限，不自动建表、迁移或创建分区。
 已有数据库不得重跑基线；调整已有库前需核对目标结构与基线的差异，仓库不保留历史迁移及回填脚本。
+已有库需按基线为 `users.created_at` 补齐 `idx_users_created_at`，供新增账号趋势做时间范围查询。
 
 审计只使用 `audit_events`，按请求 `start_time` 所属 UTC 日期分区，
 初始化时创建 UTC 当天起的 30 个每日分区。

@@ -11,6 +11,7 @@ import (
 // ProjectExport 按当前筛选导出完整项目表格。
 // @Summary 导出评奖评优项目
 // @Description 使用独立项目导出权限，复用列表筛选及排序，导出全部匹配项目的名称、年份、说明和附件数量；审计提交后返回文本格式 XLSX。
+// @Description 自行申报截止时间使用配置的展示时区，并保留时区偏移。
 // @Tags 评奖评优
 // @Produce json
 // @Param workspace_id path string true "工作空间编号"

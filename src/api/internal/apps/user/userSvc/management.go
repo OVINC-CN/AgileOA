@@ -19,9 +19,9 @@ import (
 	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/audit/auditConstants"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/audit/auditModels"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/audit/auditSvc"
-	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/audit/auditUtils"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/user/userModels"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/config"
+	"github.com/OVINC-CN/AgileOA/src/api/internal/displaytime"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/logger"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
 )
@@ -159,13 +159,15 @@ func List(
 // Statistics 从真实账号与登录审计汇总统计，空日期补零。
 func Statistics(ctx context.Context) (userModels.StatisticsData, error) {
 	var result userModels.StatisticsData
-	start, end := auditUtils.Window(config.Config.User.ChartDays)
+	start, end := displaytime.Window(time.Now(), config.Config.User.ChartDays)
+	first := displaytime.Date(start)
+	last := displaytime.Date(end.Add(-time.Nanosecond))
 	event := auditModels.Event{
 		ObjectType: auditConstants.ObjectUser,
 		ObjectID:   "statistics",
 		Conditions: auditModels.Snapshot{
-			"from": start.Format(time.DateOnly),
-			"to":   end.AddDate(0, 0, -1).Format(time.DateOnly),
+			"from": first.Format(time.DateOnly),
+			"to":   last.Format(time.DateOnly),
 		},
 	}
 	err := authenticated(
@@ -183,9 +185,10 @@ func Statistics(ctx context.Context) (userModels.StatisticsData, error) {
 				Count int64
 			}
 			var created []count
+			dateColumn := displaytime.DateSQL("created_at", start, end)
 			if err := tx.Model(&userModels.User{}).
-				Select("DATE_FORMAT(CONVERT_TZ(created_at, '+00:00', '+08:00'), '%Y-%m-%d') AS date, COUNT(*) AS count").
-				Where("created_at >= ? AND created_at < ?", start.UTC(), end.UTC()).
+				Select("? AS date, COUNT(*) AS count", dateColumn).
+				Where("created_at >= ? AND created_at < ?", start, end).
 				Group("date").
 				Scan(&created).
 				Error; err != nil {
@@ -203,7 +206,7 @@ func Statistics(ctx context.Context) (userModels.StatisticsData, error) {
 				byLogin[item.Date] = item.Count
 				result.Logins += item.Count
 			}
-			for day := start; day.Before(end); day = day.AddDate(0, 0, 1) {
+			for day := first; !day.After(last); day = day.AddDate(0, 0, 1) {
 				date := day.Format(time.DateOnly)
 				result.Days = append(
 					result.Days,

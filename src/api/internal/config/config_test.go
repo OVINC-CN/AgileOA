@@ -120,6 +120,8 @@ func TestLoadRejectsInvalidConfig(t *testing.T) {
 		{"invalid-body-limit", "body_limit: 16M", "body_limit: invalid"},
 		{"short-write-timeout", "write_timeout: 31s", "write_timeout: 30s"},
 		{"invalid-timezone", "timezone: Asia/Shanghai", "timezone: invalid"},
+		{"invalid-display-timezone", "time_zone: Asia/Shanghai", "time_zone: invalid"},
+		{"local-display-timezone", "time_zone: Asia/Shanghai", "time_zone: Local"},
 		{
 			"removed-student-account-sync",
 			"timezone: Asia/Shanghai",

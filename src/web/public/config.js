@@ -2,7 +2,7 @@
 // 调整配置后重新构建，同步发布 HTML 和对应配置文件。
 // 文件内容公开可见，请勿存放凭据或密钥。
 globalThis.AGILE_WORKSPACE_CONFIG = {
-  // 日期时间的显示时区，也用于判断日期选择器中的今天。
+  // 日期时间的显示时区
   displayTimeZone: 'Asia/Shanghai',
   // 应用显示名称，同时用作浏览器标签页标题。
   appName: '敏捷办公',

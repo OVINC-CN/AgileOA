@@ -62,7 +62,7 @@ type ListResponse struct{ response.Envelope[ListData] }
 
 // Day 是真实每日统计，不使用预置演示数据。
 type Day struct {
-	// Date 是上海日期。
+	// Date 是配置的展示时区中的日期。
 	Date string `json:"date" example:"2026-11-03"`
 	// Created 是当天新增账号数量。
 	Created int64 `json:"created" example:"3"`
