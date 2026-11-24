@@ -362,7 +362,7 @@ function StudentEditorForm({
                   label="上传头像"
                   accept="image/jpeg,image/png,image/webp"
                   disabled={mutation.isPending}
-                  loading={avatarUpload.pending}
+                  loading={avatarUpload.isPending('avatar')}
                   onFileSelect={(file, updateUpload) => {
                     void avatarUpload.run('avatar', async () => {
                       // 上传前校验头像大小，避免发送空文件或超限文件。
