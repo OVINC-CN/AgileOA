@@ -8,7 +8,8 @@ const sections = [
     fields: [
       ['stage', '发展阶段'],
       ['status', '状态'],
-      ['party_branch_name', '所属党支部'],
+      ['party_branch_short_name', '所属党支部'],
+      ['party_branch_secretaries', '支部书记'],
       ['party_position', '党内职务'],
     ],
   },
@@ -47,13 +48,18 @@ const sections = [
 }[];
 
 export function PersonDetail({ person }: { person: Person }) {
+  const values = {
+    ...person,
+    stage: stageLabel(person.stage),
+    party_branch_secretaries: person.party_branch_secretaries.join('、'),
+  };
   return (
     <div className="divide-y divide-border px-6">
       {sections.map((section) => (
         <DetailSection key={section.title} title={section.title}>
           <dl className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             {section.fields.map(([key, label]) => {
-              const value = key === 'stage' ? stageLabel(person.stage) : person[key];
+              const value = values[key];
               return (
                 <div
                   key={key}

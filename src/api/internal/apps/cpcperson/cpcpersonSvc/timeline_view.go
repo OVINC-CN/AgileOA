@@ -93,7 +93,7 @@ func TimelineViewList(
 				return err
 			}
 			var people []cpcpersonModels.Info
-			if err := scope.Order("p.id DESC").Limit(query.PageSize).
+			if err := withBranchSecretaries(scope).Order("p.id DESC").Limit(query.PageSize).
 				Offset((query.Page - 1) * query.PageSize).Find(&people).Error; err != nil {
 				return err
 			}

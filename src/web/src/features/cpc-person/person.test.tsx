@@ -57,6 +57,7 @@ const person: Person = {
   party_branch_id: 2,
   party_branch_name: '虚构支部全称',
   party_branch_short_name: '虚构支部',
+  party_branch_secretaries: ['虚构书记乙', '虚构书记三'],
   revision: 1,
   can_update: true,
   can_delete: false,
@@ -397,15 +398,28 @@ describe('党建人员', () => {
     );
     const table = within(screen.getByRole('table', { name: '人员列表' }));
     const name = await table.findByRole('button', { name: person.name });
-    const [nameHeader, numberHeader] = table.getAllByRole('columnheader');
+    const headers = table.getAllByRole('columnheader');
+    const [nameHeader, numberHeader] = headers;
     expect(nameHeader).toHaveTextContent('姓名');
     expect(nameHeader).toHaveClass('table-pinned', 'left-0');
     expect(numberHeader).toHaveTextContent('学号');
     expect(numberHeader).not.toHaveClass('table-pinned');
+    expect(headers.slice(4, 7).map((header) => header.textContent)).toEqual([
+      '所属党支部',
+      '支部书记',
+      '党内职务',
+    ]);
+    expect(table.getByRole('cell', { name: '虚构书记三、虚构书记乙' })).toBeVisible();
     expect(name.closest('td')).toHaveClass('table-pinned', 'left-0');
     await userEvent.click(name);
     const drawer = await screen.findByRole('dialog', { name: '党建人员详情' });
     expect(drawer).toHaveAccessibleDescription(`${person.name}(${person.student_no})`);
+    const details = within(drawer);
+    const fields = details.getAllByRole('term').map((field) => field.textContent);
+    expect(fields.slice(2, 5)).toEqual(['所属党支部', '支部书记', '党内职务']);
+    expect(details.getByText(person.party_branch_short_name)).toBeVisible();
+    expect(details.queryByText(person.party_branch_name)).not.toBeInTheDocument();
+    expect(details.getByText('虚构书记三、虚构书记乙')).toBeVisible();
     expect(fetch.mock.calls.filter(([path]) => path === detailPath)).toHaveLength(1);
   });
 

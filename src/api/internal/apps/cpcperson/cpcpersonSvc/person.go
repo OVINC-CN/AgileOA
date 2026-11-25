@@ -29,6 +29,20 @@ const studentColumns = "s.student_no, s.name, s.gender, s.ethnicity, s.grade, " 
 	"s.status AS student_status, s.education_level, s.class_name, s.major, s.advisor, s.phone, " +
 	"s.arrival_month, s.previous_school_or_employer, s.previous_graduation_month"
 
+const personColumns = "p.id, p.student_id, p.stage, p.status, p.party_branch_id, " +
+	"p.party_position, p.revision, p.timeline_template_id, p.timeline_status, " +
+	"tr.target_template_id AS timeline_transfer_target_id, " +
+	"COALESCE(t.name, '') AS timeline_template_name, " +
+	"(SELECT COUNT(*) FROM cpc_person_timeline_nodes AS n WHERE " +
+	"n.workspace_id = p.workspace_id AND n.person_id = p.id AND n.status = 'pending') AS timeline_pending, " +
+	"(SELECT COUNT(*) FROM cpc_person_timeline_nodes AS n WHERE " +
+	"n.workspace_id = p.workspace_id AND n.person_id = p.id AND n.status = 'completed') AS timeline_completed, " +
+	"(SELECT COUNT(*) FROM cpc_person_timeline_nodes AS n WHERE " +
+	"n.workspace_id = p.workspace_id AND n.person_id = p.id AND n.status = 'skipped') AS timeline_skipped, " +
+	"p.created_at, p.updated_at, " + studentColumns +
+	", COALESCE(b.full_name, '') AS party_branch_name, " +
+	"COALESCE(b.short_name, '') AS party_branch_short_name"
+
 // Save 在空间锁内复核细粒度权限、书记范围、学生和支部准入规则后保存。
 func Save(
 	ctx context.Context, workspaceID string, id uint64, request cpcpersonModels.Request,
@@ -258,18 +272,7 @@ func Delete(ctx context.Context, workspaceID string, id, revision uint64) error 
 
 func infoScope(tx *gorm.DB, workspaceID string) *gorm.DB {
 	return tx.Table("cpc_people AS p").
-		Select("p.id, p.student_id, p.stage, p.status, p.party_branch_id, p.party_position, p.revision, "+
-			"p.timeline_template_id, p.timeline_status, tr.target_template_id AS timeline_transfer_target_id, "+
-			"COALESCE(t.name, '') AS timeline_template_name, "+
-			"(SELECT COUNT(*) FROM cpc_person_timeline_nodes AS n WHERE "+
-			"n.workspace_id = p.workspace_id AND n.person_id = p.id AND n.status = 'pending') AS timeline_pending, "+
-			"(SELECT COUNT(*) FROM cpc_person_timeline_nodes AS n WHERE "+
-			"n.workspace_id = p.workspace_id AND n.person_id = p.id AND n.status = 'completed') AS timeline_completed, "+
-			"(SELECT COUNT(*) FROM cpc_person_timeline_nodes AS n WHERE "+
-			"n.workspace_id = p.workspace_id AND n.person_id = p.id AND n.status = 'skipped') AS timeline_skipped, "+
-			"p.created_at, p.updated_at, "+studentColumns+
-			", COALESCE(b.full_name, '') AS party_branch_name, "+
-			"COALESCE(b.short_name, '') AS party_branch_short_name").
+		Select(personColumns).
 		Joins("JOIN students AS s ON s.workspace_id = p.workspace_id AND s.id = p.student_id").
 		Joins("LEFT JOIN cpc_party_branches AS b ON b.workspace_id = p.workspace_id AND b.id = p.party_branch_id").
 		Joins("LEFT JOIN cpc_timeline_templates AS t ON t.workspace_id = p.workspace_id AND t.id = p.timeline_template_id").
@@ -278,12 +281,25 @@ func infoScope(tx *gorm.DB, workspaceID string) *gorm.DB {
 		Where("p.workspace_id = ?", workspaceID)
 }
 
+func withBranchSecretaries(scope *gorm.DB) *gorm.DB {
+	return scope.Select(
+		personColumns+", COALESCE((SELECT JSON_ARRAYAGG(ss.name) FROM cpc_people AS secretary "+
+			"JOIN students AS ss ON ss.workspace_id = secretary.workspace_id "+
+			"AND ss.id = secretary.student_id "+
+			"WHERE secretary.workspace_id = p.workspace_id "+
+			"AND secretary.party_branch_id = p.party_branch_id "+
+			"AND CAST(secretary.party_position AS BINARY) = ?), JSON_ARRAY()) "+
+			"AS party_branch_secretaries",
+		"党支部书记",
+	)
+}
+
 func detail(
 	tx *gorm.DB, workspaceID string, id uint64, access personAccess, action string,
 ) (cpcpersonModels.Info, error) {
 	var result cpcpersonModels.Info
-	err := access.limit(infoScope(tx, workspaceID), action, "p.party_branch_id").
-		Where("p.id = ?", id).Take(&result).Error
+	scope := access.limit(infoScope(tx, workspaceID), action, "p.party_branch_id")
+	err := withBranchSecretaries(scope).Where("p.id = ?", id).Take(&result).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return result, missing()
 	}

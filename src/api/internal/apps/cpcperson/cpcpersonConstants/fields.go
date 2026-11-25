@@ -80,6 +80,14 @@ var Fields = []cpcpersonModels.Field{
 		Options:  []cpcpersonModels.Option{},
 	},
 	{
+		Key:      "party_branch_secretaries",
+		Label:    "支部书记",
+		Type:     "array",
+		ReadOnly: true,
+		Example:  `["虚构学生乙"]`,
+		Options:  []cpcpersonModels.Option{},
+	},
+	{
 		Key:     "party_position",
 		Label:   "党内职务（最多 64 字符，可新增选项）",
 		Type:    "string",

@@ -64,6 +64,7 @@ export const personSchema = inputSchema.extend(studentSchema.shape).extend({
   id: z.number().int().positive(),
   party_branch_name: z.string(),
   party_branch_short_name: z.string(),
+  party_branch_secretaries: z.array(z.string()).transform((names) => names.toSorted()),
   revision: z.number().int().positive(),
   can_update: z.boolean(),
   can_delete: z.boolean(),
