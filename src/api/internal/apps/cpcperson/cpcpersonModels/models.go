@@ -103,6 +103,8 @@ type Info struct {
 	PartyBranchName string `json:"party_branch_name" example:"中共示例支部委员会"`
 	// PartyBranchShortName 是自动确定的所属党支部简称。
 	PartyBranchShortName string `json:"party_branch_short_name" example:"示例支部"`
+	// PartyBranchSecretaries 是同空间同支部内党内职务为“党支部书记”的人员姓名，无匹配时为空数组。
+	PartyBranchSecretaries []string `json:"party_branch_secretaries" gorm:"serializer:json" example:"虚构学生乙"`
 	// Revision 是修改及删除使用的并发版本。
 	Revision uint64 `json:"revision" example:"1"`
 	// CanUpdate 表示当前账号同时具备编辑权限及此人员的编辑范围。

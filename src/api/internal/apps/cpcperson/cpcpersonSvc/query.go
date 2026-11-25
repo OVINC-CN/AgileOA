@@ -39,7 +39,7 @@ func List(
 			if err := scope.Count(&result.Total).Error; err != nil {
 				return err
 			}
-			if err := scope.Order("p.id DESC").Limit(query.PageSize).
+			if err := withBranchSecretaries(scope).Order("p.id DESC").Limit(query.PageSize).
 				Offset((query.Page - 1) * query.PageSize).Find(&result.Items).Error; err != nil {
 				return err
 			}

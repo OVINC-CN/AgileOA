@@ -222,6 +222,11 @@ function PersonWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
       header: '所属党支部',
     },
     {
+      id: 'party_branch_secretaries',
+      accessorFn: (person) => person.party_branch_secretaries.join('、'),
+      header: '支部书记',
+    },
+    {
       accessorKey: 'party_position',
       header: '党内职务',
     },

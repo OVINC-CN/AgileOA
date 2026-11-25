@@ -1224,6 +1224,13 @@ definitions:
         description: PartyBranchName 是自动确定的所属党支部全称。
         example: 中共示例支部委员会
         type: string
+      party_branch_secretaries:
+        description: PartyBranchSecretaries 是同空间同支部内党内职务为“党支部书记”的人员姓名，无匹配时为空数组。
+        example:
+        - 虚构学生乙
+        items:
+          type: string
+        type: array
       party_branch_short_name:
         description: PartyBranchShortName 是自动确定的所属党支部简称。
         example: 示例支部
