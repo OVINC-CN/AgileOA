@@ -4,7 +4,7 @@ import { getConfig } from '@/lib/config';
 import { initializeRum } from '@/lib/rum';
 
 const createAegis = vi.hoisted(() =>
-  vi.fn(function (_settings: unknown) {
+  vi.fn<(settings: unknown) => { extendBean: () => void }>(function () {
     return { extendBean: vi.fn() };
   }),
 );
