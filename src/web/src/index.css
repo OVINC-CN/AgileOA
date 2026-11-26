@@ -317,6 +317,7 @@
     position: absolute;
     left: 44px;
     width: 104px;
+    text-align: left;
     opacity: 1;
     pointer-events: none;
     transition: opacity 100ms var(--motion-easing-standard) 60ms;
