@@ -17,6 +17,24 @@ import (
 
 const mcpEndpointPath = "/v1/mcp"
 
+const mcpInstructions = `
+先使用 get_workspaces 获取可访问的工作空间，再显式传入 workspace_id 查询。
+用户未指定空间且有多个可访问空间时，先确认查询范围。
+多选筛选参数使用数组，工具结果保留原接口响应。
+
+查学生名单或按相同条件统计人数时，默认传入 status: ["在籍"]。
+学生专业和住宿仪表只统计在籍学生数据。
+
+查党建人员名单、发展阶段统计或人员时间线列表时，默认传入 status: ["在编"]。
+查党员时，另传 stage: ["full_member", "probationary_member"]，查正式党员时只传 stage: ["full_member"]。
+按支部查党员人数可用党建仪表，合计包含正式党员和预备党员。
+用户明确指定学生或党建人员状态时，按指定状态查询。要求全部状态时省略 status。
+
+查月度工作时，按学生工作或党建工作选择对应工具。
+用户未指定年份时，在 year 数组中传入当前年份。
+用户指定年份时按指定范围查询，要求全部年份时省略 year。
+月度工作只返回当前账号负责或参与的记录。`
+
 // MCP 注册标准传输入口，实际转换由公共中间件完成。
 // @Summary 工作空间只读 MCP
 // @Description 使用 Streamable HTTP 无状态 JSON 模式。POST 接收 initialize、tools/list 和 tools/call；通知返回 202。GET 与 DELETE 返回 405。查询工具按名称与 GET 路径显式登记，参数和响应模型复用现有接口 Swagger，未登记接口默认不开放。调用复用认证身份、权限、校验及审计，不提供写入、导出、模板或下载工具。
@@ -74,9 +92,8 @@ func mcpConversion(engine *echo.Echo) echo.MiddlewareFunc {
 	}
 	server := mcp.NewServer(&mcp.Implementation{Name: config.Config.App.Name, Version: version},
 		&mcp.ServerOptions{
-			PageSize: config.Config.HTTP.MaxPageSize,
-			Instructions: "仅提供工作空间查询。先使用 get_workspaces 获取工作空间编号，" +
-				"再按权限查询对应工作空间。多选筛选参数使用数组，工具结果保留原接口响应。",
+			PageSize:     config.Config.HTTP.MaxPageSize,
+			Instructions: mcpInstructions,
 		})
 	for _, tool := range tools {
 		server.AddTool(tool.Tool, mcpQueryHandler(engine, tool))
