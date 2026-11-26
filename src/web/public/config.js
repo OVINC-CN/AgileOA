@@ -14,6 +14,16 @@ globalThis.AGILE_WORKSPACE_CONFIG = {
   // 密码登录及用户密码设置入口，与 YAML 的 user.password_login_enabled 保持一致。
   passwordLoginEnabled: true,
 
+  // 腾讯云前端性能监控，id 留空时关闭上报，生产构建可通过 AEGIS_ID 覆盖。
+  aegis: {
+    id: '',
+    hostUrl: 'https://rumt-zh.com',
+    aid: true,
+    spa: true,
+    reportApiSpeed: true,
+    api: { apiDetail: false },
+  },
+
   // API 基础地址，留空字符串时使用当前页面的来源。
   apiBaseURL: 'https://api.ovinc.localhost',
   // 浏览器等待单次 API 请求的时限，单位为毫秒。

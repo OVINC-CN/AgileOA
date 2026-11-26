@@ -21,6 +21,7 @@ const configSchema = z
     copyrightYear: z.number().int().positive(),
     passwordLoginEnabled: z.boolean(),
     ...deploymentFields,
+    aegis: z.unknown().optional(),
     apiTimeoutMs: z.number().int().positive(),
     messageDurationMs: z.number().int().positive(),
     pageUpdateCheckIntervalMs: pollIntervalSchema,

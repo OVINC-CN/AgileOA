@@ -102,42 +102,35 @@ function buildRuntimeConfig(): Plugin {
         const fileViewerAssetsPath = await publishFileViewerAssets(outputDirectory);
         const configPath = resolve(outputDirectory, 'config.js');
         const source = await readFile(configPath, 'utf8');
-        const passwordLoginEnabledPattern =
-          /^([ \t]*passwordLoginEnabled:[ \t]*)(?:true|false)(?=,)/gm;
-        if ([...source.matchAll(passwordLoginEnabledPattern)].length !== 1) {
-          this.error('构建配置必须包含唯一的 passwordLoginEnabled 布尔字段');
-        }
 
-        // 写入生产配置值并校验字段，避免替换失败后继续发布。
-        let productionConfig = source.replace(
-          passwordLoginEnabledPattern,
-          (_match, prefix: string) => `${prefix}${String(productionPasswordLoginEnabled)}`,
-        );
+        // 校验生产构建覆盖值，并在原配置求值后合并。
         const overrides = {
           apiBaseURL: process.env.API_BASE_URL?.trim() ?? '',
           contactEmail: process.env.CONTACT_EMAIL?.trim(),
           fileViewerAssetsPath,
         };
         for (const field of Object.keys(overrides) as (keyof typeof overrides)[]) {
-          const pattern = new RegExp(
-            String.raw`^([ \t]*${field}:[ \t]*)(?:'(?:\\.|[^'\\\r\n])*'|"(?:\\.|[^"\\\r\n])*")(?=,)`,
-            'gm',
-          );
-          if ([...productionConfig.matchAll(pattern)].length !== 1) {
-            this.error(`构建配置必须包含唯一的 ${field} 字符串字段`);
-          }
           const value = overrides[field];
-          if (value === undefined) {
-            continue;
-          }
-          if (!deploymentFields[field].safeParse(value).success) {
+          if (value !== undefined && !deploymentFields[field].safeParse(value).success) {
             this.error(`构建配置中的 ${field} 格式无效`);
           }
-          productionConfig = productionConfig.replace(
-            pattern,
-            (_match, prefix: string) => `${prefix}${JSON.stringify(value)}`,
-          );
         }
+
+        // 保留原监控对象的属性，应用 ID 由显式设置的环境变量覆盖。
+        const aegisId = process.env.AEGIS_ID?.trim();
+        const aegisOverride =
+          aegisId === undefined
+            ? ''
+            : `aegis: { ...globalThis.AGILE_WORKSPACE_CONFIG.aegis, id: ${JSON.stringify(aegisId)} },`;
+        const fields = JSON.stringify({
+          ...overrides,
+          passwordLoginEnabled: productionPasswordLoginEnabled,
+        });
+        const productionConfig = `${source}\n;globalThis.AGILE_WORKSPACE_CONFIG = {
+  ...globalThis.AGILE_WORKSPACE_CONFIG,
+  ...${fields},
+  ${aegisOverride}
+};\n`;
 
         // 去除发布配置中的注释，保留字段名和可读格式。
         const { code, errors } = minifySync(configPath, productionConfig, {

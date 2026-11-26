@@ -330,6 +330,10 @@ Vite 将 Flyfish 运行资源、资源清单及许可文件作为一组发布到
 上传提示由 [file-upload.ts](src/web/src/lib/file-upload.ts) 的 `uploadHint`
 读取 `fileContentTypeGroups` 和白名单生成；变更 MIME 时同时更新分组与校验。
 
+[rum.ts](src/web/src/lib/rum.ts) 在应用入口按 `aegis.id` 加载腾讯云监控，直接接收 SDK 选项，默认使用 HTTP 状态码统计接口结果。
+应用入口在 `/v1/user-info` 确认登录身份后更新 `uin`，组织账号使用 `user-<id>`，学生使用 `student-<id>`，退出及会话失效时清空。
+变更监控时，检查空 ID 关闭上报、页面及测速地址过滤查询参数、接口路径归一化业务编号，以及签名附件链接过滤。
+
 ## 本地验证
 
 仅文档或 SQL 整理时，核对本地链接、脚本及配置引用、结构差异，并执行 `git diff --check`。

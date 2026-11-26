@@ -1,4 +1,4 @@
-import { queryOptions, useQuery } from '@tanstack/react-query';
+import { hashKey, type QueryClient, queryOptions, useQuery } from '@tanstack/react-query';
 import { z } from 'zod';
 
 import { clearWatermarkPreference } from '@/features/user/watermark';
@@ -81,6 +81,24 @@ export const currentUserOptions = queryOptions({
   retry: false,
   refetchOnWindowFocus: true,
 });
+
+export function subscribeCurrentUserUin(client: QueryClient, onChange: (uin: string) => void) {
+  // 用查询确认登录身份，退出和会话失效时清空身份。
+  const currentUserHash = hashKey(currentUserKey);
+  return client.getQueryCache().subscribe((event) => {
+    if (event.query.queryHash !== currentUserHash) return;
+    if (event.type === 'removed') {
+      onChange('');
+      return;
+    }
+    if (event.type !== 'updated' || event.action.type !== 'success') return;
+
+    const user = client.getQueryData(currentUserOptions.queryKey);
+    if (user === null || (user && !event.action.manual)) {
+      onChange(user ? `${user.identity_type}-${String(user.id)}` : '');
+    }
+  });
+}
 
 export function useCurrentUser() {
   return useQuery(currentUserOptions);
