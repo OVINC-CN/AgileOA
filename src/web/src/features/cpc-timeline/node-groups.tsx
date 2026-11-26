@@ -2,8 +2,31 @@ import { Fragment, type ReactNode } from 'react';
 
 import { Separator } from '@/components/ui/separator';
 import type { TimelineNode } from '@/features/cpc-timeline/model';
+import { cn } from '@/lib/utils';
 
 type GroupableNode = Pick<TimelineNode, 'id' | 'group_name'>;
+
+export function TimelineNodeGroupDivider({
+  name,
+  className,
+  as: Heading = 'h2',
+}: {
+  name: string;
+  className?: string;
+  as?: 'h2' | 'h4';
+}) {
+  if (!name) return <Separator decorative={false} className={className} />;
+
+  return (
+    <div className={cn('flex min-w-0 items-center gap-3', className)}>
+      <Separator className="min-w-0 flex-1" />
+      <Heading className="max-w-[70%] min-w-0 text-center text-sm font-medium wrap-anywhere text-muted-foreground">
+        {name}
+      </Heading>
+      <Separator className="min-w-0 flex-1" />
+    </div>
+  );
+}
 
 export function TimelineNodeGroups<T extends GroupableNode>({
   nodes,
@@ -44,7 +67,7 @@ export function TimelineNodeGroups<T extends GroupableNode>({
             <Fragment key={group.id}>
               {visibleGroups[groupIndex - 1]?.name ? (
                 <li role="presentation">
-                  <Separator decorative={false} className="mb-5 bg-border" />
+                  <TimelineNodeGroupDivider name="" className="mb-5" />
                 </li>
               ) : null}
               {children}
@@ -54,13 +77,7 @@ export function TimelineNodeGroups<T extends GroupableNode>({
         return (
           <li key={group.id}>
             <section aria-label={`分组 ${group.name}`}>
-              <div className="mb-5 flex min-w-0 items-center gap-3">
-                <Separator className="min-w-0 flex-1 bg-border" />
-                <h2 className="max-w-[70%] min-w-0 text-center text-sm font-medium wrap-anywhere text-muted-foreground">
-                  {group.name}
-                </h2>
-                <Separator className="min-w-0 flex-1 bg-border" />
-              </div>
+              <TimelineNodeGroupDivider name={group.name} className="mb-5" />
               <ol aria-label={`${group.name}的节点`} className="space-y-0">
                 {children}
               </ol>

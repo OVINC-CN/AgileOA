@@ -2,9 +2,9 @@ import { ArrowDown, ArrowUp, GripVertical, Plus, Trash2 } from 'lucide-react';
 import { Fragment, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
 import { Tooltip } from '@/components/ui/tooltip';
 import { moveNode, newNode, removeNode, type TimelineNode } from '@/features/cpc-timeline/model';
+import { TimelineNodeGroupDivider } from '@/features/cpc-timeline/node-groups';
 import { useApiAction } from '@/lib/api-action';
 import { getConfig } from '@/lib/config';
 import { showMessage } from '@/lib/messages';
@@ -98,9 +98,13 @@ export function NodeList({
         <ol aria-label="时间线节点排序" className="space-y-1">
           {nodes.map((node, index) => (
             <Fragment key={node.id}>
-              {!node.group_name.trim() && nodes[index - 1]?.group_name.trim() ? (
+              {node.group_name.trim() !== (nodes[index - 1]?.group_name.trim() ?? '') ? (
                 <li role="presentation">
-                  <Separator decorative={false} className="bg-border" />
+                  <TimelineNodeGroupDivider
+                    name={node.group_name.trim()}
+                    className="my-2"
+                    as="h4"
+                  />
                 </li>
               ) : null}
               <li
@@ -160,15 +164,8 @@ export function NodeList({
                       onSelect(node.id);
                     }}
                   >
-                    <span className="min-w-0">
-                      <span data-tooltip-overflow className="block truncate leading-5">
-                        {String(index + 1)}. {node.name || '未命名节点'}
-                      </span>
-                      {node.group_name ? (
-                        <span className="block truncate text-xs leading-4 font-normal text-muted-foreground">
-                          {node.group_name}
-                        </span>
-                      ) : null}
+                    <span data-tooltip-overflow className="min-w-0 truncate leading-5">
+                      {String(index + 1)}. {node.name || '未命名节点'}
                     </span>
                   </Button>
                 </Tooltip>

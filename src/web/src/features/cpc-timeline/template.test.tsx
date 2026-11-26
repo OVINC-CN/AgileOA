@@ -207,9 +207,10 @@ function NodeHarness({ initial }: { initial: TimelineNode[] }) {
   );
 }
 
-it('键盘排序保留节点引用，被引用节点不能直接删除', async () => {
-  const first = { ...newNode(), name: '前置材料' };
+it('编辑列表展示连续分组，键盘排序更新分组并保留节点引用', async () => {
+  const first = { ...newNode(), name: '前置材料', group_name: '申请阶段' };
   const second = { ...newNode(), name: '参考材料' };
+  const third = { ...newNode(), name: '后续材料', group_name: '申请阶段' };
   first.rules = [
     {
       id: 'rule_first',
@@ -218,16 +219,22 @@ it('键盘排序保留节点引用，被引用节点不能直接删除', async (
       max_offset: { years: 0, months: 1, days: 0, workdays: 0 },
     },
   ];
-  render(<NodeHarness initial={[first, second]} />);
+  render(<NodeHarness initial={[first, second, third]} />);
   const user = userEvent.setup();
-  screen.getByRole('button', { name: '拖动节点 1，方向键调整顺序' }).focus();
-  await user.keyboard('{ArrowDown}');
   const list = within(screen.getByRole('list', { name: '时间线节点排序' }));
+  expect(list.getAllByRole('heading', { name: '申请阶段' })).toHaveLength(2);
+  expect(list.getByRole('separator')).toBeVisible();
+  expect(list.getByRole('button', { name: '1. 前置材料' })).toBeVisible();
+
+  list.getByRole('button', { name: '拖动节点 1，方向键调整顺序' }).focus();
+  await user.keyboard('{ArrowDown}');
+  expect(list.getByRole('heading', { name: '申请阶段' })).toBeVisible();
+  expect(list.queryByRole('separator')).not.toBeInTheDocument();
   expect(list.getAllByRole('listitem')[0]).toHaveTextContent('参考材料');
   expect(list.getAllByRole('listitem')[1]).toHaveTextContent('前置材料');
   await user.click(list.getByRole('button', { name: '删除节点 1' }));
   expect(await screen.findByRole('alert')).toHaveTextContent('请先处理引用');
-  expect(list.getAllByRole('listitem')).toHaveLength(2);
+  expect(list.getAllByRole('listitem')).toHaveLength(3);
 });
 
 function renderDataPage(actions: string[], tab = '') {
