@@ -163,6 +163,8 @@ API 侧先在业务事务中保存任务所需状态和操作审计，由 app �
 [版本检测](src/web/src/components/page-update-detector.tsx)与
 [通知中心](src/web/src/features/notification/notification-center.tsx)共用
 [随机间隔取样](src/web/src/lib/polling.ts)。通知抽屉关闭时轮询未读数量，打开时轮询当前列表并同步角标。
+`poll` 由定时器在当次请求附加。通知使用 TanStack Query 的单次请求元数据传递标记，
+首次加载、回到页面后的重查和手动操作使用常规请求。 [CDN 日志筛选](README.md#前端-cdn-刷新)
 
 ### 公共组件
 

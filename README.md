@@ -234,6 +234,14 @@ mise exec -- make cdn-urls CDN_ORIGIN=https://workspace.example.com > "$cdn_mani
 
 前端 `config.js` 的 `pageUpdateCheckIntervalMs` 和 `notificationPollIntervalMs` 分别配置版本检测和通知刷新的随机间隔。两项均使用毫秒为单位的 `min` 和 `max`，默认每轮在 50 至 100 秒之间重新取值。版本检测单次请求超时由 `pageUpdateCheckTimeoutMs` 配置，默认 15 秒。
 
+在 EdgeOne 七层访问日志的 `RequestUrlQueryString` 中按参数筛选定时轮询。发布后检查三个值均可检索，并比较同一页面路径带 `poll=page-update` 和常规 GET 的 ETag，确认两者相同。 [EdgeOne 七层访问日志](https://edgeone.ai/zh/document/61300)
+
+| 轮询 | 查询参数 |
+| --- | --- |
+| 前端版本检查 | `poll=page-update` |
+| 通知未读数 | `poll=notification-unread` |
+| 通知列表 | `poll=notification-list` |
+
 ### API 与探针
 
 - `/v1/mcp` 提供工作空间只读 MCP 查询，复用现有账号、权限和 API。客户端仅使用 API Token，并为 POST 配置 `X-CSRF-Protection: 1`；其他受保护 API 仅使用 Cookie。 [MCP 接入](CONTRIBUTING.md#工作空间-mcp)

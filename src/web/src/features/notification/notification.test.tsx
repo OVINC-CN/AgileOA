@@ -1,4 +1,9 @@
-import { QueryClient, QueryClientProvider, QueryObserver } from '@tanstack/react-query';
+import {
+  focusManager,
+  QueryClient,
+  QueryClientProvider,
+  QueryObserver,
+} from '@tanstack/react-query';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router';
@@ -35,6 +40,7 @@ const notice = (id: number): Notice => ({
 });
 
 afterEach(() => {
+  focusManager.setFocused(undefined);
   vi.useRealTimers();
   vi.unstubAllGlobals();
 });
@@ -430,6 +436,7 @@ describe('个人通知', () => {
     const posts = fetchMock.mock.calls.filter(([, options]) => options.method === 'POST');
     expect(posts).toHaveLength(1);
     expect(posts[0]?.[1].body).toBe(JSON.stringify({ ids: [7, 6, 5, 4, 3] }));
+    expect(fetchMock.mock.calls.some(([url]) => url.includes('poll='))).toBe(false);
   });
 
   it('未读数量每轮重新抽取轮询间隔，并更新通知角标', async () => {
@@ -443,7 +450,10 @@ describe('个人通知', () => {
     await act(async () => {
       await vi.advanceTimersByTimeAsync(49000);
     });
-    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(fetchMock).toHaveBeenCalledExactlyOnceWith(
+      '/v1/notifications/unread',
+      expect.any(Object),
+    );
     random.mockReturnValue(0.999999);
     await act(async () => {
       await vi.advanceTimersByTimeAsync(1000);
@@ -451,6 +461,10 @@ describe('个人通知', () => {
     await vi.waitFor(() => {
       expect(screen.getByRole('button', { name: '通知（1 条未读）' })).toBeVisible();
     });
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      '/v1/notifications/unread?poll=notification-unread',
+      expect.any(Object),
+    );
     add(notice(3));
     await act(async () => {
       await vi.advanceTimersByTimeAsync(99000);
@@ -462,12 +476,37 @@ describe('个人通知', () => {
     await vi.waitFor(() => {
       expect(screen.getByRole('button', { name: '通知（2 条未读）' })).toBeVisible();
     });
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      '/v1/notifications/unread?poll=notification-unread',
+      expect.any(Object),
+    );
+
+    focusManager.setFocused(false);
+    add(notice(4));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(100000);
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    focusManager.setFocused(true);
+    await vi.waitFor(() => {
+      expect(screen.getByRole('button', { name: '通知（3 条未读）' })).toBeVisible();
+    });
+    expect(fetchMock).toHaveBeenLastCalledWith('/v1/notifications/unread', expect.any(Object));
   });
 
-  it('抽屉打开时自动查询新通知并展示正文，保留已有消息', async () => {
+  it.each([
+    { identity: '组织', workspace: undefined, base: '/v1/notifications' },
+    {
+      identity: '学生',
+      workspace: workspaceID,
+      base: `/v1/workspaces/${workspaceID}/student-service/notifications`,
+    },
+  ])('$identity通知只标记定时请求，随抽屉开启与关闭切换轮询接口', async ({ workspace, base }) => {
     vi.useFakeTimers();
     vi.spyOn(Math, 'random').mockReturnValue(0.999999);
-    const { add, fetchMock } = setup();
+    const { add, fetchMock } = setup([notice(1)], '/', workspace);
+    const getRequests = () =>
+      fetchMock.mock.calls.map(([url]) => new URL(url, 'https://fixture.example'));
     await vi.waitFor(() => {
       expect(screen.getByRole('button', { name: '通知（1 条未读）' })).toBeVisible();
     });
@@ -477,6 +516,9 @@ describe('个人通知', () => {
       expect(screen.getByRole('dialog', { name: '通知' })).toBeVisible();
     });
     const drawer = screen.getByRole('dialog', { name: '通知' });
+    const openRequest = getRequests().at(-1);
+    expect(openRequest?.pathname).toBe(base);
+    expect(openRequest?.searchParams.get('poll')).toBeNull();
     add(notice(2));
     await act(async () => {
       await vi.advanceTimersByTimeAsync(99000);
@@ -490,9 +532,30 @@ describe('个人通知', () => {
       expect(within(drawer).getByText(notice(1).content)).toBeVisible();
       expect(within(drawer).getByText('共 2 条未读通知')).toBeVisible();
     });
-    expect(
-      fetchMock.mock.calls.filter(([url]) => url.endsWith('/notifications/unread')),
-    ).toHaveLength(1);
+    expect(getRequests().filter(({ pathname }) => pathname === `${base}/unread`)).toHaveLength(1);
+    const poll = getRequests().at(-1);
+    expect(poll?.pathname).toBe(base);
+    expect(poll?.searchParams.get('poll')).toBe('notification-list');
+    expect(poll?.searchParams.get('page')).toBe('1');
+    expect(poll?.searchParams.get('status')).toBe('unread');
+
+    add(notice(3));
+    fireEvent.click(within(drawer).getByRole('button', { name: '刷新通知' }));
+    await vi.waitFor(() => {
+      expect(within(drawer).getByText(notice(3).content)).toBeVisible();
+    });
+    expect(getRequests().at(-1)?.searchParams.get('poll')).toBeNull();
+    fireEvent.click(within(drawer).getByRole('button', { name: '关闭抽屉' }));
+    await vi.waitFor(() => {
+      expect(screen.queryByRole('dialog', { name: '通知' })).not.toBeInTheDocument();
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(100000);
+    });
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      `${base}/unread?poll=notification-unread`,
+      expect.any(Object),
+    );
   });
 
   it('账号切换时关闭旧抽屉，查询缓存按账号隔离', async () => {
