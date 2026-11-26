@@ -75,7 +75,7 @@ Docker 工作流在推送 Git tag 时构建并发布 `linux/amd64` 后端镜像�
 `CONTACT_EMAIL` 可覆盖前端配置中的 `contactEmail`，供用户协议及隐私协议显示。
 未设置时沿用 `public/config.js` 的邮箱，示例值为 `contact@example.com`。部署时请填写实际接收请求的邮箱。
 
-腾讯云前端性能监控的选项在 [config.js](src/web/public/config.js) 的 `aegis` 对象中按 SDK 文档设置。`id` 默认留空，关闭上报。生产构建通过 `AEGIS_ID` 覆盖或补充 `aegis.id`，未设置时沿用文件值，显式传空则关闭上报。启用后默认向 `https://rumt-zh.com` 上报页面访问、页面及静态资源性能、接口耗时和错误类型。 [腾讯云接入文档](https://cloud.tencent.com/document/product/248/87187)
+腾讯云前端性能监控的选项在 [config.js](src/web/public/config.js) 的 `aegis` 对象中按 SDK 文档设置。`id` 默认留空，关闭上报。生产构建通过 `AEGIS_ID` 覆盖或补充 `aegis.id`，未设置时沿用文件值，显式传空则关闭上报。启用后默认向 `https://rumt-zh.com` 上报页面访问、页面及静态资源性能、接口耗时、HTTP 状态及错误类型。 [腾讯云接入文档](https://cloud.tencent.com/document/product/248/87187)
 
 启用监控后，当前身份确认时会带上由身份类型和内部编号组成的 `uin`，例如 `user-6666` 或 `student-6666`。退出登录或会话失效时清空该标识。
 
