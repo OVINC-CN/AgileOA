@@ -253,7 +253,7 @@ func createLoginSession(
 	return successful(tx, user, accessConstants.UserLogin, created)
 }
 
-// Info 根据中间件确认的身份返回当前账号，成功和失败均不纳入审计。
+// Info 根据中间件确认的身份返回当前账号。
 func Info(ctx context.Context) (userModels.Info, error) {
 	identity, err := userUtils.Identity(ctx)
 	if err != nil {

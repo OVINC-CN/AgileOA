@@ -60,23 +60,35 @@ func TestMigratedSensitiveContextRetainsOriginalAAD(t *testing.T) {
 	}
 }
 
-func TestCurrentUserInformationNeverRequiresAuditPersistence(t *testing.T) {
-	event := auditModels.Event{Actor: auditModels.Actor{ID: 1}, Action: accessConstants.UserInfo}
-	if err := Write(nil, event); err != nil {
-		t.Fatal("当前用户信息的成功响应依赖审计存储")
+func TestExemptQueriesNeverRequireAuditPersistence(t *testing.T) {
+	for _, scenario := range []struct {
+		action string
+		actor  auditModels.Actor
+	}{
+		{accessConstants.UserInfo, auditModels.Actor{ID: 1}},
+		{accessConstants.NotificationUnread, auditModels.Actor{ID: 1}},
+		{accessConstants.StudentNotificationUnread, auditModels.Actor{StudentID: 1}},
+	} {
+		t.Run(scenario.action, func(t *testing.T) {
+			event := auditModels.Event{Actor: scenario.actor, Action: scenario.action}
+			if err := Write(nil, event); err != nil {
+				t.Fatal("免审计查询的成功响应依赖审计存储")
+			}
+			event.ErrorCode = "http_403"
+			if err := Failure(t.Context(), event); err != nil {
+				t.Fatal("免审计查询的失败响应依赖审计存储")
+			}
+		})
 	}
-	event.ErrorCode = "http_401"
-	if err := Failure(t.Context(), event); err != nil {
-		t.Fatal("当前用户信息的失败响应依赖审计存储")
-	}
-	if !errors.Is(
-		Write(
-			nil,
-			auditModels.Event{Actor: auditModels.Actor{ID: 1}, Action: accessConstants.UserCreate},
-		),
-		ErrUnavailable,
-	) {
-		t.Fatal("审计排除范围扩大到了其他账号操作")
+	for _, action := range []string{
+		accessConstants.UserCreate, accessConstants.NotificationList,
+		accessConstants.NotificationRead, accessConstants.StudentNotificationList,
+		accessConstants.StudentNotificationRead,
+	} {
+		event := auditModels.Event{Actor: auditModels.Actor{ID: 1}, Action: action}
+		if !errors.Is(Write(nil, event), ErrUnavailable) {
+			t.Fatalf("操作 %s 仍需审计", action)
+		}
 	}
 }
 
