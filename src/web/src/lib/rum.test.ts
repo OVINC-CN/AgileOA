@@ -12,25 +12,20 @@ import { initializeRum } from '@/lib/rum';
 
 const { createAegis, setConfig } = vi.hoisted(() => {
   const setConfig = vi.fn();
-  const createAegis = vi.fn<
-    (settings: unknown) => { extendBean: () => void; setConfig: typeof setConfig }
-  >(function () {
-    return { extendBean: vi.fn(), setConfig };
+  const createAegis = vi.fn<(settings: unknown) => { setConfig: typeof setConfig }>(function () {
+    return { setConfig };
   });
   return { createAegis, setConfig };
 });
 
 vi.mock('aegis-web-sdk', () => ({
-  default: Object.assign(createAegis, {
-    environment: { development: 'development', production: 'production' },
-    logType: {},
-  }),
+  default: createAegis,
 }));
 
 describe('前端性能监控配置', () => {
   it('保留完整的 SDK 选项与自定义回调', async () => {
     const options = {
-      id: ' example-id ',
+      id: 'example-id',
       aid: true,
       env: 'test',
       reportApiSpeed: { urlHandler: vi.fn() },
@@ -40,14 +35,14 @@ describe('前端性能监控配置', () => {
     vi.stubGlobal('AGILE_WORKSPACE_CONFIG', { ...getConfig(), aegis: options });
 
     const config = getConfig();
-    await initializeRum(config, () => '/');
+    await initializeRum(config);
 
     expect(config.aegis).toBe(options);
-    expect(createAegis.mock.calls[0]?.[0]).toMatchObject({ ...options, id: 'example-id' });
+    expect(createAegis.mock.calls[0]?.[0]).toBe(options);
   });
 
   it('只在用户标识变化时更新 SDK', async () => {
-    const setUin = await initializeRum({ ...getConfig(), aegis: { id: 'example-id' } }, () => '/');
+    const setUin = await initializeRum({ ...getConfig(), aegis: { id: 'example-id' } });
     expect(setUin).toBeDefined();
 
     setUin?.('user-6666');
@@ -127,7 +122,7 @@ describe('前端性能监控配置', () => {
   ])('$name 时保持应用配置可用', async ({ aegis }) => {
     vi.stubGlobal('AGILE_WORKSPACE_CONFIG', { ...getConfig(), aegis });
 
-    await initializeRum(getConfig(), () => '/');
+    await initializeRum(getConfig());
 
     expect(createAegis).not.toHaveBeenCalled();
   });
