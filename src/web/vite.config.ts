@@ -77,6 +77,11 @@ async function publishFileViewerAssets(outputDirectory: string): Promise<string>
   return assetPath;
 }
 
+function configStringPattern(field: string): RegExp {
+  const value = String.raw`(?:'(?:\\.|[^'\\\r\n])*'|"(?:\\.|[^"\\\r\n])*")`;
+  return new RegExp(String.raw`^([ \t]*${field}:[ \t]*)${value}(?=,)`, 'gm');
+}
+
 function buildRuntimeConfig(): Plugin {
   let outputDirectory: string | undefined;
   return {
@@ -119,10 +124,7 @@ function buildRuntimeConfig(): Plugin {
           fileViewerAssetsPath,
         };
         for (const field of Object.keys(overrides) as (keyof typeof overrides)[]) {
-          const pattern = new RegExp(
-            String.raw`^([ \t]*${field}:[ \t]*)(?:'(?:\\.|[^'\\\r\n])*'|"(?:\\.|[^"\\\r\n])*")(?=,)`,
-            'gm',
-          );
+          const pattern = configStringPattern(field);
           if ([...productionConfig.matchAll(pattern)].length !== 1) {
             this.error(`构建配置必须包含唯一的 ${field} 字符串字段`);
           }
@@ -136,6 +138,28 @@ function buildRuntimeConfig(): Plugin {
           productionConfig = productionConfig.replace(
             pattern,
             (_match, prefix: string) => `${prefix}${JSON.stringify(value)}`,
+          );
+        }
+
+        // 仅替换监控对象中的应用 ID，显式传入空值时关闭上报。
+        const aegisId = process.env.AEGIS_ID?.trim();
+        if (aegisId !== undefined) {
+          const aegisObjectPattern = /^([ \t]*)aegis:[ \t]*\{[ \t]*\r?\n([\s\S]*?)^\1\},/gm;
+          const aegisObjects = [...productionConfig.matchAll(aegisObjectPattern)];
+          const aegisFields = aegisObjects[0]?.[2];
+          const idPattern = configStringPattern('id');
+          if (
+            aegisObjects.length !== 1 ||
+            !aegisFields ||
+            [...aegisFields.matchAll(idPattern)].length !== 1
+          ) {
+            this.error('构建配置必须包含唯一的 aegis.id 字符串字段');
+          }
+          productionConfig = productionConfig.replace(aegisObjectPattern, (block) =>
+            block.replace(
+              idPattern,
+              (_match, prefix: string) => `${prefix}${JSON.stringify(aegisId)}`,
+            ),
           );
         }
 

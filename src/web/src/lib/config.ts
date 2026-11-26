@@ -21,6 +21,18 @@ const configSchema = z
     copyrightYear: z.number().int().positive(),
     passwordLoginEnabled: z.boolean(),
     ...deploymentFields,
+    aegis: z
+      .object({
+        id: z.string().trim().default(''),
+        hostUrl: z.url({ protocol: /^https$/u }),
+        aid: z.literal(false),
+        device: z.literal(false),
+        spa: z.boolean(),
+        reportApiSpeed: z.boolean(),
+        reportAssetSpeed: z.boolean(),
+        api: z.object({ apiDetail: z.literal(false) }),
+      })
+      .optional(),
     apiTimeoutMs: z.number().int().positive(),
     messageDurationMs: z.number().int().positive(),
     pageUpdateCheckIntervalMs: pollIntervalSchema,

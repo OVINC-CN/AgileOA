@@ -75,8 +75,11 @@ Docker 工作流在推送 Git tag 时构建并发布 `linux/amd64` 后端镜像�
 `CONTACT_EMAIL` 可覆盖前端配置中的 `contactEmail`，供用户协议及隐私协议显示。
 未设置时沿用 `public/config.js` 的邮箱，示例值为 `contact@example.com`。部署时请填写实际接收请求的邮箱。
 
+腾讯云前端性能监控默认关闭。[config.js](src/web/public/config.js) 的 `aegis` 对象包含应用 ID、上报地址、页面访问和测速开关。生产构建通过 `AEGIS_ID` 覆盖 `aegis.id`，未设置时沿用文件值，显式传空则关闭上报。启用后默认向 `https://rumt-zh.com` 上报页面访问、页面及静态资源性能、接口耗时和错误类型。 [腾讯云接入文档](https://cloud.tencent.com/document/product/248/87187)
+
 ```sh
-API_BASE_URL=https://api.example.com CONTACT_EMAIL=privacy@example.com mise exec -- pnpm --dir src/web build
+API_BASE_URL=https://api.example.com CONTACT_EMAIL=privacy@example.com AEGIS_ID=应用ID \
+  mise exec -- pnpm --dir src/web build
 ```
 
 生产构建将 `passwordLoginEnabled` 设为 `false`，去掉配置注释，按最终内容生成 `config.<hash>.js` 并更新 HTML 引用。部署时先上传配置及其他静态资源，再更新 HTML，并保留旧哈希资源供缓存页面使用。
