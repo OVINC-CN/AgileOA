@@ -136,8 +136,9 @@ API 侧先在业务事务中保存任务所需状态和操作审计，由 app �
 [mcp_dispatch.go](src/api/internal/httpd/mcp_dispatch.go) 复用原 HTTP 处理链路。
 客户端连接方式见 [API 与探针](README.md#api-与探针)。
 
-调试时先执行 `initialize` 和 `tools/list`，调用 `get_workspaces` 获取可访问空间，
-再把 `workspace_id` 显式传给业务查询。多选参数使用数组。
+调试时先执行 `initialize` 和 `tools/list`。`get_workspaces` 无需参数，与顶部工作空间切换共用
+`GET /v1/workspaces`，一次返回当前账号显式获准进入的全部启用空间。每项包含 `id`、`name` 和
+`description`。调用后把 `workspace_id` 显式传给业务查询。多选参数使用数组。
 相关验证入口为 [mcp_test.go](src/api/internal/httpd/mcp_test.go)，
 覆盖工具范围、参数边界、身份隔离、来源检查、响应限制和审计上下文。
 

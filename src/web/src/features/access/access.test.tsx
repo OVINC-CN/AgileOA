@@ -269,14 +269,20 @@ describe('直接用户操作工作空间授权', () => {
     '从 $entry 切换空间后按列表权限进入 $destination 并清理旧缓存',
     async ({ entry, actions, destination }) => {
       const calls: string[] = [];
+      const items = [
+        first,
+        ...Array.from({ length: 4 }, (_, index) => ({
+          ...first,
+          id: `w${String(index).padStart(15, '0')}`,
+          name: `虚构空间 ${String(index + 1)}`,
+        })),
+        second,
+      ].map(({ id, name, description }) => ({ id, name, description }));
       vi.stubGlobal(
         'fetch',
         vi.fn((url: string) => {
           calls.push(url);
-          if (url.startsWith('/v1/workspaces?'))
-            return Promise.resolve(
-              respond({ items: [first, second], total: 2, page: 1, page_size: 20 }),
-            );
+          if (url === '/v1/workspaces') return Promise.resolve(respond({ items }));
           return Promise.resolve(
             respond({
               workspace: url.endsWith(secondID) ? second : first,
@@ -299,15 +305,18 @@ describe('直接用户操作工作空间授权', () => {
           <RouterProvider router={router} />
         </QueryClientProvider>,
       );
+      expect(calls).toHaveLength(0);
       await userEvent.click(screen.getByRole('button', { name: '选择工作空间' }));
-      await userEvent.click(await screen.findByRole('menuitemradio', { name: second.name }));
+      const target = await screen.findByRole('menuitemradio', { name: second.name });
+      expect(screen.getAllByRole('menuitemradio')).toHaveLength(items.length);
+      expect(screen.queryByText('加载更多')).not.toBeInTheDocument();
+      await userEvent.click(target);
       await waitFor(() => {
         expect(router.state.location.pathname).toBe(destination);
         expect(router.state.location.search).toBe(`?workspace=${secondID}`);
       });
       expect(client.getQueryData(['workspace', firstID, 'records'])).toBeUndefined();
-      expect(calls.some((url) => url.startsWith('/v1/workspaces?'))).toBe(true);
-      expect(calls.some((url) => url.startsWith('/v1/system/'))).toBe(false);
+      expect(calls).toEqual(['/v1/workspaces', `/v1/workspaces/${secondID}`]);
     },
   );
 });

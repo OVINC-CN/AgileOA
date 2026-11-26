@@ -133,19 +133,13 @@ func UpdateActions(c echo.Context) error {
 
 // MyWorkspaces 查询当前账号获得授权的工作空间。
 // @Summary 我的工作空间
-// @Description 仅返回当前启用账号被显式授予 access_workspace 的启用工作空间；节点指派不授予空间发现或进入权限。
+// @Description 一次返回当前启用账号被显式授予 access_workspace 的全部启用工作空间。节点指派不授予空间发现或进入权限。
 // @Tags 工作空间
 // @Produce json
-// @Param page query int false "页码，从 1 开始" default(1)
-// @Param page_size query int false "每页数量，默认与上限来自 YAML"
-// @Success 200 {object} workspaceModels.ListResponse "我的工作空间分页目录"
+// @Success 200 {object} accessModels.MyWorkspacesResponse "我的工作空间目录"
 // @Router /v1/workspaces [get]
 func MyWorkspaces(c echo.Context) error {
-	page, err := pagination.Parse(c)
-	if err != nil {
-		return err
-	}
-	data, err := accessSvc.MyWorkspaces(c.Request().Context(), page)
+	data, err := accessSvc.MyWorkspaces(c.Request().Context())
 	if err != nil {
 		return err
 	}

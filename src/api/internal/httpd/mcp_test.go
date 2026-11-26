@@ -38,6 +38,9 @@ func TestMCPCatalogOnlyExposesWorkspaceJSONQueries(t *testing.T) {
 		if input["additionalProperties"] != false || tool.Tool.OutputSchema == nil {
 			t.Fatalf("工具缺少固定输入或响应模型：%s", tool.Tool.Name)
 		}
+		if tool.Path == "/v1/workspaces" && len(tool.Parameters) != 0 {
+			t.Fatal("工作空间发现工具不应接收查询参数")
+		}
 		if tool.Path == mcpWorkspaceQueryPrefix+"/monthly-work" ||
 			tool.Path == mcpWorkspaceQueryPrefix+"/cpc-monthly-work" {
 			properties := input["properties"].(map[string]any)

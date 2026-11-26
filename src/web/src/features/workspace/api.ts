@@ -1,4 +1,4 @@
-import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
+import { queryOptions } from '@tanstack/react-query';
 import { z } from 'zod';
 
 import { apiDelete, apiGet, apiPost, apiPut } from '@/lib/api';
@@ -81,32 +81,18 @@ export function deleteWorkspace(id: string) {
   return apiDelete(`/v1/system/workspaces/${id}`, z.null());
 }
 
-export const myWorkspacesOptions = (page: number, pageSize: number) =>
-  queryOptions({
-    queryKey: ['workspace', 'mine', page, pageSize],
-    queryFn: ({ signal }) =>
-      apiGet(
-        `/v1/workspaces?page=${String(page)}&page_size=${String(pageSize)}`,
-        workspaceListSchema,
-        signal,
-      ),
-    staleTime: 0,
-  });
-
-export const myWorkspacePagesOptions = (pageSize: number) =>
-  infiniteQueryOptions({
-    queryKey: ['workspace', 'mine', 'pages', pageSize],
-    initialPageParam: 1,
-    queryFn: ({ signal, pageParam }) =>
-      apiGet(
-        `/v1/workspaces?page=${String(pageParam)}&page_size=${String(pageSize)}`,
-        workspaceListSchema,
-        signal,
-      ),
-    getNextPageParam: (lastPage) =>
-      lastPage.page * lastPage.page_size < lastPage.total ? lastPage.page + 1 : undefined,
-    staleTime: 0,
-  });
+export const myWorkspacesOptions = queryOptions({
+  queryKey: ['workspace', 'mine'],
+  queryFn: ({ signal }) =>
+    apiGet(
+      '/v1/workspaces',
+      z.object({
+        items: z.array(workspaceSchema.pick({ id: true, name: true, description: true })),
+      }),
+      signal,
+    ),
+  staleTime: 0,
+});
 
 export const workspaceContextOptions = (id: string) =>
   queryOptions({

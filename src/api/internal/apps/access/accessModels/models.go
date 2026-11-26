@@ -118,6 +118,27 @@ type UpdateActionsRequest struct {
 	Revision uint64 `json:"revision" validate:"required" example:"1"`
 }
 
+// MyWorkspace 是当前账号可发现的工作空间基本信息。
+type MyWorkspace struct {
+	// ID 是工作空间编号。
+	ID string `json:"id" example:"w7m2k9p4s6n8c3x5"`
+	// Name 是工作空间显示名称。
+	Name string `json:"name" example:"教学事务"`
+	// Description 是工作空间用途说明。
+	Description string `json:"description" example:"处理日常教学事务"`
+}
+
+// MyWorkspacesData 返回当前账号可访问的全部工作空间。
+type MyWorkspacesData struct {
+	// Items 是获准进入的启用工作空间，空结果为数组。
+	Items []MyWorkspace `json:"items"`
+}
+
+// MyWorkspacesResponse 复用统一响应字段。
+type MyWorkspacesResponse struct {
+	response.Envelope[MyWorkspacesData]
+}
+
 // ContextData 是进入工作空间时实时返回的上下文，不持久化于会话。
 type ContextData struct {
 	// CanReviewProjectApplications 表示账号有填报查看权限且被指派为组织审批人，不替代显式授权。

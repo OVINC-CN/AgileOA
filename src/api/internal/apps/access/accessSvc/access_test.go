@@ -215,11 +215,11 @@ func TestWorkspacePermissionsAndAuditTransactions(t *testing.T) {
 	request(t, server, http.MethodGet, "/v1/workspaces/1", nil, adminCookie, 400)
 	request(t, server, http.MethodGet, path, nil, cookie, 403)
 	request(t, server, http.MethodGet, path, nil, adminCookie, 403)
-	list := decode[workspaceModels.ListData](
+	list := decode[accessModels.MyWorkspacesData](
 		t,
 		request(t, server, http.MethodGet, "/v1/workspaces", nil, cookie, 200),
 	)
-	if list.Total != 0 {
+	if list.Items == nil || len(list.Items) != 0 {
 		t.Fatal("无权限账号可见工作空间")
 	}
 	checkAssignmentWorkspaceAccess(t, server, adminCookie, cookie, first.ID, user.ID)
@@ -237,11 +237,11 @@ func TestWorkspacePermissionsAndAuditTransactions(t *testing.T) {
 	}).Error; err != nil {
 		t.Fatal(err)
 	}
-	list = decode[workspaceModels.ListData](
+	list = decode[accessModels.MyWorkspacesData](
 		t,
 		request(t, server, http.MethodGet, "/v1/workspaces", nil, cookie, 200),
 	)
-	if list.Total != 0 {
+	if len(list.Items) != 0 {
 		t.Fatal("反向列表未严格要求 access_workspace")
 	}
 	replaceActions(t, server, adminCookie, second.ID, user.ID, []string{}, 200)
@@ -263,15 +263,23 @@ func TestWorkspacePermissionsAndAuditTransactions(t *testing.T) {
 		[]string{accessConstants.AccessWorkspace},
 		200,
 	)
-	list = decode[workspaceModels.ListData](
+	list = decode[accessModels.MyWorkspacesData](
 		t,
 		request(t, server, http.MethodGet, "/v1/workspaces?user_id=1", nil, cookie, 200),
 	)
-	if list.Total != 1 || len(list.Items) != 1 || list.Items[0].ID != first.ID {
+	if len(list.Items) != 1 || list.Items[0].ID != first.ID {
 		t.Fatal("用户工作空间列表出现跨用户或跨空间授权")
 	}
 	request(t, server, http.MethodGet, path, nil, cookie, 200)
 	request(t, server, http.MethodGet, "/v1/workspaces/"+second.ID, nil, cookie, 403)
+	replaceActions(t, server, adminCookie, second.ID, user.ID,
+		[]string{accessConstants.AccessWorkspace}, 200)
+	list = decode[accessModels.MyWorkspacesData](t, request(t, server, http.MethodGet,
+		"/v1/workspaces?page_size=1", nil, cookie, 200))
+	if len(list.Items) != 2 {
+		t.Fatal("工作空间发现没有一次返回全部授权空间")
+	}
+	replaceActions(t, server, adminCookie, second.ID, user.ID, []string{}, 200)
 	request(t, server, http.MethodDelete, managePath, nil, cookie, 403)
 	request(t, server, http.MethodDelete, managePath, nil, adminCookie, 409)
 	request(
