@@ -37,12 +37,8 @@ func StudentUnread(
 	event := auditModels.Event{ObjectType: auditConstants.ObjectNotification}
 	err := accessUtils.StudentWorkspace(ctx, workspaceID, accessConstants.StudentNotificationUnread,
 		event,
-		func(tx *gorm.DB, student userModels.StudentIdentity, event *auditModels.Event) error {
-			if err := unreadCount(studentInbox(tx, student), &result.UnreadCount); err != nil {
-				return err
-			}
-			event.ReturnedCount = result.UnreadCount
-			return nil
+		func(tx *gorm.DB, student userModels.StudentIdentity, _ *auditModels.Event) error {
+			return unreadCount(studentInbox(tx, student), &result.UnreadCount)
 		})
 	return result, err
 }

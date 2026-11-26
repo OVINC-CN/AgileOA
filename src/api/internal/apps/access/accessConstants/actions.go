@@ -974,7 +974,7 @@ var catalog = []accessModels.Action{
 	definition(
 		UserInfo,
 		"查看当前用户",
-		"查看当前启用账号的基本信息，不纳入审计",
+		"查看当前启用账号的基本信息",
 		"user",
 		ScopeSession,
 		endpoint("GET", "/v1/user-info"),

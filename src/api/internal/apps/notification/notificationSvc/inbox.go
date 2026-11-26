@@ -29,19 +29,15 @@ func List(
 	return result, err
 }
 
-// Unread 仅统计当前账号的未读消息，不读取或审计正文。
+// Unread 仅统计当前账号的未读消息。
 func Unread(ctx context.Context) (notificationModels.UnreadData, error) {
 	var result notificationModels.UnreadData
 	event := auditModels.Event{ObjectType: auditConstants.ObjectNotification}
 	err := accessUtils.Session(ctx, accessConstants.NotificationUnread, event,
-		func(tx *gorm.DB, principal accessModels.Principal, event *auditModels.Event) error {
+		func(tx *gorm.DB, principal accessModels.Principal, _ *auditModels.Event) error {
 			scope := tx.Model(&notificationModels.Notification{}).
 				Where("user_id = ?", principal.User.ID)
-			if err := unreadCount(scope, &result.UnreadCount); err != nil {
-				return err
-			}
-			event.ReturnedCount = result.UnreadCount
-			return nil
+			return unreadCount(scope, &result.UnreadCount)
 		})
 	return result, err
 }

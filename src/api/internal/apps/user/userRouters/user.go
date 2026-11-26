@@ -64,13 +64,12 @@ func Login(c echo.Context) error {
 
 // Info 返回当前登录账号的固定字段目录。
 // @Summary 当前用户信息
-// @Description 实时检查账号与会话状态，返回基本信息和身份类型；学生身份同时返回绑定空间，且仅在启用空间内保持在籍及登记学号、邮箱未变更时有效。成功和失败均不写入审计。
+// @Description 实时检查账号与会话状态，返回基本信息和身份类型；学生身份同时返回绑定空间，且仅在启用空间内保持在籍及登记学号、邮箱未变更时有效。
 // @Tags 用户
 // @Produce json
 // @Success 200 {object} userModels.InfoResponse "当前登录用户"
 // @Router /v1/user-info [get]
 func Info(c echo.Context) error {
-	// 当前身份由认证中间件提供，此接口不写入审计。
 	user, err := userSvc.Info(c.Request().Context())
 	if err != nil {
 		return err

@@ -31,10 +31,19 @@ import (
 // ErrUnavailable 阻止业务数据返回或业务事务提交，不携带内部数据库参数。
 var ErrUnavailable = errors.New("audit persistence unavailable")
 
+func skipAudit(action string) bool {
+	switch action {
+	case accessConstants.UserInfo, accessConstants.NotificationUnread,
+		accessConstants.StudentNotificationUnread:
+		return true
+	default:
+		return false
+	}
+}
+
 // Write 保留业务调用入口，在原事务中生成并持久化标准审计事件。
 func Write(tx *gorm.DB, event auditModels.Event) error {
-	// 仅使用可信身份，匿名请求和当前用户信息仍不写审计。
-	if event.Action == accessConstants.UserInfo {
+	if skipAudit(event.Action) {
 		return nil
 	}
 	if tx != nil && tx.Statement != nil && event.Actor.ID == 0 && event.Actor.StudentID == 0 {
@@ -177,8 +186,7 @@ func resultCode(event auditModels.Event) (int, error) {
 
 // Failure 在失败业务事务回滚后独立落库，请求取消也必须使用有界超时尝试审计。
 func Failure(ctx context.Context, event auditModels.Event) error {
-	// 统一排除鉴权拒绝与 HTTP 兜底失败，避免当前用户信息依赖审计存储。
-	if event.Action == accessConstants.UserInfo {
+	if skipAudit(event.Action) {
 		return nil
 	}
 	if event.Actor.ID == 0 && event.Actor.StudentID == 0 {
