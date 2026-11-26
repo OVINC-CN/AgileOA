@@ -41,11 +41,11 @@ describe('页面更新检测', () => {
       .mockResolvedValueOnce(pageResponse('"initial"'))
       .mockResolvedValue(pageResponse('"updated"'));
     vi.stubGlobal('fetch', fetchMock);
-    window.history.replaceState(null, '', '/stu/roster?workspace=fixture');
+    window.history.replaceState(null, '', '/stu/roster?workspace=fixture#list');
     render(<PageUpdateDetector />);
     await advanceTime(0);
     expect(fetchMock).toHaveBeenCalledExactlyOnceWith(
-      window.location.href,
+      `${window.location.origin}/stu/roster`,
       expect.objectContaining({ method: 'GET', cache: 'no-store' }),
     );
     expect(fetchMock.mock.calls[0]?.[1]?.signal).toBeInstanceOf(AbortSignal);
@@ -54,9 +54,13 @@ describe('页面更新检测', () => {
     expect(fetchMock).toHaveBeenCalledOnce();
 
     random.mockReturnValue(0.999999);
-    window.history.replaceState(null, '', '/cpc/roster?workspace=another');
+    window.history.replaceState(null, '', '/cpc/roster?workspace=another#list');
     await advanceTime(1);
-    expect(fetchMock).toHaveBeenLastCalledWith(window.location.href, expect.any(Object));
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      `${window.location.origin}/cpc/roster?poll=page-update`,
+      expect.objectContaining({ method: 'GET', cache: 'no-store' }),
+    );
+    expect(window.location.search + window.location.hash).toBe('?workspace=another#list');
     await advanceTime(99999);
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledTimes(2);

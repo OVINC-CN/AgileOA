@@ -12,7 +12,7 @@ export function PageUpdateDetector() {
     let stopped = false;
     let nextCheck: number;
 
-    const check = async () => {
+    const check = async (scheduled: boolean) => {
       // 所有页面共用首次有效 ETag，请求未结束时跳过本轮。
       if (stopped || pending) return;
       const request = new AbortController();
@@ -22,8 +22,12 @@ export function PageUpdateDetector() {
       }, config.pageUpdateCheckTimeoutMs);
 
       try {
-        // 每次通过 GET 读取当前页面的 ETag，并绕过浏览器缓存。
-        const response = await fetch(window.location.href, {
+        // 只请求页面路径，定时检测附加日志标识。
+        const url = new URL(window.location.href);
+        url.search = '';
+        url.hash = '';
+        if (scheduled) url.searchParams.set('poll', 'page-update');
+        const response = await fetch(url.href, {
           method: 'GET',
           cache: 'no-store',
           signal: request.signal,
@@ -62,11 +66,11 @@ export function PageUpdateDetector() {
     const scheduleCheck = () => {
       nextCheck = window.setTimeout(() => {
         scheduleCheck();
-        void check();
+        void check(true);
       }, randomPollIntervalMs(config.pageUpdateCheckIntervalMs));
     };
     scheduleCheck();
-    void check();
+    void check(false);
 
     // 卸载时取消请求和定时器，避免过期响应触发提示。
     return () => {

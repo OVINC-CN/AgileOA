@@ -29,6 +29,9 @@ export const notificationStatuses: { value: NotificationStatus; label: string }[
   { value: 'all', label: '全部通知' },
 ];
 
+// 通过请求元数据区分同一查询的定时请求和常规请求，重试沿用本次标记。
+export const notificationPollFetchMeta = Object.freeze({});
+
 // 两类收件箱按身份隔离，学生缓存同时包含绑定空间和学生编号。
 export const notificationKey = (recipient: NotificationRecipient) =>
   typeof recipient === 'number'
@@ -44,7 +47,11 @@ const notificationBase = (recipient: NotificationRecipient) =>
 export function notificationUnreadOptions(recipient: NotificationRecipient) {
   return queryOptions({
     queryKey: notificationUnreadKey(recipient),
-    queryFn: ({ signal }) => apiGet(`${notificationBase(recipient)}/unread`, unreadSchema, signal),
+    queryFn: ({ client, queryKey, signal }) => {
+      const scheduled = client.getQueryState(queryKey)?.fetchMeta === notificationPollFetchMeta;
+      const suffix = scheduled ? '?poll=notification-unread' : '';
+      return apiGet(`${notificationBase(recipient)}/unread${suffix}`, unreadSchema, signal);
+    },
   });
 }
 
@@ -56,12 +63,17 @@ export function notificationListOptions(
 ) {
   return queryOptions({
     queryKey: [...notificationKey(recipient), 'list', status, page, pageSize] as const,
-    queryFn: ({ signal }) =>
-      apiGet(
-        `${notificationBase(recipient)}?${new URLSearchParams({ page: String(page), page_size: String(pageSize), status })}`,
-        listSchema,
-        signal,
-      ),
+    queryFn: ({ client, queryKey, signal }) => {
+      const params = new URLSearchParams({
+        page: String(page),
+        page_size: String(pageSize),
+        status,
+      });
+      if (client.getQueryState(queryKey)?.fetchMeta === notificationPollFetchMeta) {
+        params.set('poll', 'notification-list');
+      }
+      return apiGet(`${notificationBase(recipient)}?${params.toString()}`, listSchema, signal);
+    },
   });
 }
 

@@ -1,4 +1,11 @@
-import { keepPreviousData, type QueryState, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  focusManager,
+  hashKey,
+  keepPreviousData,
+  type QueryKey,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { ArrowUpRight, Bell, Check, CheckCheck } from 'lucide-react';
 import { type MouseEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
@@ -17,6 +24,7 @@ import {
   type NotificationInfo,
   notificationKey,
   notificationListOptions,
+  notificationPollFetchMeta,
   type NotificationRecipient,
   type NotificationStatus,
   notificationStatuses,
@@ -32,17 +40,44 @@ import { randomPollIntervalMs } from '@/lib/polling';
 import { cn } from '@/lib/utils';
 
 const maxBadgeCount = 99;
-const notificationPollDelays = new WeakMap<QueryState, number>();
 
-function notificationRefetchInterval({ state }: { state: QueryState }): number | false {
-  if (state.fetchStatus !== 'idle') return false;
+function useNotificationPolling(queryKey: QueryKey, enabled: boolean) {
+  const client = useQueryClient();
+  const queryHash = hashKey(queryKey);
 
-  // 同一次查询结果复用间隔，避免组件重渲染时重新计时。
-  const currentDelay = notificationPollDelays.get(state);
-  if (currentDelay !== undefined) return currentDelay;
-  const delay = randomPollIntervalMs(getConfig().notificationPollIntervalMs);
-  notificationPollDelays.set(state, delay);
-  return delay;
+  useEffect(() => {
+    if (!enabled) return;
+    const cache = client.getQueryCache();
+    let timer: number | undefined;
+
+    // 查询结束后重新抽取间隔，组件重渲染和后台标签页跳过的轮次不重新取样。
+    const schedule = () => {
+      window.clearInterval(timer);
+      const query = cache.get(queryHash);
+      if (query?.state.fetchStatus !== 'idle') return;
+      timer = window.setInterval(() => {
+        if (focusManager.isFocused() && query.state.fetchStatus === 'idle') {
+          void query.fetch(undefined, { meta: notificationPollFetchMeta }).catch(() => {
+            // 查询状态和 API 客户端已处理请求失败。
+          });
+        }
+      }, randomPollIntervalMs(getConfig().notificationPollIntervalMs));
+    };
+
+    const unsubscribe = cache.subscribe(({ type, query }) => {
+      if (
+        query.queryHash === queryHash &&
+        (type === 'added' || type === 'updated' || type === 'removed')
+      ) {
+        schedule();
+      }
+    });
+    schedule();
+    return () => {
+      unsubscribe();
+      window.clearInterval(timer);
+    };
+  }, [client, enabled, queryHash]);
 }
 
 export function NotificationCenter({
@@ -60,11 +95,9 @@ export function NotificationCenter({
   const client = useQueryClient();
   const action = useApiAction();
   const config = getConfig();
-  const unread = useQuery({
-    ...notificationUnreadOptions(recipient),
-    refetchInterval: open ? false : notificationRefetchInterval,
-    refetchOnWindowFocus: true,
-  });
+  const unreadOptions = notificationUnreadOptions(recipient);
+  const unread = useQuery({ ...unreadOptions, refetchOnWindowFocus: true });
+  useNotificationPolling(unreadOptions.queryKey, !open);
   const count = unread.data?.unread_count ?? 0;
   return (
     <>
@@ -128,12 +161,18 @@ function NotificationDrawer({
   const [status, setStatus] = useState<NotificationStatus>('unread');
   const mark = useApiAction();
   const filter = useApiAction();
+  const listOptions = notificationListOptions(
+    recipient,
+    pagination.page,
+    pagination.pageSize,
+    status,
+  );
   const query = useQuery({
-    ...notificationListOptions(recipient, pagination.page, pagination.pageSize, status),
+    ...listOptions,
     placeholderData: keepPreviousData,
-    refetchInterval: notificationRefetchInterval,
     refetchOnWindowFocus: true,
   });
+  useNotificationPolling(listOptions.queryKey, true);
   const data = query.data;
   const unreadIDs =
     data?.items.filter((item) => item.read_at === null).map((item) => item.id) ?? [];
