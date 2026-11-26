@@ -22,7 +22,7 @@ interface ReportRequest {
 export async function initializeRum(
   { aegis: options, apiBaseURL }: Pick<AppConfig, 'aegis' | 'apiBaseURL'>,
   pageURL: () => string,
-): Promise<void> {
+): Promise<((uin: string) => void) | undefined> {
   try {
     // 可选监控只使用应用 ID 判断是否启用，其余配置由 SDK 处理。
     if (!options || typeof options !== 'object' || Array.isArray(options)) return;
@@ -31,7 +31,9 @@ export async function initializeRum(
 
     const { default: Aegis } = await import('aegis-web-sdk');
     const settings = options as Record<string, unknown>;
-    const hasConfiguredUin = Boolean(settings['uin']);
+    const configuredUin = settings['uin'];
+    let currentUin =
+      typeof configuredUin === 'string' || typeof configuredUin === 'number' ? configuredUin : '';
     const siteOrigin = window.location.origin;
     const apiURL = new URL(apiBaseURL || siteOrigin);
     const apiPrefix = `${apiURL.pathname.replace(/\/$/u, '')}/v1`;
@@ -94,7 +96,7 @@ export async function initializeRum(
         const url = new URL(request.url);
         url.searchParams.delete('originFrom');
         url.searchParams.delete('referer');
-        if (!hasConfiguredUin) url.searchParams.delete('uin');
+        if (!currentUin) url.searchParams.delete('uin');
         request.url = url.href;
         return request;
       },
@@ -104,8 +106,19 @@ export async function initializeRum(
     } as ConstructorParameters<typeof Aegis>[0]);
     // 清除 SDK 自动提取的来源及未配置的用户标识，批量测速正文也使用这些公共字段。
     aegis.extendBean('referer', '');
-    if (!hasConfiguredUin) aegis.extendBean('uin', '');
+    if (!currentUin) aegis.extendBean('uin', '');
+
+    return (uin) => {
+      if (currentUin === uin) return;
+      try {
+        aegis.setConfig({ uin });
+        currentUin = uin;
+      } catch {
+        // 监控更新失败时继续处理登录状态。
+      }
+    };
   } catch {
     // 监控加载失败时继续提供页面服务。
+    return undefined;
   }
 }
