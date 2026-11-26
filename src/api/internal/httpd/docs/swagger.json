@@ -2082,7 +2082,7 @@
         },
         "/v1/workspaces": {
             "get": {
-                "description": "仅返回当前启用账号被显式授予 access_workspace 的启用工作空间；节点指派不授予空间发现或进入权限。",
+                "description": "一次返回当前启用账号被显式授予 access_workspace 的全部启用工作空间。节点指派不授予空间发现或进入权限。",
                 "produces": [
                     "application/json"
                 ],
@@ -2090,26 +2090,11 @@
                     "工作空间"
                 ],
                 "summary": "我的工作空间",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "页码，从 1 开始",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "每页数量，默认与上限来自 YAML",
-                        "name": "page_size",
-                        "in": "query"
-                    }
-                ],
                 "responses": {
                     "200": {
-                        "description": "我的工作空间分页目录",
+                        "description": "我的工作空间目录",
                         "schema": {
-                            "$ref": "#/definitions/workspaceModels.ListResponse"
+                            "$ref": "#/definitions/accessModels.MyWorkspacesResponse"
                         }
                     }
                 }
@@ -15311,6 +15296,62 @@
                     "description": "Path 是接口路径模板，参数以冒号开头。",
                     "type": "string",
                     "example": "/v1/workspaces/:workspace_id"
+                }
+            }
+        },
+        "accessModels.MyWorkspace": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "description": "Description 是工作空间用途说明。",
+                    "type": "string",
+                    "example": "处理日常教学事务"
+                },
+                "id": {
+                    "description": "ID 是工作空间编号。",
+                    "type": "string",
+                    "example": "w7m2k9p4s6n8c3x5"
+                },
+                "name": {
+                    "description": "Name 是工作空间显示名称。",
+                    "type": "string",
+                    "example": "教学事务"
+                }
+            }
+        },
+        "accessModels.MyWorkspacesData": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "description": "Items 是获准进入的启用工作空间，空结果为数组。",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/accessModels.MyWorkspace"
+                    }
+                }
+            }
+        },
+        "accessModels.MyWorkspacesResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "Data 是接口业务数据，结构由具体接口定义。",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/accessModels.MyWorkspacesData"
+                        }
+                    ],
+                    "x-nullable": true
+                },
+                "error_msg": {
+                    "description": "ErrorMsg 是简体中文错误说明；请求成功时为空字符串。",
+                    "type": "string",
+                    "example": ""
+                },
+                "trace": {
+                    "description": "Trace 是当前请求的 OpenTelemetry Trace ID，关闭上报时仍然存在。",
+                    "type": "string",
+                    "example": "4bf92f3577b34da6a3ce929d0e0e4736"
                 }
             }
         },

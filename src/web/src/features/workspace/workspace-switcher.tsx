@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Building, Check, ChevronDown, RotateCw } from 'lucide-react';
 import { DropdownMenu } from 'radix-ui';
 import { useEffect, useState } from 'react';
@@ -8,7 +8,7 @@ import { ErrorMessage } from '@/components/error-message';
 import { Button } from '@/components/ui/button';
 import { LoadingIcon } from '@/components/ui/loading-icon';
 import { Tooltip } from '@/components/ui/tooltip';
-import { myWorkspacePagesOptions, workspaceContextOptions } from '@/features/workspace/api';
+import { myWorkspacesOptions, workspaceContextOptions } from '@/features/workspace/api';
 import {
   getWorkspaceEntryPath,
   useActiveWorkspaceID,
@@ -16,8 +16,6 @@ import {
   workspaceURL,
 } from '@/features/workspace/navigation';
 import { useApiAction, useInitialLoading } from '@/lib/api-action';
-import { getConfig } from '@/lib/config';
-import { useLoadingDelay } from '@/lib/loading';
 import { cn } from '@/lib/utils';
 
 export function WorkspaceSwitcher({
@@ -41,23 +39,10 @@ export function WorkspaceSwitcher({
       onBusyChange?.(false);
     };
   }, [action.pending, onBusyChange]);
-  const list = useInfiniteQuery({
-    ...myWorkspacePagesOptions(getConfig().tablePageSize),
-    enabled: open,
-  });
-  const listLoading = useInitialLoading(
-    open && list.isFetching && !list.isFetchingNextPage && !action.pending,
-  );
-  const moreLoading = useLoadingDelay(action.isPending('more'));
+  const list = useQuery({ ...myWorkspacesOptions, enabled: open });
+  const listLoading = useInitialLoading(open && list.isFetching && !action.pending);
   const label = workspaceName ?? '选择工作空间';
-  const items = [
-    ...new Map(
-      (list.data?.pages.flatMap((page) => page.items) ?? []).map((workspace) => [
-        workspace.id,
-        workspace,
-      ]),
-    ).values(),
-  ];
+  const items = list.data?.items ?? [];
   return (
     <DropdownMenu.Root
       modal={false}
@@ -192,24 +177,6 @@ export function WorkspaceSwitcher({
             <p className="px-3 py-4 text-sm text-muted-foreground">暂无可访问的工作空间</p>
           ) : null}
           {action.error ? <ErrorMessage>{action.error.message}</ErrorMessage> : null}
-          {(list.hasNextPage && !list.error) || moreLoading ? (
-            <DropdownMenu.Item
-              disabled={action.pending}
-              aria-busy={moreLoading}
-              onSelect={(event) => {
-                event.preventDefault();
-                void action.run('more', () => list.fetchNextPage());
-              }}
-              className="flex cursor-pointer items-center justify-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground outline-none data-disabled:opacity-50 data-highlighted:bg-accent"
-            >
-              {moreLoading ? (
-                <LoadingIcon />
-              ) : (
-                <ChevronDown className="size-4" aria-hidden="true" />
-              )}
-              加载更多
-            </DropdownMenu.Item>
-          ) : null}
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
     </DropdownMenu.Root>

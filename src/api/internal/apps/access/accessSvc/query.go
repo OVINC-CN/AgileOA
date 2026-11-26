@@ -11,41 +11,29 @@ import (
 	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/audit/auditConstants"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/audit/auditModels"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/workspace/workspaceModels"
-	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/workspace/workspaceUtils"
-	"github.com/OVINC-CN/AgileOA/src/api/internal/pagination"
 )
 
 // MyWorkspaces 仅返回显式授予进入权限的空间，节点指派不参与空间授权。
-func MyWorkspaces(
-	ctx context.Context,
-	query pagination.Query,
-) (workspaceModels.ListData, error) {
-	result := workspaceModels.ListData{
-		Items: []workspaceModels.Info{}, Page: query.Page, PageSize: query.PageSize,
-	}
-	event := auditModels.Event{
-		ObjectType: auditConstants.ObjectWorkspace,
-		Conditions: auditModels.Snapshot{"page": query.Page, "page_size": query.PageSize},
-	}
+func MyWorkspaces(ctx context.Context) (accessModels.MyWorkspacesData, error) {
+	result := accessModels.MyWorkspacesData{Items: []accessModels.MyWorkspace{}}
+	event := auditModels.Event{ObjectType: auditConstants.ObjectWorkspace}
 	err := accessUtils.Session(ctx, accessConstants.AccessMyWorkspaces, event,
 		func(tx *gorm.DB, principal accessModels.Principal, event *auditModels.Event) error {
+			// 仅查询当前账号显式获准进入的启用空间。
 			permissions := tx.Model(&accessModels.Permission{}).Select("1").
 				Where("access_permissions.workspace_id = workspaces.id AND user_id = ? AND action = ?",
 					principal.User.ID, accessConstants.AccessWorkspace)
-			scope := tx.Model(&workspaceModels.Workspace{}).
+			if err := tx.Model(&workspaceModels.Workspace{}).
+				Select("workspaces.id, workspaces.name, workspaces.description").
 				Where("workspaces.is_enabled = ?", true).
-				Where("EXISTS (?)", permissions)
-			if err := scope.Count(&result.Total).Error; err != nil {
+				Where("EXISTS (?)", permissions).
+				Order("workspaces.id DESC").
+				Find(&result.Items).Error; err != nil {
 				return err
 			}
-			var workspaces []workspaceModels.Workspace
-			if err := scope.Select("workspaces.*").Order("workspaces.id DESC").
-				Offset((query.Page - 1) * query.PageSize).Limit(query.PageSize).
-				Find(&workspaces).Error; err != nil {
-				return err
-			}
-			for _, workspace := range workspaces {
-				result.Items = append(result.Items, workspaceUtils.Info(workspace))
+
+			// 记录本次返回的空间编号及数量。
+			for _, workspace := range result.Items {
 				event.ReturnedIDs = append(event.ReturnedIDs, workspace.ID)
 			}
 			event.ReturnedCount = int64(len(result.Items))

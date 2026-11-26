@@ -12,7 +12,6 @@ import (
 	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/project/projectModels"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/student/studentConstants"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/student/studentModels"
-	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/workspace/workspaceModels"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/db"
 )
 
@@ -49,9 +48,9 @@ func checkAssignmentWorkspaceAccess(
 	path := "/v1/workspaces/" + workspaceID
 	assertDenied := func() {
 		t.Helper()
-		list := decode[workspaceModels.ListData](t,
+		list := decode[accessModels.MyWorkspacesData](t,
 			request(t, server, http.MethodGet, "/v1/workspaces", nil, reviewer, 200))
-		if list.Total != 0 || len(list.Items) != 0 {
+		if len(list.Items) != 0 {
 			t.Fatal("节点指派使未获进入权限的账号发现了工作空间")
 		}
 		request(t, server, http.MethodGet, path, nil, reviewer, 403)
@@ -121,9 +120,9 @@ func checkAssignmentWorkspaceAccess(
 		{accessConstants.AccessWorkspace, accessConstants.ProjectApplicationList},
 	} {
 		replaceActions(t, server, admin, workspaceID, userID, actions, 200)
-		list := decode[workspaceModels.ListData](t,
+		list := decode[accessModels.MyWorkspacesData](t,
 			request(t, server, http.MethodGet, "/v1/workspaces", nil, reviewer, 200))
-		if list.Total != 1 || len(list.Items) != 1 || list.Items[0].ID != workspaceID {
+		if len(list.Items) != 1 || list.Items[0].ID != workspaceID {
 			t.Fatal("显式进入授权未恢复工作空间列表")
 		}
 		context := decode[accessModels.ContextData](t,
