@@ -233,11 +233,11 @@ export function PersonTimelineDrawer({
         {data?.template_id ? (
           <>
             <div className="space-y-1">
-              <h2 className="text-sm font-semibold wrap-anywhere">{data.template_name}</h2>
+              <h2 className="text-sm font-medium wrap-anywhere">{data.template_name}</h2>
               <p
                 className={
                   data.status === 'abnormal'
-                    ? 'flex items-center gap-2 font-semibold text-danger-foreground'
+                    ? 'flex items-center gap-2 font-medium text-danger-foreground'
                     : data.status === 'transferring'
                       ? 'text-sm text-warning-foreground'
                       : 'text-sm text-success-foreground'
@@ -434,12 +434,12 @@ function TimelineNodeHeader({
     </>
   );
   return (
-    <h3 aria-label={title} className="text-sm font-semibold">
+    <h3 aria-label={title} className="text-sm font-medium">
       {onEdit ? (
         <Button
           type="button"
           variant="ghost"
-          className="h-auto w-full min-w-0 justify-between gap-2 p-0 text-left font-semibold whitespace-normal hover:bg-transparent"
+          className="h-auto w-full min-w-0 justify-between gap-2 p-0 text-left font-medium whitespace-normal hover:bg-transparent"
           aria-label={`编辑节点 ${node.name}`}
           onClick={onEdit}
         >

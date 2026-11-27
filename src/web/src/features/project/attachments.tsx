@@ -198,6 +198,8 @@ export function AttachmentManager({
           <div className="border-y border-border">
             <ManagementTable
               tableID="project-attachments"
+              pinnedColumn="filename"
+              emptyMessage="暂无附件"
               rowActions={renderActions}
               rowID={(record) => String(record.id)}
               columns={columns.filter(

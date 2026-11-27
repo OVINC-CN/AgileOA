@@ -44,7 +44,7 @@ export function StudentFieldSections({
             aria-labelledby={`${id}-${section.id}`}
             className="space-y-4 py-5 first:pt-0 last:pb-0"
           >
-            <h3 id={`${id}-${section.id}`} className="text-sm font-semibold">
+            <h3 id={`${id}-${section.id}`} className="text-sm font-medium">
               {section.label}
             </h3>
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">{content}</div>

@@ -1,7 +1,8 @@
-import { FolderOpen } from 'lucide-react';
+import { FolderOpen, X } from 'lucide-react';
 import { type ComponentProps, useId, useRef } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { Tooltip } from '@/components/ui/tooltip';
 import { uploadAccept, validateFileSize, validateUploadFile } from '@/lib/file-upload';
 import { showMessage } from '@/lib/messages';
 import { cn } from '@/lib/utils';
@@ -63,13 +64,28 @@ export function FileInput({
         <FolderOpen aria-hidden="true" />
         选择文件
       </Button>
-      <span
-        aria-live="polite"
-        className="min-w-0 flex-1 truncate text-sm text-muted-foreground"
-        title={file?.name}
-      >
-        {file?.name ?? '请选择文件'}
-      </span>
+      <Tooltip content={file?.name ?? ''} onlyOverflow disabled={!file}>
+        <span aria-live="polite" className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
+          {file?.name ?? '请选择文件'}
+        </span>
+      </Tooltip>
+      {file ? (
+        <Tooltip content="清空已选文件" disabled={disabled === true}>
+          <Button
+            type="button"
+            variant="cancel"
+            size="icon-xs"
+            className="border-0 text-muted-foreground enabled:hover:text-foreground"
+            aria-label="清空已选文件"
+            disabled={disabled}
+            onClick={() => {
+              onFileChange(null);
+            }}
+          >
+            <X aria-hidden="true" />
+          </Button>
+        </Tooltip>
+      ) : null}
     </div>
   );
 }

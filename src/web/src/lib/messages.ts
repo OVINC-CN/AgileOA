@@ -1,9 +1,12 @@
 import { getConfig } from '@/lib/config';
 
+export type MessageTone = 'error' | 'success' | 'info' | 'warning';
+
 interface MessageOptions {
   // 设为 0 时常驻，普通消息默认按运行配置自动关闭。
   durationMs?: number;
   dismissible?: boolean;
+  tone?: MessageTone;
   action?: {
     label: string;
     onClick: () => void;
@@ -12,6 +15,7 @@ interface MessageOptions {
 interface Message {
   id: string;
   text: string;
+  tone: MessageTone;
   dismissible: boolean;
   action?: MessageOptions['action'];
 }
@@ -40,7 +44,13 @@ export const messageStore = {
 };
 export function showMessage(text: string, id?: string, options: MessageOptions = {}) {
   const content = text.trim();
-  if (!content || snapshot.messages.some((message) => message.text === content)) return;
+  const tone = options.tone ?? 'error';
+  if (
+    !content ||
+    snapshot.messages.some((message) => message.text === content && message.tone === tone)
+  ) {
+    return;
+  }
   const messageID = id ?? `message-${String(++nextID)}`;
   // 同一编号替换内容时重新计时，独立消息互不影响。
   clearTimeout(timers.get(messageID));
@@ -61,6 +71,7 @@ export function showMessage(text: string, id?: string, options: MessageOptions =
       {
         id: messageID,
         text: content,
+        tone,
         dismissible: options.dismissible ?? true,
         action: options.action,
       },

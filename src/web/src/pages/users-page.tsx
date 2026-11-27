@@ -1,5 +1,5 @@
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, Plus, Search, Unplug, X } from 'lucide-react';
+import { Plus, Search, Unplug } from 'lucide-react';
 import { useRef, useState } from 'react';
 
 import { ErrorMessage } from '@/components/error-message';
@@ -28,6 +28,7 @@ import { useCurrentUser } from '@/features/user/api';
 import { useApiAction, useApiMutation, useInitialLoading } from '@/lib/api-action';
 import { useFilterForm } from '@/lib/filter-form';
 import { formatIdentity } from '@/lib/format';
+import { showMessage } from '@/lib/messages';
 import { useTablePagination } from '@/lib/pagination';
 
 const emptyRows: UserRow[] = [];
@@ -104,7 +105,6 @@ export function UsersPage() {
   const [editor, setEditor] = useState<{ user: UserRow | null } | null>(null);
   const [revoking, setRevoking] = useState<UserRow | null>(null);
   const [apiTokenUser, setAPITokenUser] = useState<UserRow | null>(null);
-  const [notice, setNotice] = useState('');
   const searchAction = useApiAction();
   const list = useQuery({
     ...userListOptions(filters, page, pageSize),
@@ -130,7 +130,7 @@ export function UsersPage() {
   const done = (message: string) => {
     setEditor(null);
     setRevoking(null);
-    setNotice(message);
+    showMessage(message, undefined, { tone: 'success' });
     if (list.data?.items.length === 1 && page > 1 && message.startsWith('已删除')) {
       setPage(page - 1);
     }
@@ -152,26 +152,6 @@ export function UsersPage() {
       </ManagementPageHeader>
       <UserCharts data={stats.data} loading={stats.isPending} />
       {stats.error ? <ErrorMessage>{stats.error.message}</ErrorMessage> : null}
-      {notice ? (
-        <div
-          role="status"
-          className="flex items-center gap-2 rounded-xl border border-warning-border/70 bg-warning/70 px-4 py-3 text-sm text-warning-foreground"
-        >
-          <Check className="size-4 shrink-0" aria-hidden="true" />
-          <span className="min-w-0 flex-1 wrap-anywhere">{notice}</span>
-          <Button
-            variant="cancel"
-            size="icon-xs"
-            className="ml-auto"
-            aria-label="关闭提示"
-            onClick={() => {
-              setNotice('');
-            }}
-          >
-            <X aria-hidden="true" />
-          </Button>
-        </div>
-      ) : null}
       <FilterPanel
         hasUnappliedChanges={hasUnappliedChanges}
         onSubmit={(event) => {

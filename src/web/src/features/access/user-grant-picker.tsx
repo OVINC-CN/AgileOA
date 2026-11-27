@@ -135,6 +135,7 @@ export function UserGrantPicker({
         <Card className="gap-0 overflow-hidden border-border py-0">
           <ManagementTable
             tableID="system-permission-candidates"
+            pinnedColumn="username"
             columns={columns}
             data={users.data?.items ?? []}
             total={users.data?.total ?? 0}

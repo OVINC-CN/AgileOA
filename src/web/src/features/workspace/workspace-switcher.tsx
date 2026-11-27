@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Building, Check, ChevronDown, RotateCw } from 'lucide-react';
+import { Building, Check, ChevronDown, RefreshCw } from 'lucide-react';
 import { DropdownMenu } from 'radix-ui';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
@@ -114,7 +114,7 @@ export function WorkspaceSwitcher({
                   void action.run('retry', () => list.refetch());
                 }}
               >
-                <RotateCw aria-hidden="true" />
+                <RefreshCw aria-hidden="true" />
                 重新加载
               </Button>
             </div>

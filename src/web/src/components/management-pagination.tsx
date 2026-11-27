@@ -2,6 +2,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { SearchSelect } from '@/components/ui/search-select';
+import { Tooltip } from '@/components/ui/tooltip';
 import { useApiAction } from '@/lib/api-action';
 import { getConfig } from '@/lib/config';
 import { formatNumber } from '@/lib/format';
@@ -36,9 +37,6 @@ export function ManagementPagination({
       <p aria-live="polite" className="text-xs text-muted-foreground tabular-nums">
         共 {formatNumber(total)} 条记录
       </p>
-      <span className="sr-only" aria-live="polite">
-        第 {String(page)} / {String(pages)} 页
-      </span>
       <div className="ml-auto flex items-center gap-2">
         <SearchSelect
           label="每页条数"
@@ -54,34 +52,44 @@ export function ManagementPagination({
             void pagination.run('size', () => onPageSize(Number(value)));
           }}
         />
-        <Button
-          type="button"
-          size="icon-sm"
-          variant="ghost"
-          disabled={page <= 1 || loading || pagination.pending}
-          loading={pagination.isPending('previous')}
-          onClick={() => {
-            void pagination.run('previous', () => onPage(page - 1));
-          }}
-          aria-label="上一页"
-          title="上一页"
-        >
-          <ChevronLeft aria-hidden="true" />
-        </Button>
-        <Button
-          type="button"
-          size="icon-sm"
-          variant="ghost"
-          disabled={page >= pages || loading || pagination.pending}
-          loading={pagination.isPending('next')}
-          onClick={() => {
-            void pagination.run('next', () => onPage(page + 1));
-          }}
-          aria-label="下一页"
-          title="下一页"
-        >
-          <ChevronRight aria-hidden="true" />
-        </Button>
+        <div className="flex items-center gap-1">
+          <Tooltip content="上一页" disabled={page <= 1 || loading || pagination.pending}>
+            <Button
+              type="button"
+              size="icon-sm"
+              variant="ghost"
+              disabled={page <= 1 || loading || pagination.pending}
+              loading={pagination.isPending('previous')}
+              onClick={() => {
+                void pagination.run('previous', () => onPage(page - 1));
+              }}
+              aria-label="上一页"
+            >
+              <ChevronLeft aria-hidden="true" />
+            </Button>
+          </Tooltip>
+          <span
+            aria-live="polite"
+            className="px-1 text-xs whitespace-nowrap text-muted-foreground tabular-nums"
+          >
+            第 {String(page)} / {String(pages)} 页
+          </span>
+          <Tooltip content="下一页" disabled={page >= pages || loading || pagination.pending}>
+            <Button
+              type="button"
+              size="icon-sm"
+              variant="ghost"
+              disabled={page >= pages || loading || pagination.pending}
+              loading={pagination.isPending('next')}
+              onClick={() => {
+                void pagination.run('next', () => onPage(page + 1));
+              }}
+              aria-label="下一页"
+            >
+              <ChevronRight aria-hidden="true" />
+            </Button>
+          </Tooltip>
+        </div>
       </div>
     </div>
   );

@@ -52,7 +52,7 @@ export function ParticipationDetail({
           </div>
           <div className="space-y-1.5">
             <dt className="text-xs text-muted-foreground">总分</dt>
-            <dd className="text-lg font-semibold wrap-anywhere tabular-nums">
+            <dd className="text-lg font-medium wrap-anywhere tabular-nums">
               {formatScore(record.score)}
             </dd>
           </div>

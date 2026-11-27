@@ -232,7 +232,7 @@ export function PersonTimelineNodeEditor({
         <PersonTimelineRules node={current} nodes={nodes} />
         <section className="space-y-3" aria-label="附件管理">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h3 className="text-sm font-semibold">附件管理</h3>
+            <h3 className="text-sm font-medium">附件管理</h3>
             <FileUploadButton
               loading={upload.pending}
               disabled={save.pending || skip.pending || reset.pending || remove.pending}

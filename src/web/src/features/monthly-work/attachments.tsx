@@ -184,6 +184,8 @@ function AttachmentPanel({
           <div className="border-y border-border">
             <ManagementTable
               tableID={`monthly-work-attachments:${category}`}
+              pinnedColumn="filename"
+              emptyMessage="暂无附件"
               rowActions={renderActions}
               rowID={(record) => String(record.id)}
               columns={columns}

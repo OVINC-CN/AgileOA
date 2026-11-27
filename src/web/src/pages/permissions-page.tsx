@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
-import { Plus, RotateCw, Search, ShieldCheck } from 'lucide-react';
+import { Plus, RefreshCw, Search, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
 import { useSearchParams } from 'react-router';
 
@@ -8,6 +8,7 @@ import { ErrorMessage } from '@/components/error-message';
 import { FilterField, FilterPanel } from '@/components/filter-panel';
 import { ManagementPageHeader } from '@/components/management-page-header';
 import { ManagementTable } from '@/components/management-table';
+import { RefreshButton } from '@/components/refresh-button';
 import { SearchResetButton } from '@/components/search-reset-button';
 import { TableActionButton } from '@/components/table-action-button';
 import { Badge } from '@/components/ui/badge';
@@ -28,6 +29,7 @@ import { workspaceEnumOptions, workspaceIDSchema } from '@/features/workspace/ap
 import { workspaceQueryParam } from '@/features/workspace/navigation';
 import { useApiAction, useInitialLoading } from '@/lib/api-action';
 import { formatIdentity } from '@/lib/format';
+import { showMessage } from '@/lib/messages';
 import { useTablePagination } from '@/lib/pagination';
 import { recordTimeColumns } from '@/lib/record-time-columns';
 
@@ -48,7 +50,6 @@ export function PermissionsPage() {
     creating: boolean;
   } | null>(null);
   const [addingWorkspaceID, setAddingWorkspaceID] = useState<string | null>(null);
-  const [notice, setNotice] = useState('');
   const searchAction = useApiAction();
   const selectorAction = useApiAction();
   const editAction = useApiAction();
@@ -158,7 +159,6 @@ export function PermissionsPage() {
               setPage(1);
               setEditing(null);
               setAddingWorkspaceID(null);
-              setNotice('');
               await client.query({
                 ...accessUsersOptions(value, search, 1, pageSize),
                 staleTime: 0,
@@ -170,7 +170,6 @@ export function PermissionsPage() {
           <Button
             disabled={selectorAction.pending || enumRetry.pending || editAction.pending}
             onClick={() => {
-              setNotice('');
               setAddingWorkspaceID(workspaceID);
             }}
           >
@@ -197,17 +196,12 @@ export function PermissionsPage() {
               });
             }}
           >
-            <RotateCw aria-hidden="true" />
+            <RefreshCw aria-hidden="true" />
             重新加载
           </Button>
         </div>
       ) : null}
       {editAction.error ? <ErrorMessage>{editAction.error.message}</ErrorMessage> : null}
-      {notice ? (
-        <p role="status" className="text-sm wrap-anywhere text-muted-foreground">
-          {notice}
-        </p>
-      ) : null}
       {workspace && !workspaces.error ? (
         <>
           <FilterPanel
@@ -264,6 +258,16 @@ export function PermissionsPage() {
             <ManagementTable
               tableID="system-permissions"
               pinnedColumn="username"
+              refreshAction={
+                <RefreshButton
+                  label="刷新权限列表"
+                  onRefresh={() =>
+                    client.invalidateQueries({
+                      queryKey: ['management', 'access', 'users', workspaceID],
+                    })
+                  }
+                />
+              }
               primaryColumn={{ id: 'username', getAction: (user) => getEditAction(user, 'user') }}
               columns={columns}
               data={users.data?.items ?? empty}
@@ -324,8 +328,10 @@ export function PermissionsPage() {
             const lastPage = Math.max(1, Math.ceil((latest?.total ?? 0) / pageSize));
             if (page > lastPage) setPage(lastPage);
             setEditing(null);
-            setNotice(
+            showMessage(
               `已${editing.creating ? '添加' : '更新'} ${editing.user.display_name} 的操作权限`,
+              undefined,
+              { tone: 'success' },
             );
           }}
         />

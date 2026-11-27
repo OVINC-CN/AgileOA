@@ -32,7 +32,7 @@ export function TemplatePreview({
           </span>
           <div className="space-y-3 rounded-xl border border-border bg-background/70 p-4">
             <div className="flex flex-wrap items-center gap-2">
-              <h3 className="min-w-0 text-sm font-semibold wrap-anywhere">
+              <h3 className="min-w-0 text-sm font-medium wrap-anywhere">
                 {node.name || '未命名节点'}
               </h3>
               {node.is_baseline ? <BaselineNodeBadge /> : null}
