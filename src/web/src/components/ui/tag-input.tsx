@@ -2,7 +2,9 @@ import { Plus, X } from 'lucide-react';
 import { useId, useRef, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Tooltip } from '@/components/ui/tooltip';
 import { showMessage } from '@/lib/messages';
 
 export function TagInput({
@@ -48,28 +50,31 @@ export function TagInput({
     setDraft('');
   };
   return (
-    <div className="form-control flex min-h-11 min-w-0 flex-wrap items-center gap-2 rounded-lg border p-2 focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/30 motion-reduce:transition-none">
+    <div className="form-control flex min-h-9 min-w-0 flex-wrap items-center gap-1.5 rounded-lg border px-2 py-1 focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/30 motion-reduce:transition-none">
       {values.map((value, index) => (
         <Badge
           key={`${String(index)}:${value}`}
           variant="outline"
-          className="max-w-full gap-1.5 rounded-md border-primary/15 bg-primary/8 px-2 py-1 text-xs font-normal"
+          className="max-w-full gap-1 rounded-md border-primary/15 bg-primary/8 px-2 py-0.5 text-xs font-normal"
         >
-          <span className="truncate" title={value}>
-            {value}
-          </span>
+          <Tooltip content={value} onlyOverflow>
+            <span className="truncate">{value}</span>
+          </Tooltip>
           {!readOnly ? (
-            <button
-              type="button"
-              aria-label={`删除候选值 ${value}`}
-              title="删除"
-              className="-mr-1 shrink-0 rounded p-0.5 text-muted-foreground transition-colors outline-none hover:bg-background/80 hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
-              onClick={() => {
-                onValuesChange(values.filter((_, position) => position !== index));
-              }}
-            >
-              <X className="size-3" aria-hidden="true" />
-            </button>
+            <Tooltip content="删除">
+              <Button
+                type="button"
+                variant="cancel"
+                size="icon-xs"
+                aria-label={`删除候选值 ${value}`}
+                className="-mr-1 size-4 rounded border-0 p-0 text-muted-foreground enabled:hover:text-foreground"
+                onClick={() => {
+                  onValuesChange(values.filter((_, position) => position !== index));
+                }}
+              >
+                <X className="size-3" aria-hidden="true" />
+              </Button>
+            </Tooltip>
           ) : null}
         </Badge>
       ))}
@@ -93,6 +98,14 @@ export function TagInput({
                 event.preventDefault();
                 commit(draft);
               }
+              if (
+                event.key === 'Backspace' &&
+                !draft &&
+                values.length > 0 &&
+                !event.nativeEvent.isComposing
+              ) {
+                onValuesChange(values.slice(0, -1));
+              }
             }}
             onPaste={(event) => {
               event.preventDefault();
@@ -110,19 +123,22 @@ export function TagInput({
               showMessage(event.currentTarget.validationMessage, messageID);
             }}
           />
-          <button
-            type="button"
-            aria-label={`添加${label}`}
-            title="添加"
-            disabled={!draft.trim()}
-            className="rounded-md p-1 text-primary outline-none hover:bg-primary/10 focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-30"
-            onClick={() => {
-              commit(draft);
-              input.current?.focus();
-            }}
-          >
-            <Plus className="size-4" aria-hidden="true" />
-          </button>
+          <Tooltip content="添加" disabled={!draft.trim()}>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              aria-label={`添加${label}`}
+              disabled={!draft.trim()}
+              className="text-accent-foreground hover:bg-accent hover:text-accent-foreground"
+              onClick={() => {
+                commit(draft);
+                input.current?.focus();
+              }}
+            >
+              <Plus className="size-4" aria-hidden="true" />
+            </Button>
+          </Tooltip>
         </div>
       ) : null}
       {readOnly && values.length === 0 ? (

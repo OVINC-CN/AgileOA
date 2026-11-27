@@ -27,7 +27,7 @@ export function UserMCPGuide() {
     // 复制当前部署的接入地址，实际凭据继续由上方 Token 区域管理。
     try {
       await navigator.clipboard.writeText(endpoint);
-      showMessage('MCP 服务地址已复制');
+      showMessage('MCP 服务地址已复制', undefined, { tone: 'success' });
     } catch {
       showMessage('复制失败，请选中内容后手动复制');
     }
@@ -36,7 +36,7 @@ export function UserMCPGuide() {
   return (
     <section aria-labelledby="user-mcp-guide-title" className="min-w-0 space-y-4 border-t pt-5">
       <div className="space-y-1">
-        <h2 id="user-mcp-guide-title" className="text-sm font-semibold">
+        <h2 id="user-mcp-guide-title" className="text-sm font-medium">
           MCP 接入
         </h2>
         <p className="text-sm leading-6 text-muted-foreground">

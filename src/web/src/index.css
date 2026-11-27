@@ -88,7 +88,6 @@
   --font-size-page: 1rem;
   --font-size-metric-emphasis: 1.5rem;
   --motion-navigation-duration: 200ms;
-  --motion-sidebar-duration: 220ms;
   --motion-delete-confirmation-duration: 350ms;
   --motion-easing-standard: cubic-bezier(0.4, 0, 0.2, 1);
   --motion-easing-continuous: cubic-bezier(0.42, 0.22, 0.58, 0.78);
@@ -303,7 +302,6 @@
   @media (min-width: 1024px) {
     .side-navigation-layout {
       grid-template-columns: 160px minmax(0, 1fr);
-      transition: grid-template-columns var(--motion-sidebar-duration) var(--motion-easing-standard);
     }
     .side-navigation-layout[data-collapsed='true'] {
       grid-template-columns: 56px minmax(0, 1fr);
@@ -560,7 +558,6 @@
     --default-transition-duration: 0ms;
   }
   .form-control,
-  .side-navigation-layout,
   .side-navigation-label,
   .navigation-motion-indicator[data-ready='true'],
   .navigation-motion > [role='tab'],

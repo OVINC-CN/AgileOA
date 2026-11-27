@@ -45,6 +45,7 @@ export function PageUpdateDetector() {
         stopped = true;
         window.clearTimeout(nextCheck);
         showMessage('发现新版本，请刷新页面以使用最新版本', 'page-update', {
+          tone: 'info',
           durationMs: 0,
           dismissible: false,
           action: {

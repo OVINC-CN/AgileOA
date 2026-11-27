@@ -17,7 +17,7 @@ export function DetailValue({
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(value);
-      showMessage('已复制');
+      showMessage('已复制', undefined, { tone: 'success' });
     } catch {
       showMessage('复制失败，请重试');
     }

@@ -246,7 +246,7 @@ function PersonWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
           <span
             className={
               row.original.timeline_status === 'abnormal'
-                ? 'font-semibold text-danger-foreground'
+                ? 'font-medium text-danger-foreground'
                 : row.original.timeline_status === 'transferring'
                   ? 'text-warning-foreground'
                   : 'text-success-foreground'

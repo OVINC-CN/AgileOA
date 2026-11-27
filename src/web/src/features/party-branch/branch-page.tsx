@@ -418,6 +418,8 @@ function BranchWorkspace({ workspaceID, actions, refresh: refreshWorkspace }: Wo
                     result.queued
                       ? '重排任务已提交，执行结果将通过站内通知发送'
                       : '当前没有需要重排的在编人员',
+                    undefined,
+                    { tone: result.queued ? 'success' : 'info' },
                   );
                 });
               }}

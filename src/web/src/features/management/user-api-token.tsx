@@ -68,14 +68,18 @@ export function UserAPITokenDrawer({ user, onClose }: { user: UserRow; onClose: 
       setData(result.data);
       setVisible(kind === 'reset');
       confirmationDrawer.current?.close();
-      showMessage(kind === 'reset' ? 'API Token 已生成，可随时再次查看' : 'API Token 已撤销');
+      showMessage(
+        kind === 'reset' ? 'API Token 已生成，可随时再次查看' : 'API Token 已撤销',
+        undefined,
+        { tone: 'success' },
+      );
     }
   };
   const copy = async () => {
     if (!data?.token) return;
     try {
       await navigator.clipboard.writeText(data.token);
-      showMessage('API Token 已复制');
+      showMessage('API Token 已复制', undefined, { tone: 'success' });
     } catch {
       showMessage('复制失败，请显示 API Token 后手动复制');
     }

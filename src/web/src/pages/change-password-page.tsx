@@ -71,7 +71,7 @@ export function ChangePasswordPage() {
           className="glass-panel w-full max-w-sm rounded-2xl border p-7 sm:p-8"
         >
           <img src="/agile.svg" alt={config.appName} className="mb-8 h-6 w-auto" />
-          <h1 id="change-password-title" className="text-xl font-semibold">
+          <h1 id="change-password-title" className="text-xl font-medium">
             修改密码
           </h1>
           <p className="mt-2 mb-6 text-sm text-muted-foreground">请更换临时密码后继续使用。</p>

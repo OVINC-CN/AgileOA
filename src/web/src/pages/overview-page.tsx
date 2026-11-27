@@ -114,14 +114,14 @@ export function OverviewPage() {
       <div className="w-full max-w-5xl" role="group" aria-label="当前日期">
         <h1
           id="overview-date-heading"
-          className="flex items-center justify-center gap-3 text-[14px] font-normal tracking-widest text-muted-foreground"
+          className="flex items-center justify-center gap-3 text-base font-normal tracking-widest text-muted-foreground"
         >
           <span>{year} 年</span>
           <span aria-hidden="true" className="size-1 rounded-full bg-primary/50" />
           <span>{Number(month)} 月</span>
         </h1>
         {holidays.length > 0 || countdown ? (
-          <p className="mt-2 px-4 text-[14px] leading-relaxed font-normal break-words text-muted-foreground">
+          <p className="mt-2 px-4 text-base leading-relaxed font-normal break-words text-muted-foreground">
             {holidays.length > 0 ? (
               <span className="text-accent-foreground">{holidays.join(' · ')}</span>
             ) : null}
@@ -148,9 +148,7 @@ export function OverviewPage() {
                   aria-label={`${dateLabel}，今天`}
                   className="glass-panel overview-calendar-today"
                 >
-                  <span className="text-[14px] tracking-widest text-muted-foreground">
-                    {weekday}
-                  </span>
+                  <span className="text-base tracking-widest text-muted-foreground">{weekday}</span>
                   <span className="overview-calendar-day">{day}</span>
                   <span className="rounded-full bg-primary/10 px-3 py-1 text-xs tracking-widest text-accent-foreground">
                     今天

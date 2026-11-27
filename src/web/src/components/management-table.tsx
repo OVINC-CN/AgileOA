@@ -152,6 +152,8 @@ export function ManagementTable<T>({
             <h2 className="text-base font-medium">{title}</h2>
             {loading ? <LoadingIcon /> : null}
           </div>
+        ) : loading ? (
+          <LoadingIcon className="mr-auto text-muted-foreground" />
         ) : null}
         <TableColumnSettings settings={settings} />
         {refreshAction}
@@ -207,7 +209,15 @@ export function ManagementTable<T>({
           ) : (
             <TableRow>
               <TableCell colSpan={Math.max(settings.visibleColumns.length, 1)} className="h-30">
-                {!visibleLoading && emptyMessage ? (
+                {visibleLoading ? (
+                  <div
+                    role="status"
+                    className="flex items-center justify-center gap-2 text-muted-foreground"
+                  >
+                    <LoadingIcon />
+                    <span>正在加载</span>
+                  </div>
+                ) : emptyMessage ? (
                   <div className="flex flex-col items-center gap-3 text-muted-foreground">
                     <Inbox className="size-7 opacity-50" aria-hidden="true" />
                     <p>{emptyMessage}</p>

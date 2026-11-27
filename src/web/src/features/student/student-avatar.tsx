@@ -82,7 +82,13 @@ function AvatarImage({ name, src, loading }: { name: string; src: string; loadin
           <Dialog.Title className="sr-only">头像预览</Dialog.Title>
           <div className="flex justify-end p-2">
             <Dialog.Close asChild>
-              <Button type="button" variant="cancel" size="icon-sm" aria-label="关闭预览">
+              <Button
+                type="button"
+                variant="cancel"
+                size="icon-sm"
+                className="border-0"
+                aria-label="关闭预览"
+              >
                 <X aria-hidden="true" />
               </Button>
             </Dialog.Close>

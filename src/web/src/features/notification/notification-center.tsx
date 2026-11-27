@@ -127,7 +127,7 @@ export function NotificationCenter({
         {count > 0 ? (
           <span
             aria-hidden="true"
-            className="pointer-events-none absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-xs leading-none font-semibold text-primary-foreground ring-2 ring-background"
+            className="pointer-events-none absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-xs leading-none font-medium text-primary-foreground ring-2 ring-background"
           >
             {count > maxBadgeCount ? `${String(maxBadgeCount)}+` : String(count)}
           </span>
@@ -310,7 +310,7 @@ function NotificationDrawer({
                     <span className="sr-only">未读</span>
                   </span>
                 ) : null}
-                <h3 className="min-w-0 text-sm font-semibold wrap-anywhere">
+                <h3 className="min-w-0 text-sm font-medium wrap-anywhere">
                   {formatValue(notification.title)}
                 </h3>
               </div>
@@ -318,7 +318,10 @@ function NotificationDrawer({
                 {formatValue(notification.content)}
               </p>
               <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-                <time dateTime={notification.created_at} className="text-xs text-muted-foreground">
+                <time
+                  dateTime={notification.created_at}
+                  className="text-xs text-muted-foreground tabular-nums"
+                >
                   {formatDate(notification.created_at)}
                 </time>
                 <div className="ml-auto flex items-center gap-2">

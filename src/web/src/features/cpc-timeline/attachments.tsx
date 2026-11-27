@@ -136,7 +136,7 @@ function AttachmentPanel({
                           file,
                           updateUpload,
                         );
-                        showMessage('附件上传成功');
+                        showMessage('附件上传成功', undefined, { tone: 'success' });
                       } finally {
                         pagination.setPage(1);
                         await invalidate(1);

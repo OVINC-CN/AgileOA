@@ -1,11 +1,47 @@
-import { CircleAlert, X } from 'lucide-react';
+import { CircleAlert, CircleCheck, Info, TriangleAlert, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 
 import { Button } from '@/components/ui/button';
-import { dismissMessage, messageStore, showMessage } from '@/lib/messages';
+import { dismissMessage, messageStore, type MessageTone, showMessage } from '@/lib/messages';
+import { cn } from '@/lib/utils';
 
 type Message = ReturnType<typeof messageStore.getSnapshot>['messages'][number];
+
+const toneStyles: Record<
+  MessageTone,
+  {
+    role: 'alert' | 'status';
+    border: string;
+    icon: typeof CircleAlert;
+    iconClassName: string;
+  }
+> = {
+  error: {
+    role: 'alert',
+    border: 'border-danger-border',
+    icon: CircleAlert,
+    iconClassName: 'text-danger-foreground',
+  },
+  warning: {
+    role: 'alert',
+    border: 'border-warning-border',
+    icon: TriangleAlert,
+    iconClassName: 'text-warning-foreground',
+  },
+  success: {
+    role: 'status',
+    border: 'border-success-border',
+    icon: CircleCheck,
+    iconClassName: 'text-success-foreground',
+  },
+  info: {
+    role: 'status',
+    border: 'border-info-border',
+    icon: Info,
+    iconClassName: 'text-info-foreground',
+  },
+};
 
 function MessageItem({
   message,
@@ -38,19 +74,27 @@ function MessageItem({
       cancelled = true;
     };
   }, [message.id, present, onExitComplete]);
+  const tone = toneStyles[message.tone];
+  const Icon = tone.icon;
   return (
     <div
       ref={ref}
       id={message.id}
-      role="alert"
+      role={tone.role}
+      data-tone={message.tone}
       aria-hidden={!present}
       inert={!present}
       data-state={present ? 'open' : 'closed'}
       style={{ pointerEvents: present ? 'auto' : 'none' }}
-      className="message-motion glass-panel flex shrink-0 items-start gap-3 rounded-xl border border-destructive/25 bg-popover px-4 py-3 text-sm shadow-none"
+      className={cn(
+        'message-motion glass-panel flex w-full shrink-0 items-start gap-2.5 rounded-xl border bg-popover px-3.5 py-2.5 text-sm shadow-popover',
+        tone.border,
+      )}
     >
-      <CircleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-destructive" />
-      <p className="min-w-0 flex-1 py-0.5 break-words">{message.text}</p>
+      <Icon aria-hidden="true" className={cn('mt-0.5 size-4 shrink-0', tone.iconClassName)} />
+      <p className="min-w-0 flex-1 py-0.5 leading-5 wrap-anywhere whitespace-pre-wrap">
+        {message.text}
+      </p>
       {message.action ? (
         <Button type="button" size="xs" onClick={message.action.onClick}>
           {message.action.label}
@@ -61,6 +105,7 @@ function MessageItem({
           type="button"
           variant="cancel"
           size="icon-xs"
+          className="border-0 text-muted-foreground enabled:hover:text-foreground"
           aria-label="关闭消息"
           onClick={() => {
             dismissMessage(message.id);
@@ -128,10 +173,10 @@ export function MessageViewport() {
   return createPortal(
     <section
       aria-label="消息通知"
-      aria-live="assertive"
+      aria-live="polite"
       aria-relevant="additions"
       style={{ pointerEvents: 'none' }}
-      className="fixed inset-x-4 top-4 z-[100] mx-auto flex max-h-[40svh] max-w-lg flex-col gap-2 overflow-y-auto"
+      className="fixed inset-x-4 top-4 z-[100] mx-auto flex max-h-[40svh] max-w-sm flex-col gap-2 overflow-y-auto"
     >
       {rendered.messages.map((message) => (
         <MessageItem

@@ -121,7 +121,7 @@ function setup(assignedCount = 1, candidateCount = 1, rejectSave = false) {
       <RouterProvider router={router} />
     </QueryClientProvider>,
   );
-  return { calls, submitted };
+  return { calls, grants, submitted };
 }
 
 beforeEach(() => {
@@ -266,5 +266,20 @@ describe('工作空间权限列表与独立授权入口', () => {
     expect(await screen.findByText('虚构用户6(fixture.6)')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '上一页' })).toBeDisabled();
     expect(screen.getByText('共 5 条记录')).toBeInTheDocument();
+  });
+
+  it('刷新发现最后一页的授权已被撤销时回退有效页码', async () => {
+    const { grants } = setup(6, 0);
+    await screen.findByText('虚构用户6(fixture.6)');
+    await userEvent.click(screen.getByRole('button', { name: '下一页' }));
+    await screen.findByText('虚构用户1(fixture.1)');
+
+    grants.delete(1);
+    await userEvent.click(screen.getByRole('button', { name: '刷新权限列表' }));
+
+    expect(await screen.findByText('虚构用户6(fixture.6)')).toBeInTheDocument();
+    expect(await screen.findByText('第 1 / 1 页')).toBeVisible();
+    expect(screen.getByText('共 5 条记录')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '上一页' })).toBeDisabled();
   });
 });

@@ -153,7 +153,7 @@ export function TimelineTransferDrawer({
         {preview ? (
           <>
             <div className="space-y-2 border-t pt-4">
-              <h2 className="text-sm font-semibold wrap-anywhere">
+              <h2 className="text-sm font-medium wrap-anywhere">
                 转移后预览 · {preview.timeline.template_name}
               </h2>
               <p className="text-xs text-muted-foreground">
@@ -177,7 +177,7 @@ export function TimelineTransferDrawer({
                 className="space-y-3 rounded-lg border border-warning-border bg-warning p-4"
                 aria-label="未映射的填写内容"
               >
-                <h3 className="text-sm font-semibold text-warning-foreground">
+                <h3 className="text-sm font-medium text-warning-foreground">
                   以下已填写内容未映射，转移后不再保留
                 </h3>
                 <dl className="space-y-2 text-sm">
@@ -212,7 +212,7 @@ export function TimelineTransferDrawer({
                     )}
                   >
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="min-w-0 text-sm font-semibold wrap-anywhere">{node.name}</h3>
+                      <h3 className="min-w-0 text-sm font-medium wrap-anywhere">{node.name}</h3>
                       {node.is_baseline ? <BaselineNodeBadge /> : null}
                       <span className="ml-auto text-xs text-muted-foreground">
                         {node.status_label}

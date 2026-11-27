@@ -49,7 +49,7 @@ describe('页面更新检测', () => {
       expect.objectContaining({ method: 'GET', cache: 'no-store' }),
     );
     expect(fetchMock.mock.calls[0]?.[1]?.signal).toBeInstanceOf(AbortSignal);
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
     await advanceTime(49999);
     expect(fetchMock).toHaveBeenCalledOnce();
 
@@ -62,14 +62,16 @@ describe('页面更新检测', () => {
     );
     expect(window.location.search + window.location.hash).toBe('?workspace=another#list');
     await advanceTime(99999);
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledTimes(2);
     await advanceTime(1);
-    expect(screen.getByRole('alert')).toHaveTextContent('发现新版本');
+    const notice = screen.getByRole('status');
+    expect(notice).toHaveTextContent('发现新版本');
+    expect(notice).toHaveAttribute('data-tone', 'info');
     expect(screen.getByRole('button', { name: '一键刷新' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '关闭消息' })).not.toBeInTheDocument();
     await advanceTime(180000);
-    expect(screen.getAllByRole('alert')).toHaveLength(1);
+    expect(screen.getAllByRole('status')).toHaveLength(1);
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 
@@ -86,9 +88,9 @@ describe('页面更新检测', () => {
     render(<PageUpdateDetector />);
     await advanceTime(0);
     await advanceTime(240000);
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
     await advanceTime(60000);
-    expect(screen.getByRole('alert')).toHaveTextContent('发现新版本');
+    expect(screen.getByRole('status')).toHaveTextContent('发现新版本');
   });
 
   it('请求进行中不重复发送，超时后恢复检测，卸载会取消请求并忽略迟到的变化', async () => {
@@ -131,7 +133,7 @@ describe('页面更新检测', () => {
       finish(pageResponse('"updated"'));
       await vi.advanceTimersByTimeAsync(120000);
     });
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 });

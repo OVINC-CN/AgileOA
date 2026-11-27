@@ -150,18 +150,35 @@ export function deleteWork(
 export const workAttachmentOptions = (
   workspaceID: string,
   workID: number,
-  page: number,
-  size: number,
   category: WorkCategory = 'student',
 ) =>
   queryOptions({
-    queryKey: [...workKey(workspaceID, category), 'attachments', workID, page, size],
-    queryFn: ({ signal }) =>
-      apiGet(
-        `${base(workspaceID)}/attachments/${resource(category)}?monthly_work_id=${String(workID)}&page=${String(page)}&page_size=${String(size)}`,
-        list(workFileSchema(category)),
-        signal,
-      ),
+    queryKey: [...workKey(workspaceID, category), 'attachments', workID],
+    queryFn: async ({ signal }) => {
+      const size = Math.max(...getConfig().tablePageSizeOptions);
+      const fetchPage = (page: number) => {
+        const parameters = new URLSearchParams({
+          monthly_work_id: String(workID),
+          page: String(page),
+          page_size: String(size),
+        });
+        return apiGet(
+          `${base(workspaceID)}/attachments/${resource(category)}?${parameters.toString()}`,
+          list(workFileSchema(category)),
+          signal,
+        );
+      };
+
+      // 读取完整目录，按附件编号去重并保留接口顺序。
+      const first = await fetchPage(1);
+      const files = new Map(first.items.map((file) => [file.id, file]));
+      const pages = Math.ceil(first.total / first.page_size);
+      for (let page = 2; page <= pages; page += 1) {
+        const result = await fetchPage(page);
+        for (const file of result.items) files.set(file.id, file);
+      }
+      return [...files.values()];
+    },
     retry: false,
   });
 

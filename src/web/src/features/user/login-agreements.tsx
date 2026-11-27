@@ -73,7 +73,7 @@ export function LoginAgreements({ checked, onCheckedChange, disabled = false }: 
             <p>{content.introduction}</p>
             {content.sections.map((section) => (
               <section key={section.title} className="space-y-2">
-                <h3 className="font-semibold">{section.title}</h3>
+                <h3 className="font-medium">{section.title}</h3>
                 {section.paragraphs.map((paragraph) => (
                   <p key={paragraph}>{paragraph}</p>
                 ))}

@@ -32,7 +32,6 @@ import {
   workListOptions,
   type WorkRecord,
 } from '@/features/monthly-work/api';
-import { WorkAttachments } from '@/features/monthly-work/attachments';
 import { workAction, type WorkCategory } from '@/features/monthly-work/category';
 import type { WorkTarget } from '@/features/monthly-work/navigation';
 import { groupWorkRecords, monthLabel } from '@/features/monthly-work/timeline';
@@ -91,7 +90,6 @@ function MonthlyWorkWorkspace({
   );
   const targetRecord = useRef<HTMLLIElement>(null);
   const [editing, setEditing] = useState<WorkRecord | null | undefined>();
-  const [attachmentWorkID, setAttachmentWorkID] = useState<number | null>(null);
   const [transfer, setTransfer] = useState(false);
   const client = useQueryClient();
   const refresh = useApiAction();
@@ -106,15 +104,12 @@ function MonthlyWorkWorkspace({
   const data = denied || !canList ? undefined : query.data;
   const findWork = (id: number | null | undefined) =>
     data?.items.find((record) => record.id === id);
-  const attachments = findWork(attachmentWorkID);
   const isOwner = (record: WorkRecord | undefined) =>
     record !== undefined && record.owner_id === userID;
-  const canOpenAttachments = (record: WorkRecord) =>
-    canReadFiles || (isOwner(record) && can('attachment.upload'));
-  const canManageFiles = (record: WorkRecord) =>
-    isOwner(record) && (can('attachment.upload') || can('attachment.delete'));
-  const canChangeWork = (record: WorkRecord | undefined, operation: 'update' | 'delete') =>
-    isOwner(record) && can(operation);
+  const canOpenEditor = (record: WorkRecord | undefined) =>
+    isOwner(record) &&
+    (can('update') || can('attachment.upload') || (canReadFiles && can('attachment.delete')));
+  const canDeleteWork = (record: WorkRecord) => isOwner(record) && can('delete');
   const targetVisible = data?.items.some((record) => record.id === target?.id) ?? false;
   useEffect(() => {
     // 通知按目标年月查询，记录可见时滚动到对应卡片。
@@ -407,21 +402,9 @@ function MonthlyWorkWorkspace({
                             : null}
                         </ul>
                       ) : null}
-                      {canOpenAttachments(record) ||
-                      canChangeWork(record, 'update') ||
-                      canChangeWork(record, 'delete') ? (
+                      {canOpenEditor(record) || canDeleteWork(record) ? (
                         <div className="flex min-w-0 flex-wrap items-center gap-1 border-t border-border pt-3 lg:col-start-2 lg:row-start-1 lg:justify-end lg:self-start lg:border-0 lg:pt-0">
-                          {canOpenAttachments(record) ? (
-                            <TableActionButton
-                              onClick={() => {
-                                setAttachmentWorkID(record.id);
-                              }}
-                            >
-                              <Paperclip aria-hidden="true" />
-                              {canManageFiles(record) ? '管理附件' : '查看附件'}
-                            </TableActionButton>
-                          ) : null}
-                          {canChangeWork(record, 'update') ? (
+                          {canOpenEditor(record) ? (
                             <TableActionButton
                               onClick={() => {
                                 setEditing(record);
@@ -431,7 +414,7 @@ function MonthlyWorkWorkspace({
                               编辑
                             </TableActionButton>
                           ) : null}
-                          {canChangeWork(record, 'delete') ? (
+                          {canDeleteWork(record) ? (
                             <TableActionsMenu
                               label={record.work_item}
                               disabled={remove.pending}
@@ -477,8 +460,7 @@ function MonthlyWorkWorkspace({
       ) : (
         <Card className="p-6 text-sm text-muted-foreground">没有查看月度工作的权限</Card>
       )}
-      {editing !== undefined &&
-      (editing ? canChangeWork(findWork(editing.id), 'update') : can('create')) ? (
+      {editing !== undefined && (editing ? canOpenEditor(findWork(editing.id)) : can('create')) ? (
         <WorkEditor
           workspaceID={workspaceID}
           category={category}
@@ -487,18 +469,6 @@ function MonthlyWorkWorkspace({
           currentUser={user}
           onClose={() => {
             setEditing(undefined);
-          }}
-        />
-      ) : null}
-      {attachments && canOpenAttachments(attachments) ? (
-        <WorkAttachments
-          workspaceID={workspaceID}
-          category={category}
-          record={attachments}
-          actions={actions}
-          isOwner={isOwner(attachments)}
-          onClose={() => {
-            setAttachmentWorkID(null);
           }}
         />
       ) : null}

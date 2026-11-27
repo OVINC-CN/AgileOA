@@ -1,29 +1,33 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Paperclip, Save } from 'lucide-react';
+import { Save } from 'lucide-react';
 import { useRef, useState } from 'react';
 
 import { ErrorMessage } from '@/components/error-message';
 import { Button } from '@/components/ui/button';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Drawer, type DrawerHandle } from '@/components/ui/drawer';
+import { FileUploadButton } from '@/components/ui/file-upload-button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SearchSelect } from '@/components/ui/search-select';
 import { Textarea } from '@/components/ui/textarea';
 import {
+  deleteWorkAttachment,
   saveWork,
+  uploadWorkAttachment,
   type WorkInput,
   workKey,
   workOwnerOptions,
   type WorkRecord,
 } from '@/features/monthly-work/api';
-import { WorkAttachments } from '@/features/monthly-work/attachments';
+import { WorkAttachmentList } from '@/features/monthly-work/attachments';
 import { workAction, type WorkCategory } from '@/features/monthly-work/category';
 import { LinksEditor } from '@/features/monthly-work/links-editor';
 import type { CurrentUser } from '@/features/user/api';
 import { ApiError } from '@/lib/api';
-import { useApiMutation } from '@/lib/api-action';
+import { useApiAction, useApiMutation } from '@/lib/api-action';
 import { currentCalendarDate } from '@/lib/calendar';
+import { uploadHint } from '@/lib/file-upload';
 import { formatIdentity } from '@/lib/format';
 
 export function WorkEditor({
@@ -52,16 +56,17 @@ export function WorkEditor({
       links: [],
     },
   );
-  const [attachments, setAttachments] = useState(false);
+  const can = (operation: string) => actions.includes(workAction(category, operation));
   const isOwner = original !== null && original.owner_id === currentUser?.id;
-  const canReadFiles = actions.includes(workAction(category, 'attachment.read'));
-  const canUpload = isOwner && actions.includes(workAction(category, 'attachment.upload'));
-  const canManageFiles =
-    canUpload || (isOwner && actions.includes(workAction(category, 'attachment.delete')));
+  const canSave = can(original ? 'update' : 'create');
+  const canReadFiles = can('attachment.read');
+  const canUpload = isOwner && can('attachment.upload');
+  const canDeleteFile = isOwner && can('attachment.delete');
+  const showCreateHint = !original && can('attachment.upload');
   const client = useQueryClient();
   const owners = useQuery({
     ...workOwnerOptions(workspaceID, category),
-    enabled: actions.includes(workAction(category, 'list')),
+    enabled: canSave && can('list'),
   });
   const denied = owners.error instanceof ApiError && [401, 403, 404].includes(owners.error.status);
   const availableOptions = (denied ? [] : (owners.data ?? [])).map((item) => ({
@@ -91,38 +96,48 @@ export function WorkEditor({
     }
   }
   const drawer = useRef<DrawerHandle>(null);
+  const upload = useApiAction();
+  const remove = useApiAction();
+  const invalidate = () => client.invalidateQueries({ queryKey: workKey(workspaceID, category) });
   const mutation = useApiMutation({
     mutationFn: async () => {
       await saveWork(workspaceID, original, values, category);
-      await client.invalidateQueries({ queryKey: workKey(workspaceID, category) });
+      await invalidate();
     },
     onSuccess: () => {
       drawer.current?.close();
     },
   });
+  const busy = mutation.isPending || upload.pending || remove.pending;
   return (
-    <>
-      <Drawer
-        ref={drawer}
-        title={original ? '编辑月度工作' : '新增月度工作'}
-        description="日期、工作项目及负责人必填"
-        busy={mutation.isPending}
-        onClose={onClose}
-        form={{
-          onSubmit: (event) => {
-            event.preventDefault();
-            mutation.mutate();
-          },
-        }}
-        dismissLabel="取消"
-        footer={
-          <Button type="submit" loading={mutation.isPending}>
+    <Drawer
+      ref={drawer}
+      title={original ? '编辑月度工作' : '新增月度工作'}
+      description={canSave ? '日期、工作项目及负责人必填' : undefined}
+      busy={busy}
+      onClose={onClose}
+      form={{
+        onSubmit: (event) => {
+          event.preventDefault();
+          if (canSave && !busy) mutation.mutate();
+        },
+      }}
+      dismissLabel={canSave ? '取消' : '关闭'}
+      footer={
+        canSave ? (
+          <Button
+            type="submit"
+            loading={mutation.isPending}
+            disabled={upload.pending || remove.pending}
+          >
             <Save aria-hidden="true" />
             保存
           </Button>
-        }
-      >
-        <fieldset disabled={mutation.isPending} className="space-y-4 p-6">
+        ) : null
+      }
+    >
+      <div className="space-y-4 p-6">
+        <fieldset disabled={busy || !canSave} className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="work-date">日期</Label>
@@ -194,26 +209,65 @@ export function WorkEditor({
               }}
             />
           </div>
+        </fieldset>
+        {(original ? canReadFiles || canUpload : showCreateHint) ? (
           <section className="space-y-3 border-t border-border pt-5" aria-label="附件">
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-base leading-5 font-medium">附件</h2>
-              {original && (canReadFiles || canUpload) ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setAttachments(true);
+              {original && canUpload ? (
+                <FileUploadButton
+                  loading={upload.pending}
+                  disabled={mutation.isPending || remove.pending}
+                  onFileSelect={(file, updateUpload) => {
+                    if (busy) return;
+                    void upload.run('upload', async () => {
+                      try {
+                        await uploadWorkAttachment(
+                          workspaceID,
+                          original.id,
+                          file,
+                          category,
+                          updateUpload,
+                        );
+                      } finally {
+                        await invalidate();
+                      }
+                      updateUpload('complete');
+                    });
                   }}
-                >
-                  <Paperclip aria-hidden="true" />
-                  {canManageFiles ? '管理附件' : '查看附件'}
-                </Button>
+                />
               ) : null}
             </div>
-            {original || !actions.includes(workAction(category, 'attachment.upload')) ? null : (
+            {canUpload ? <p className="text-xs text-muted-foreground">{uploadHint()}</p> : null}
+            {showCreateHint ? (
               <p className="text-xs text-muted-foreground">创建后由负责人上传附件</p>
-            )}
+            ) : null}
+            {original && canReadFiles ? (
+              <WorkAttachmentList
+                workspaceID={workspaceID}
+                category={category}
+                workID={original.id}
+                busy={busy}
+                onDelete={
+                  canDeleteFile
+                    ? async (file) => {
+                        if (busy) return false;
+                        const result = await remove.run('delete', async () => {
+                          try {
+                            await deleteWorkAttachment(workspaceID, file, category);
+                          } finally {
+                            await invalidate();
+                          }
+                        });
+                        return result.ok;
+                      }
+                    : undefined
+                }
+              />
+            ) : null}
           </section>
+        ) : null}
+        <fieldset disabled={busy || !canSave}>
           <LinksEditor
             value={values.links}
             onChange={(links) => {
@@ -221,19 +275,7 @@ export function WorkEditor({
             }}
           />
         </fieldset>
-      </Drawer>
-      {attachments && original && (canReadFiles || canUpload) ? (
-        <WorkAttachments
-          workspaceID={workspaceID}
-          category={category}
-          record={original}
-          actions={actions}
-          isOwner={isOwner}
-          onClose={() => {
-            setAttachments(false);
-          }}
-        />
-      ) : null}
-    </>
+      </div>
+    </Drawer>
   );
 }

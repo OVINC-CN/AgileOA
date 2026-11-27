@@ -171,4 +171,29 @@ describe('顶部 Message', () => {
     await userEvent.click(screen.getByRole('button', { name: '关闭消息' }));
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
+
+  it('支持不同语义类型、固定紧凑宽度适配小屏及超长文本换行', async () => {
+    act(() => {
+      showMessage('已复制', undefined, { tone: 'success' });
+      showMessage('发现新版本，请刷新页面', undefined, { tone: 'info' });
+      showMessage('请检查较长的异常提示内容以确保自动换行展示'.repeat(3), undefined, {
+        tone: 'warning',
+      });
+    });
+
+    const viewport = screen.getByRole('region', { name: '消息通知' });
+    expect(viewport).toHaveClass('inset-x-4', 'max-w-sm');
+    const statuses = screen.getAllByRole('status');
+    expect(statuses).toHaveLength(2);
+    expect(statuses[0]).toHaveAttribute('data-tone', 'success');
+    expect(statuses[0]).toHaveClass('w-full', 'border-success-border');
+    expect(statuses[1]).toHaveAttribute('data-tone', 'info');
+    expect(statuses[1]).toHaveClass('w-full', 'border-info-border');
+    const warning = screen.getByRole('alert');
+    expect(warning).toHaveAttribute('data-tone', 'warning');
+    expect(warning).toHaveClass('w-full', 'border-warning-border');
+    expect(within(warning).getByRole('button', { name: '关闭消息' })).toHaveClass('border-0');
+    await userEvent.click(within(warning).getByRole('button', { name: '关闭消息' }));
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
 });

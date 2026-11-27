@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ChevronDown, RotateCw, Save } from 'lucide-react';
+import { ChevronDown, RefreshCw, Save } from 'lucide-react';
 import { Collapsible } from 'radix-ui';
 import { useId, useState } from 'react';
 
@@ -323,7 +323,7 @@ export function ActionEditor({
               );
             }}
           >
-            <RotateCw aria-hidden="true" />
+            <RefreshCw aria-hidden="true" />
             重新加载
           </Button>
         ) : undefined

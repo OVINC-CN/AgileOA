@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { RotateCw } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router';
 
@@ -95,7 +95,7 @@ export function AuthGuard({
             void retry.run('retry', () => currentUser.refetch());
           }}
         >
-          <RotateCw aria-hidden="true" />
+          <RefreshCw aria-hidden="true" />
           重新加载
         </Button>
       </div>

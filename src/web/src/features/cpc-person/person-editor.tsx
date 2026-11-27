@@ -181,7 +181,7 @@ export function PersonEditor({
         ) : null}
         {student && !blocked ? (
           <section className="space-y-4">
-            <h2 className="text-sm font-semibold">学生基础信息</h2>
+            <h2 className="text-sm font-medium">学生基础信息</h2>
             <PersonStudentInfo student={student} />
           </section>
         ) : null}
