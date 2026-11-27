@@ -15,12 +15,23 @@ import (
 
 func TestAuditScalarFilters(t *testing.T) {
 	for _, scenario := range []struct {
-		name    string
-		query   string
-		ip      string
-		invalid bool
+		name       string
+		query      string
+		ip         string
+		statistics bool
+		dimension  string
+		invalid    bool
 	}{
 		{name: "default"},
+		{name: "statistics-default", statistics: true, dimension: auditConstants.DimensionResult},
+		{name: "statistics-workspace", query: "?dimension=workspace", statistics: true,
+			dimension: auditConstants.DimensionWorkspace},
+		{name: "statistics-action", query: "?dimension=action", statistics: true,
+			dimension: auditConstants.DimensionAction},
+		{name: "repeated-dimension", query: "?dimension=result&dimension=action", statistics: true,
+			invalid: true},
+		{name: "unknown-dimension", query: "?dimension=other", statistics: true, invalid: true},
+		{name: "dimension-on-list", query: "?dimension=workspace", invalid: true},
 		{name: "all-actions", query: "?action_id="},
 		{name: "system", query: "?workspace_id=system&user_identify_tenant_id=system"},
 		{name: "workspace", query: "?workspace_id=w7m2k9p4s6n8c3x5"},
@@ -60,7 +71,8 @@ func TestAuditScalarFilters(t *testing.T) {
 		t.Run(scenario.name, func(t *testing.T) {
 			request := httptest.NewRequestWithContext(t.Context(), http.MethodGet,
 				"/v1/system/audit/logs"+scenario.query, nil)
-			query, err := parse(echo.New().NewContext(request, httptest.NewRecorder()))
+			query, err := parse(echo.New().NewContext(request, httptest.NewRecorder()),
+				scenario.statistics)
 			if (err != nil) != scenario.invalid {
 				t.Fatalf("标量条件校验错误：%v", err)
 			}
@@ -69,6 +81,9 @@ func TestAuditScalarFilters(t *testing.T) {
 			}
 			if !scenario.invalid && query.AccessSourceIP != scenario.ip {
 				t.Fatalf("客户端 IP 筛选错误：%q", query.AccessSourceIP)
+			}
+			if !scenario.invalid && query.Dimension != scenario.dimension {
+				t.Fatalf("审计统计维度错误：%q", query.Dimension)
 			}
 			if scenario.name == "maximum-user" && (query.UserID == nil ||
 				strconv.FormatUint(*query.UserID, 10) != "18446744073709551615") {
@@ -96,7 +111,7 @@ func TestAuditActionUnionAndDefault(t *testing.T) {
 	} {
 		request := httptest.NewRequestWithContext(t.Context(), http.MethodGet,
 			"/v1/system/audit/logs"+scenario.query, nil)
-		query, err := parse(echo.New().NewContext(request, httptest.NewRecorder()))
+		query, err := parse(echo.New().NewContext(request, httptest.NewRecorder()), false)
 		if err != nil || !slices.Equal(query.Actions, scenario.actions) {
 			t.Fatalf("操作并集或默认值错误：%q，%v", query.Actions, err)
 		}

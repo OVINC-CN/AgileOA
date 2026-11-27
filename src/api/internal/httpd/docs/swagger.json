@@ -1293,7 +1293,7 @@
         },
         "/v1/system/audit/statistics": {
             "get": {
-                "description": "两个时间参数均限制事件的 start_time，按配置的展示时区聚合自然日趋势。",
+                "description": "两个时间参数均限制事件的 start_time，按配置的展示时区聚合自然日趋势。空间和操作按筛选后全时段总次数取前 10 名，并列按编号升序，其余按日合并为其他。",
                 "produces": [
                     "application/json"
                 ],
@@ -1302,6 +1302,18 @@
                 ],
                 "summary": "审计日志统计",
                 "parameters": [
+                    {
+                        "enum": [
+                            "result",
+                            "workspace",
+                            "action"
+                        ],
+                        "type": "string",
+                        "default": "result",
+                        "description": "统计维度：result 成功失败、workspace 空间、action 操作",
+                        "name": "dimension",
+                        "in": "query"
+                    },
                     {
                         "type": "array",
                         "items": {
@@ -16087,6 +16099,14 @@
                     "description": "Total 是匹配记录总数。",
                     "type": "integer",
                     "example": 120
+                },
+                "trend": {
+                    "description": "Trend 是请求的空间或操作趋势，成功失败维度省略。",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/auditModels.Trend"
+                        }
+                    ]
                 }
             }
         },
@@ -16222,6 +16242,46 @@
                     "description": "WorkspaceID 是业务空间编号，系统操作为 system。",
                     "type": "string",
                     "example": "system"
+                }
+            }
+        },
+        "auditModels.Trend": {
+            "type": "object",
+            "properties": {
+                "days": {
+                    "description": "Days 是展示时区内的自然日趋势，缺少记录的日期补零。",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/auditModels.TrendDay"
+                    }
+                },
+                "series": {
+                    "description": "Series 是按整个查询范围内的次数降序排列的前 10 项，其余合并为最后一项「其他」。",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/auditModels.Option"
+                    }
+                }
+            }
+        },
+        "auditModels.TrendDay": {
+            "type": "object",
+            "properties": {
+                "counts": {
+                    "description": "Counts 按 series 的顺序提供次数，缺少记录的统计项补零。",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    },
+                    "example": [
+                        30,
+                        2
+                    ]
+                },
+                "date": {
+                    "description": "Date 是配置的展示时区中的日期。",
+                    "type": "string",
+                    "example": "2026-11-16"
                 }
             }
         },

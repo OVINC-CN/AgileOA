@@ -722,6 +722,10 @@ definitions:
         description: Total 是匹配记录总数。
         example: 120
         type: integer
+      trend:
+        allOf:
+        - $ref: '#/definitions/auditModels.Trend'
+        description: Trend 是请求的空间或操作趋势，成功失败维度省略。
     type: object
   auditModels.StatisticsResponse:
     properties:
@@ -825,6 +829,34 @@ definitions:
       workspace_id:
         description: WorkspaceID 是业务空间编号，系统操作为 system。
         example: system
+        type: string
+    type: object
+  auditModels.Trend:
+    properties:
+      days:
+        description: Days 是展示时区内的自然日趋势，缺少记录的日期补零。
+        items:
+          $ref: '#/definitions/auditModels.TrendDay'
+        type: array
+      series:
+        description: Series 是按整个查询范围内的次数降序排列的前 10 项，其余合并为最后一项「其他」。
+        items:
+          $ref: '#/definitions/auditModels.Option'
+        type: array
+    type: object
+  auditModels.TrendDay:
+    properties:
+      counts:
+        description: Counts 按 series 的顺序提供次数，缺少记录的统计项补零。
+        example:
+        - 30
+        - 2
+        items:
+          type: integer
+        type: array
+      date:
+        description: Date 是配置的展示时区中的日期。
+        example: "2026-11-16"
         type: string
     type: object
   cpcdashboardModels.BranchSummary:
@@ -8684,8 +8716,17 @@ paths:
       - 审计日志
   /v1/system/audit/statistics:
     get:
-      description: 两个时间参数均限制事件的 start_time，按配置的展示时区聚合自然日趋势。
+      description: 两个时间参数均限制事件的 start_time，按配置的展示时区聚合自然日趋势。空间和操作按筛选后全时段总次数取前 10 名，并列按编号升序，其余按日合并为其他。
       parameters:
+      - default: result
+        description: 统计维度：result 成功失败、workspace 空间、action 操作
+        enum:
+        - result
+        - workspace
+        - action
+        in: query
+        name: dimension
+        type: string
       - collectionFormat: multi
         description: 用户租户，组织为 system，学生为所属空间
         in: query

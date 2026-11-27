@@ -16,12 +16,13 @@ type Query struct {
 	WorkspaceIDs   []string
 	Actions        []string
 	ResultCodes    []int
-	AccessTypes    []uint8
+	AccessTypes    []int
 	AccessSourceIP string
 	InstanceID     *string
 	RequestID      string
 	From           time.Time
 	Until          time.Time
+	Dimension      string
 }
 
 // Option 提供筛选代码及中文显示名称。
@@ -133,6 +134,22 @@ type Day struct {
 	Failure int64 `json:"failure" example:"2"`
 }
 
+// TrendDay 保存某日各统计项的次数。
+type TrendDay struct {
+	// Date 是配置的展示时区中的日期。
+	Date string `json:"date" example:"2026-11-16"`
+	// Counts 按 series 的顺序提供次数，缺少记录的统计项补零。
+	Counts []int64 `json:"counts" example:"30,2"`
+}
+
+// Trend 是空间或操作的按日趋势。
+type Trend struct {
+	// Series 是按整个查询范围内的次数降序排列的前 10 项，其余合并为最后一项「其他」。
+	Series []Option `json:"series"`
+	// Days 是展示时区内的自然日趋势，缺少记录的日期补零。
+	Days []TrendDay `json:"days"`
+}
+
 // StatisticsData 由同一次按日聚合生成总计和趋势。
 type StatisticsData struct {
 	// Total 是匹配记录总数。
@@ -145,6 +162,8 @@ type StatisticsData struct {
 	Denied int64 `json:"denied" example:"3"`
 	// Days 是展示时区的自然日趋势，缺少记录的日期补零。
 	Days []Day `json:"days" gorm:"-"`
+	// Trend 是请求的空间或操作趋势，成功失败维度省略。
+	Trend *Trend `json:"trend,omitempty" gorm:"-"`
 }
 
 // LatestLogin 保存审计内部汇总的最近登录。

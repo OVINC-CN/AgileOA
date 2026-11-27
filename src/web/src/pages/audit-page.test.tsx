@@ -4,17 +4,9 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import type { AuditRow, AuditStatistics } from '@/features/management/api';
+import type { AuditRow } from '@/features/management/api';
 import { getConfig } from '@/lib/config';
 import { AuditPage } from '@/pages/audit-page';
-
-vi.mock('@/components/management-charts', () => ({
-  AuditCharts: ({ data }: { data: AuditStatistics | undefined }) => (
-    <div role="status" aria-label="审计统计">
-      {data?.total ?? 0}
-    </div>
-  ),
-}));
 
 const workspaceID = 'w7m2k9p4s6n8c3x5';
 const deletedWorkspaceID = 't4f8a2n6k9c3p5s7';
@@ -42,7 +34,7 @@ const row: AuditRow = {
   snapshot_user_info: { id: 1, username: 'fixture', display_name: '虚构用户', is_admin: true },
 };
 
-function renderAudit(keepPending = false, includeRecord = false) {
+function renderAudit(keepPending = false, includeRecord = false, rejectAction = () => false) {
   const paths: string[] = [];
   vi.stubGlobal(
     'fetch',
@@ -51,6 +43,14 @@ function renderAudit(keepPending = false, includeRecord = false) {
       const parameters = new URL(path, 'https://example.com').searchParams;
       if (keepPending && parameters.get('action_id') !== 'exclude_audit') {
         return new Promise<Response>(() => undefined);
+      }
+      const dimension = parameters.get('dimension');
+      if (dimension === 'action' && rejectAction()) {
+        return Promise.resolve(
+          new Response(JSON.stringify({ error_msg: '暂时无法读取统计', data: null }), {
+            status: 503,
+          }),
+        );
       }
       const data = path.includes(`/logs/${row.event_id}?`)
         ? {
@@ -61,7 +61,27 @@ function renderAudit(keepPending = false, includeRecord = false) {
             extend_data: { method: 'PUT', path: '/v1/workspaces/:workspace_id/cpc-people/:id' },
           }
         : path.includes('/statistics?')
-          ? { total: 0, success: 0, failure: 0, denied: 0, days: [] }
+          ? {
+              total: 0,
+              success: 0,
+              failure: 0,
+              denied: 0,
+              days: [],
+              ...(dimension && {
+                trend: {
+                  series: [
+                    dimension === 'workspace'
+                      ? { value: 'system', label: '系统' }
+                      : { value: 'cpc.person.update', label: '编辑党建人员' },
+                    dimension === 'workspace'
+                      ? { value: workspaceID, label: '示例空间' }
+                      : { value: 'student.update', label: '编辑学生信息' },
+                    { value: 'other', label: '其他' },
+                  ],
+                  days: [{ date: '2026-11-03', counts: [5, 1, 2] }],
+                },
+              }),
+            }
           : {
               items: includeRecord ? [row] : [],
               total: includeRecord ? 1 : 0,
@@ -128,6 +148,78 @@ function expectAction(paths: string[], action: string | string[]) {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+});
+
+it('趋势切换使用已提交条件，失败保留原选项并允许重试', async () => {
+  let rejectAction = true;
+  const paths = renderAudit(false, false, () => rejectAction);
+  const user = userEvent.setup();
+  const group = screen.getByRole('group', { name: '统计维度' });
+  expect(screen.getByRole('navigation', { name: '面包屑' }).closest('header')).toContainElement(
+    group,
+  );
+  const controls = within(group);
+  const result = controls.getByRole('button', { name: '成功失败' });
+  const workspace = controls.getByRole('button', { name: '空间' });
+  const action = controls.getByRole('button', { name: '操作' });
+  expect(result).toHaveAttribute('aria-pressed', 'true');
+  const resultLegend = within(screen.getByRole('group', { name: '趋势图例' }));
+  const success = resultLegend.getByRole('button', { name: '成功' });
+  expect(resultLegend.getByRole('button', { name: '失败' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await user.click(success);
+  expect(success).toHaveAttribute('aria-pressed', 'false');
+  await waitFor(() => {
+    expect(workspace).toBeEnabled();
+  });
+  const userID = screen.getByRole('textbox', { name: '用户 ID' });
+  expect(userID).toHaveAttribute('data-1p-ignore', 'true');
+  expect(userID).toHaveAttribute('autocomplete', 'off');
+  await user.type(userID, '42');
+  await user.click(workspace);
+  await waitFor(() => {
+    expect(workspace).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('figure', { name: '空间操作趋势' })).toHaveTextContent(
+      '系统5，示例空间1，其他2',
+    );
+  });
+  const workspaceLegend = within(screen.getByRole('group', { name: '趋势图例' }));
+  expect(workspaceLegend.getAllByRole('button').map((button) => button.textContent)).toEqual([
+    '系统',
+    '示例空间',
+    '其他',
+  ]);
+  const other = workspaceLegend.getByRole('button', { name: '其他' });
+  expect(other.parentElement).toHaveClass('w-full');
+  await user.click(other);
+  expect(other).toHaveAttribute('aria-pressed', 'false');
+  expect(paths.at(-1)).toContain('dimension=workspace');
+  expect(paths.at(-1)).not.toContain('user_id');
+
+  await user.click(action);
+  await waitFor(() => {
+    expect(paths.at(-1)).toContain('dimension=action');
+    expect(action).toBeEnabled();
+  });
+  expect(workspace).toHaveAttribute('aria-pressed', 'true');
+
+  rejectAction = false;
+  await user.click(action);
+  await waitFor(() => {
+    expect(action).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('figure', { name: '各项操作趋势' })).toHaveTextContent('编辑党建人员5');
+  });
+  await user.click(screen.getByRole('button', { name: '搜索' }));
+  await waitFor(() => {
+    const lastList = paths.filter((path) => path.includes('/logs?')).at(-1);
+    const lastStats = paths.filter((path) => path.includes('/statistics?')).at(-1);
+    expect(lastList).toContain('user_id=42');
+    expect(lastList).not.toContain('dimension=');
+    expect(lastStats).toContain('user_id=42');
+    expect(lastStats).toContain('dimension=action');
+  });
 });
 
 describe('审计操作筛选', () => {
