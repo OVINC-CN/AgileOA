@@ -36,11 +36,9 @@ func mcpQueryTools(
 	paths := make(map[string]bool)
 	for _, registration := range registrations {
 		path := registration.Path
-		if !mcpQueryPath(path) {
-			return nil, "", fmt.Errorf(
-				"MCP query registration is outside workspace scope: %s",
-				path,
-			)
+		scope := mcpQueryScope(path)
+		if scope == "" {
+			return nil, "", fmt.Errorf("MCP query registration is outside query scope: %s", path)
 		}
 		operation := document.Paths[path].Get
 		if operation == nil {
@@ -55,8 +53,7 @@ func mcpQueryTools(
 		}
 		route := strings.NewReplacer("{", ":", "}", "").Replace(path)
 		action, ok := accessConstants.ForEndpoint(http.MethodGet, route)
-		if !registered[route] || !ok || (action.Scope != accessConstants.ScopeWorkspace &&
-			action.Value != accessConstants.AccessMyWorkspaces) {
+		if !registered[route] || !ok || action.Scope != scope {
 			return nil, "", fmt.Errorf("MCP query endpoint is not registered: %s", path)
 		}
 		tool, err := mcpToolDefinition(registration, operation, schema, document.Definitions)
@@ -79,16 +76,22 @@ func mcpQueryTools(
 	return tools, document.Info.Version, nil
 }
 
-func mcpQueryPath(path string) bool {
-	if path != "/v1/workspaces" && !strings.HasPrefix(path, "/v1/workspaces/") {
-		return false
-	}
+func mcpQueryScope(path string) string {
 	for _, suffix := range []string{"/export", "/template", "/download"} {
 		if strings.HasSuffix(path, suffix) {
-			return false
+			return ""
 		}
 	}
-	return true
+	switch {
+	case path == "/v1/user-info" || path == "/v1/workspaces":
+		return accessConstants.ScopeSession
+	case strings.HasPrefix(path, "/v1/workspaces/"):
+		return accessConstants.ScopeWorkspace
+	case strings.HasPrefix(path, mcpSystemQueryPrefix+"/"):
+		return accessConstants.ScopeSystem
+	default:
+		return ""
+	}
 }
 
 func mcpToolDefinition(

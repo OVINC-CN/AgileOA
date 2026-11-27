@@ -8133,9 +8133,9 @@ paths:
     delete:
       consumes:
       - application/json
-      description: 使用 Streamable HTTP 无状态 JSON 模式。POST 接收 initialize、tools/list 和
-        tools/call；通知返回 202。GET 与 DELETE 返回 405。查询工具按名称与 GET 路径显式登记，参数和响应模型复用现有接口
-        Swagger，未登记接口默认不开放。调用复用认证身份、权限、校验及审计，不提供写入、导出、模板或下载工具。
+      description: |-
+        使用 Streamable HTTP 无状态 JSON 模式。POST 接收 initialize、tools/list 和 tools/call；通知返回 202。GET 与 DELETE 返回 405。查询工具按名称与 GET 路径显式登记，参数和响应模型复用现有接口 Swagger，未登记接口默认不开放。调用复用认证身份、权限、校验及审计，不提供写入、导出、模板或下载工具。
+        工具目录包含当前用户、工作空间和系统管理查询。系统管理工具沿用原接口权限，权限不足时工具结果的 _meta.http_status 为 403。
       parameters:
       - description: 仅支持 API Token，格式为 Bearer <token>，不接受 Cookie
         in: header
@@ -8205,15 +8205,15 @@ paths:
           description: 请求超时
           schema:
             $ref: '#/definitions/httpd.MCPResponse'
-      summary: 工作空间只读 MCP
+      summary: 只读 MCP
       tags:
       - MCP
     get:
       consumes:
       - application/json
-      description: 使用 Streamable HTTP 无状态 JSON 模式。POST 接收 initialize、tools/list 和
-        tools/call；通知返回 202。GET 与 DELETE 返回 405。查询工具按名称与 GET 路径显式登记，参数和响应模型复用现有接口
-        Swagger，未登记接口默认不开放。调用复用认证身份、权限、校验及审计，不提供写入、导出、模板或下载工具。
+      description: |-
+        使用 Streamable HTTP 无状态 JSON 模式。POST 接收 initialize、tools/list 和 tools/call；通知返回 202。GET 与 DELETE 返回 405。查询工具按名称与 GET 路径显式登记，参数和响应模型复用现有接口 Swagger，未登记接口默认不开放。调用复用认证身份、权限、校验及审计，不提供写入、导出、模板或下载工具。
+        工具目录包含当前用户、工作空间和系统管理查询。系统管理工具沿用原接口权限，权限不足时工具结果的 _meta.http_status 为 403。
       parameters:
       - description: 仅支持 API Token，格式为 Bearer <token>，不接受 Cookie
         in: header
@@ -8283,15 +8283,15 @@ paths:
           description: 请求超时
           schema:
             $ref: '#/definitions/httpd.MCPResponse'
-      summary: 工作空间只读 MCP
+      summary: 只读 MCP
       tags:
       - MCP
     post:
       consumes:
       - application/json
-      description: 使用 Streamable HTTP 无状态 JSON 模式。POST 接收 initialize、tools/list 和
-        tools/call；通知返回 202。GET 与 DELETE 返回 405。查询工具按名称与 GET 路径显式登记，参数和响应模型复用现有接口
-        Swagger，未登记接口默认不开放。调用复用认证身份、权限、校验及审计，不提供写入、导出、模板或下载工具。
+      description: |-
+        使用 Streamable HTTP 无状态 JSON 模式。POST 接收 initialize、tools/list 和 tools/call；通知返回 202。GET 与 DELETE 返回 405。查询工具按名称与 GET 路径显式登记，参数和响应模型复用现有接口 Swagger，未登记接口默认不开放。调用复用认证身份、权限、校验及审计，不提供写入、导出、模板或下载工具。
+        工具目录包含当前用户、工作空间和系统管理查询。系统管理工具沿用原接口权限，权限不足时工具结果的 _meta.http_status 为 403。
       parameters:
       - description: 仅支持 API Token，格式为 Bearer <token>，不接受 Cookie
         in: header
@@ -8361,7 +8361,7 @@ paths:
           description: 请求超时
           schema:
             $ref: '#/definitions/httpd.MCPResponse'
-      summary: 工作空间只读 MCP
+      summary: 只读 MCP
       tags:
       - MCP
   /v1/notifications:

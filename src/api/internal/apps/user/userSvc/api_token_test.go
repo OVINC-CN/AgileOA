@@ -171,6 +171,7 @@ func checkAPITokens(
 	sendBearer(t, server, http.MethodGet, "/v1/system/users", first.Token, adminCookie,
 		http.StatusOK)
 	checkAuthenticationQueryCount(t, server, cookie, first.Token)
+	checkMCPReadPermissions(t, server, adminCookie, first.Token, user.ID)
 	checkAPITokenWorkspace(t, server, adminCookie, cookie, first.Token, user.ID)
 
 	// 重置立即作废旧值；审计故障时查看被阻断，重置、撤销和退出全部回滚。
@@ -321,6 +322,52 @@ func assertNoAPIToken(t *testing.T, userID uint64) {
 	if err := db.DB().WithContext(t.Context()).Model(&userModels.APIToken{}).
 		Where("user_id = ?", userID).Count(&count).Error; err != nil || count != 0 {
 		t.Fatal("撤销凭据后仍保留 API Token")
+	}
+}
+
+func checkMCPReadPermissions(
+	t *testing.T,
+	server *echo.Echo,
+	adminCookie *http.Cookie,
+	token string,
+	userID uint64,
+) {
+	t.Helper()
+	for _, test := range []struct {
+		name   string
+		status int
+	}{
+		{"get_user_info", http.StatusOK},
+		{"get_system_access_actions", http.StatusForbidden},
+	} {
+		// 管理员 Cookie 不会改变普通账号 Token 对应的身份或权限。
+		result := sendMCP(t, server, token, adminCookie, "tools/call", map[string]any{
+			"name": test.name, "arguments": map[string]any{},
+		}, http.StatusOK)
+		var wire struct {
+			Result struct {
+				IsError           bool                               `json:"isError"`
+				Meta              map[string]int                     `json:"_meta"`
+				StructuredContent response.Envelope[json.RawMessage] `json:"structuredContent"`
+			} `json:"result"`
+		}
+		if err := json.Unmarshal(result.Body.Bytes(), &wire); err != nil ||
+			wire.Result.Meta["http_status"] != test.status ||
+			wire.Result.IsError != (test.status == http.StatusForbidden) {
+			t.Fatalf("工具 %s 未保留原接口权限结果", test.name)
+		}
+		envelope := wire.Result.StructuredContent
+		if test.status == http.StatusForbidden {
+			if envelope.ErrorMsg == "" || string(envelope.Data) != "null" {
+				t.Fatal("系统工具未阻断未授权账号")
+			}
+			continue
+		}
+		var info userModels.Info
+		if err := json.Unmarshal(envelope.Data, &info); err != nil ||
+			info.ID != userID || info.IsAdmin {
+			t.Fatal("当前用户工具未返回 Token 所属账号")
+		}
 	}
 }
 

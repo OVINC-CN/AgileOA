@@ -2,10 +2,17 @@ package httpd
 
 // #nosec G101 -- 固定 HTTP 路径模板，不是认证凭据。
 const mcpWorkspaceQueryPrefix = "/v1/workspaces/{workspace_id}"
+const mcpSystemQueryPrefix = "/v1/system"
 
 // mcpQueryRegistrations 是供人工维护的 MCP 查询开放清单，未登记的接口默认不开放。
 func mcpQueryRegistrations() []mcpQueryRegistration {
 	return []mcpQueryRegistration{
+		// 当前账号。
+		{
+			Name: "get_user_info",
+			Path: "/v1/user-info",
+		},
+
 		// 工作空间发现与上下文。
 		{
 			Name: "get_workspaces",
@@ -312,6 +319,52 @@ func mcpQueryRegistrations() []mcpQueryRegistration {
 		{
 			Name: "get_workspace_cpc_monthly_work_owners",
 			Path: mcpWorkspaceQueryPrefix + "/cpc-monthly-work/owners",
+		},
+
+		// 系统管理查询。
+		{
+			Name: "get_system_users",
+			Path: mcpSystemQueryPrefix + "/users",
+		},
+		{
+			Name: "get_system_users_statistics",
+			Path: mcpSystemQueryPrefix + "/users/statistics",
+		},
+		{
+			Name: "get_system_workspaces",
+			Path: mcpSystemQueryPrefix + "/workspaces",
+		},
+		{
+			Name: "get_system_workspaces_enum",
+			Path: mcpSystemQueryPrefix + "/workspaces/enum",
+		},
+		{
+			Name: "get_system_workspaces_by_workspace_id",
+			Path: mcpSystemQueryPrefix + "/workspaces/{workspace_id}",
+		},
+		{
+			Name: "get_system_access_actions",
+			Path: mcpSystemQueryPrefix + "/access/actions",
+		},
+		{
+			Name: "get_system_access_workspaces_by_workspace_id_users",
+			Path: mcpSystemQueryPrefix + "/access/workspaces/{workspace_id}/users",
+		},
+		{
+			Name: "get_system_access_workspaces_by_workspace_id_users_by_user_id_actions",
+			Path: mcpSystemQueryPrefix + "/access/workspaces/{workspace_id}/users/{user_id}/actions",
+		},
+		{
+			Name: "get_system_audit_logs",
+			Path: mcpSystemQueryPrefix + "/audit/logs",
+		},
+		{
+			Name: "get_system_audit_statistics",
+			Path: mcpSystemQueryPrefix + "/audit/statistics",
+		},
+		{
+			Name: "get_system_audit_logs_by_id",
+			Path: mcpSystemQueryPrefix + "/audit/logs/{id}",
 		},
 	}
 }
