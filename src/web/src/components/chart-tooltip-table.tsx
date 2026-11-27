@@ -8,6 +8,7 @@ export function ChartTooltipTable({
   rows,
   footer,
   fixedColumns = false,
+  lastRowID,
 }: {
   tableID: string;
   caption: string | number | undefined;
@@ -15,17 +16,20 @@ export function ChartTooltipTable({
   rows: { id: string; label: string; color: string | undefined; value: number; cells: string[] }[];
   footer?: { label: string; cells: string[] };
   fixedColumns?: boolean;
+  lastRowID?: string | undefined;
 }) {
   const indexedColumns = columns.map((column, index) => ({ ...column, index }));
   const settings = useTableColumns(tableID, indexedColumns);
   const visibleColumns = fixedColumns ? indexedColumns : settings.visibleColumns;
   if (!rows.length) return null;
-  const sortedRows = rows.toSorted((a, b) => b.value - a.value);
+  const displayedRows = rows.toSorted(
+    (a, b) => Number(a.id === lastRowID) - Number(b.id === lastRowID) || b.value - a.value,
+  );
 
   return (
     <div
       role="status"
-      className="glass-panel pointer-events-auto max-w-[min(36rem,calc(100vw-2rem))] overflow-x-auto overscroll-x-contain rounded-xl border bg-popover p-3 text-xs shadow-popover"
+      className="glass-panel pointer-events-none max-w-[min(36rem,calc(100vw-2rem))] rounded-xl border bg-popover p-3 text-xs shadow-popover"
     >
       <table className="w-full text-left leading-4 whitespace-nowrap">
         <caption className="mb-1 text-left font-medium">{formatValue(caption)}</caption>
@@ -45,7 +49,7 @@ export function ChartTooltipTable({
           </tr>
         </thead>
         <tbody className="tabular-nums">
-          {sortedRows.map((row) => (
+          {displayedRows.map((row) => (
             <tr key={row.id}>
               {visibleColumns.map((column) =>
                 column.index === 0 ? (
@@ -56,7 +60,9 @@ export function ChartTooltipTable({
                         className="size-2 shrink-0 rounded-xs"
                         style={{ backgroundColor: row.color }}
                       />
-                      <span>{formatValue(row.label)}</span>
+                      <span className="max-w-[min(24rem,45vw)] truncate">
+                        {formatValue(row.label)}
+                      </span>
                     </span>
                   </th>
                 ) : (

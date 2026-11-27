@@ -24,4 +24,7 @@ const (
 	IdentityStudent      = 2
 	AccessWeb            = 1
 	AccessMCP            = 2
+	DimensionResult      = "result"
+	DimensionWorkspace   = "workspace"
+	DimensionAction      = "action"
 )

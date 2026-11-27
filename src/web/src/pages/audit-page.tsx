@@ -1,7 +1,7 @@
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
-import { Eye, Search } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import { Building2, ClipboardList, Eye, ListChecks, Search } from 'lucide-react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 
 import { ErrorMessage } from '@/components/error-message';
 import { FilterField, FilterPanel } from '@/components/filter-panel';
@@ -12,12 +12,14 @@ import { RefreshButton } from '@/components/refresh-button';
 import { SearchResetButton } from '@/components/search-reset-button';
 import { TableActionButton } from '@/components/table-action-button';
 import { Button } from '@/components/ui/button';
+import { ButtonGroup } from '@/components/ui/button-group';
 import { Card } from '@/components/ui/card';
 import { DateTimePicker } from '@/components/ui/date-time-picker';
 import { Input } from '@/components/ui/input';
 import { SearchSelect } from '@/components/ui/search-select';
 import {
   auditDetailOptions,
+  type AuditDimension,
   type AuditFilters,
   auditListOptions,
   type AuditRow,
@@ -39,19 +41,30 @@ import { useTablePagination } from '@/lib/pagination';
 const emptyRows: AuditRow[] = [];
 const midnight = { hour: '00', minute: '00' };
 const systemOptions = [{ value: 'system', label: '系统', pinned: true }];
+const auditDimensions = [
+  { value: 'result', label: '成功失败', icon: ListChecks },
+  { value: 'workspace', label: '空间', icon: Building2 },
+  { value: 'action', label: '操作', icon: ClipboardList },
+] as const;
 
 export function AuditPage() {
   const client = useQueryClient();
   const [filters, setFilters] = useState<AuditFilters>(defaultAuditFilters);
+  const submittedFilters = useRef(filters);
+  const [dimension, setDimension] = useState<AuditDimension>('result');
   const { page, pageSize, setPage, setPageSize } = useTablePagination();
   const [selected, setSelected] = useState<AuditRow | null>(null);
   const searchAction = useApiAction();
   const detailAction = useApiAction();
+  const dimensionAction = useApiAction();
   const list = useQuery({
     ...auditListOptions(filters, page, pageSize),
     placeholderData: keepPreviousData,
   });
-  const stats = useQuery({ ...auditStatisticsOptions(filters), placeholderData: keepPreviousData });
+  const stats = useQuery({
+    ...auditStatisticsOptions(filters, dimension),
+    placeholderData: keepPreviousData,
+  });
   const initialLoading = useInitialLoading(
     (list.isPending && !list.isFetched) || (stats.isPending && !stats.isFetched),
   );
@@ -71,10 +84,11 @@ export function AuditPage() {
     };
     // 所有查询复用同一份提交条件；编号文本不做模糊或前缀匹配。
     setPage(1);
+    submittedFilters.current = next;
     setFilters(next);
     await Promise.allSettled([
       client.query({ ...auditListOptions(next, 1, pageSize), staleTime: 0 }),
-      client.query({ ...auditStatisticsOptions(next), staleTime: 0 }),
+      client.query({ ...auditStatisticsOptions(next, dimension), staleTime: 0 }),
     ]);
   };
   const { draft, setDraft, changeFilters, hasUnappliedChanges } = useFilterForm(
@@ -194,8 +208,36 @@ export function AuditPage() {
   );
   return (
     <section className="space-y-6" aria-labelledby="audit-title">
-      <ManagementPageHeader id="audit-title" title="审计日志" />
-      <AuditCharts data={stats.data} loading={stats.isPending} />
+      <ManagementPageHeader id="audit-title" title="审计日志" actionsClassName="max-sm:w-full">
+        <ButtonGroup aria-label="统计维度" className="max-w-full max-sm:w-full [&>button]:flex-1">
+          {auditDimensions.map(({ value, label, icon: Icon }) => (
+            <Button
+              key={value}
+              type="button"
+              variant="ghost"
+              size="sm"
+              aria-pressed={dimension === value}
+              loading={dimensionAction.isPending(value)}
+              disabled={dimensionAction.pending || stats.isFetching}
+              onClick={() => {
+                if (value === dimension) return;
+                void dimensionAction
+                  .run(value, () =>
+                    client.query({ ...auditStatisticsOptions(filters, value), staleTime: 0 }),
+                  )
+                  .then((result) => {
+                    // 请求期间筛选已变化时，保留当前维度及最新筛选的数据。
+                    if (result.ok && submittedFilters.current === filters) setDimension(value);
+                  });
+              }}
+            >
+              <Icon aria-hidden="true" />
+              {label}
+            </Button>
+          ))}
+        </ButtonGroup>
+      </ManagementPageHeader>
+      <AuditCharts data={stats.data} loading={stats.isPending} dimension={dimension} />
       {stats.error ? <ErrorMessage>{stats.error.message}</ErrorMessage> : null}
       <FilterPanel
         hasUnappliedChanges={hasUnappliedChanges}
@@ -339,6 +381,8 @@ export function AuditPage() {
           <Input
             id="audit-user-id"
             aria-label="用户 ID"
+            autoComplete="off"
+            data-1p-ignore="true"
             inputMode="numeric"
             placeholder="完整用户编号"
             maxLength={20}

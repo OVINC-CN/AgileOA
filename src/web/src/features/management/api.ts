@@ -116,6 +116,18 @@ const auditDetailSchema = auditRowSchema.extend({
   has_sensitive_snapshot: z.boolean(),
 });
 export type AuditDetail = z.infer<typeof auditDetailSchema>;
+export type AuditDimension = 'result' | 'workspace' | 'action';
+const auditTrendSchema = z
+  .object({
+    series: z.array(optionSchema).max(11),
+    days: z.array(
+      z.object({
+        date: z.iso.date(),
+        counts: z.array(z.number().int().nonnegative()),
+      }),
+    ),
+  })
+  .refine(({ series, days }) => days.every((day) => day.counts.length === series.length));
 const auditStatsSchema = z.object({
   total: z.number().int().nonnegative(),
   success: z.number().int().nonnegative(),
@@ -128,6 +140,7 @@ const auditStatsSchema = z.object({
       failure: z.number().int().nonnegative(),
     }),
   ),
+  trend: auditTrendSchema.optional(),
 });
 export type AuditStatistics = z.infer<typeof auditStatsSchema>;
 
@@ -170,11 +183,18 @@ export const auditListOptions = (filters: AuditFilters, page: number, pageSize: 
         { parseJSON: parseAuditJSON },
       ),
   });
-export const auditStatisticsOptions = (filters: AuditFilters) =>
+export const auditStatisticsOptions = (filters: AuditFilters, dimension: AuditDimension) =>
   queryOptions({
-    queryKey: ['management', 'audit', 'statistics', filters],
-    queryFn: ({ signal }) =>
-      apiGet(`/v1/system/audit/statistics?${auditSearch(filters)}`, auditStatsSchema, signal),
+    queryKey: ['management', 'audit', 'statistics', filters, dimension],
+    queryFn: ({ signal }) => {
+      const parameters = new URLSearchParams(auditSearch(filters));
+      if (dimension !== 'result') parameters.set('dimension', dimension);
+      return apiGet(
+        `/v1/system/audit/statistics?${parameters.toString()}`,
+        auditStatsSchema.refine((data) => dimension === 'result' || data.trend !== undefined),
+        signal,
+      );
+    },
   });
 export const auditDetailOptions = (row: AuditRow) =>
   queryOptions({

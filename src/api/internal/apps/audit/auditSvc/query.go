@@ -18,7 +18,6 @@ import (
 	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/audit/auditModels"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/apps/user/userUtils"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/db"
-	"github.com/OVINC-CN/AgileOA/src/api/internal/displaytime"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
 	"github.com/OVINC-CN/AgileOA/src/api/internal/tracing"
 )
@@ -133,53 +132,6 @@ func Detail(ctx context.Context, id, date string) (auditModels.Detail, error) {
 	return result, err
 }
 
-// Statistics 按展示时区的自然日聚合，同步生成总数、结果、拒绝及趋势。
-func Statistics(ctx context.Context, query auditModels.Query) (auditModels.StatisticsData, error) {
-	result := auditModels.StatisticsData{Days: []auditModels.Day{}}
-	event := queryEvent()
-	event.ObjectID = "statistics"
-	err := read(
-		ctx,
-		accessConstants.AuditStatistics,
-		event,
-		func(tx *gorm.DB) (auditModels.Event, error) {
-			var rows []struct {
-				Date    string
-				Total   int64
-				Success int64
-				Failure int64
-				Denied  int64
-			}
-			date := displaytime.UnixMilliDateSQL("start_time", query.From, query.Until)
-			if err := queryScope(tx, query).
-				Select("? AS date, COUNT(*) AS total, SUM(result_code = 0) AS success, "+
-					"SUM(result_code <> 0) AS failure, SUM(result_code = 403) AS denied", date).
-				Group("date").Scan(&rows).Error; err != nil {
-				return event, err
-			}
-			byDate := make(map[string]auditModels.Day, len(rows))
-			for _, row := range rows {
-				result.Total += row.Total
-				result.Success += row.Success
-				result.Failure += row.Failure
-				result.Denied += row.Denied
-				byDate[row.Date] = auditModels.Day{
-					Date: row.Date, Success: row.Success, Failure: row.Failure,
-				}
-			}
-			last := displaytime.Date(query.Until.Add(-time.Millisecond))
-			for day := displaytime.Date(query.From); !day.After(last); day = day.AddDate(0, 0, 1) {
-				date := day.Format(time.DateOnly)
-				item := byDate[date]
-				item.Date = date
-				result.Days = append(result.Days, item)
-			}
-			return event, nil
-		},
-	)
-	return result, err
-}
-
 func dateBounds(query auditModels.Query) (string, time.Time) {
 	last := query.Until.Add(-time.Millisecond).UTC()
 	day := time.Date(last.Year(), last.Month(), last.Day(), 0, 0, 0, 0, time.UTC)
@@ -270,19 +222,9 @@ func filterOptions(tx *gorm.DB, query auditModels.Query, result *auditModels.Lis
 		}
 	}
 	slices.Sort(ids)
-	var names []struct {
-		ID   string
-		Name string
-	}
-	if len(ids) > 0 {
-		if err := tx.Table("workspaces").Select("id,name").Where("id IN ?", ids).
-			Scan(&names).Error; err != nil {
-			return err
-		}
-	}
-	labels := make(map[string]string, len(names))
-	for _, item := range names {
-		labels[item.ID] = item.Name
+	labels, err := workspaceNames(tx, ids)
+	if err != nil {
+		return err
 	}
 	options := func(values map[string]bool) []auditModels.Option {
 		result := []auditModels.Option{{Value: auditConstants.SystemWorkspace, Label: "系统"}}
@@ -290,11 +232,10 @@ func filterOptions(tx *gorm.DB, query auditModels.Query, result *auditModels.Lis
 			if !values[id] {
 				continue
 			}
-			name, found := labels[id]
-			if !found {
-				name = "已删除工作空间"
-			}
-			result = append(result, auditModels.Option{Value: id, Label: name + "（" + id + "）"})
+			result = append(result, auditModels.Option{
+				Value: id,
+				Label: workspaceLabel(id, labels),
+			})
 		}
 		return result
 	}
@@ -312,6 +253,35 @@ func filterOptions(tx *gorm.DB, query auditModels.Query, result *auditModels.Lis
 		})
 	}
 	return nil
+}
+
+func workspaceNames(tx *gorm.DB, ids []string) (map[string]string, error) {
+	var names []struct {
+		ID   string
+		Name string
+	}
+	if len(ids) > 0 {
+		if err := tx.Table("workspaces").Select("id,name").Where("id IN ?", ids).
+			Scan(&names).Error; err != nil {
+			return nil, err
+		}
+	}
+	labels := make(map[string]string, len(names))
+	for _, item := range names {
+		labels[item.ID] = item.Name
+	}
+	return labels, nil
+}
+
+func workspaceLabel(id string, labels map[string]string) string {
+	if id == auditConstants.SystemWorkspace {
+		return "系统"
+	}
+	name, found := labels[id]
+	if !found {
+		name = "已删除工作空间"
+	}
+	return name + "（" + id + "）"
 }
 
 func resultLabel(code int) string {

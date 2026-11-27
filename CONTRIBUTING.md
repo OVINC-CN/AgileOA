@@ -117,7 +117,7 @@ API 侧先在业务事务中保存任务所需状态和操作审计，由 app �
 | 场景 | 查询入口 | 重点核对 |
 | --- | --- | --- |
 | 空间授权用户与候选 | [accessSvc/users.go](src/api/internal/apps/access/accessSvc/users.go) | `idx_users_access_search` 与 `access_permissions` 复合主键；筛选、总数和选页使用相同授权条件 |
-| 审计列表、统计与详情 | [auditSvc/query.go](src/api/internal/apps/audit/auditSvc/query.go) | UTC 分区裁剪、标量筛选索引、当前页复合键回读和详情唯一索引，趋势按应用展示时区归日；客户端 IP 筛选核对 `idx_audit_events_ip` 的 IP 等值和时间范围 |
+| 审计列表、统计与详情 | [auditSvc](src/api/internal/apps/audit/auditSvc/) | UTC 分区裁剪、标量筛选索引、当前页复合键回读和详情唯一索引，趋势按应用展示时区归日。空间及操作使用筛选后全时段的总次数排名，客户端 IP 筛选核对 `idx_audit_events_ip` 的 IP 等值和时间范围 |
 | 最近登录与登录趋势 | [auditSvc/login.go](src/api/internal/apps/audit/auditSvc/login.go) | `idx_audit_events_login`、`idx_audit_events_login_time` |
 | 新增账号趋势 | [userSvc/management.go](src/api/internal/apps/user/userSvc/management.go) | `idx_users_created_at` 筛选 UTC 时间范围，按应用展示时区归日 |
 | 申报流程同步与排名 | [projectSvc](src/api/internal/apps/project/projectSvc/) | 空间、项目、状态组合条件及学生关联 |
@@ -232,6 +232,10 @@ Drawer 默认在底部提供「关闭」。使用 `dismissLabel` 设置退出按
 审计日志将 ID 与开始时间合并为固定首列，
 点击打开审计详情。桌面端在右侧固定操作列，前端以结束时间减去开始时间显示毫秒耗时。
 客户端 IP 筛选由列表和统计共用，按已记录的地址文本精确匹配。
+趋势可切换成功失败、空间和操作，使用列表的已提交筛选。空间和操作按查询范围内的总 PV 降序取前 10 项，
+同次数按编号升序排列，其余按天合并为「其他」，在图例中单独占最后一行。
+维度按钮放在面包屑行，加载成功后更新选中状态。用户管理与审计日志复用图例，点击可显隐单项。
+图表悬浮提示让鼠标事件穿透提示层。审计提示按所指日期的 PV 降序，「其他」固定末行。[ChartTooltipTable](src/web/src/components/chart-tooltip-table.tsx)
 
 下拉的排序、分组和置顶入口由 [select-options.ts](src/web/src/lib/select-options.ts) 处理；
 使用 `defaultValue` 连接字段重置目标。日期与日期时间共用

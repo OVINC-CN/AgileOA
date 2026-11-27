@@ -45,7 +45,7 @@ var errInvalidFilter = errors.New("invalid audit filter")
 // @Success 200 {object} auditModels.ListResponse "标准审计分页"
 // @Router /v1/system/audit/logs [get]
 func List(c echo.Context) error {
-	query, err := parse(c)
+	query, err := parse(c, false)
 	if err != nil {
 		return auditSvc.Reject(c.Request().Context(), accessConstants.AuditRead)
 	}
@@ -58,9 +58,10 @@ func List(c echo.Context) error {
 
 // Statistics 复用列表的全部已提交筛选条件。
 // @Summary 审计日志统计
-// @Description 两个时间参数均限制事件的 start_time，按配置的展示时区聚合自然日趋势。
+// @Description 两个时间参数均限制事件的 start_time，按配置的展示时区聚合自然日趋势。空间和操作按筛选后全时段总次数取前 10 名，并列按编号升序，其余按日合并为其他。
 // @Tags 审计日志
 // @Produce json
+// @Param dimension query string false "统计维度：result 成功失败、workspace 空间、action 操作" Enums(result,workspace,action) default(result)
 // @Param user_identify_tenant_id query []string false "用户租户，组织为 system，学生为所属空间" collectionFormat(multi)
 // @Param user_id query string false "用户编号，十进制无符号整数，精确匹配"
 // @Param workspace_id query []string false "业务空间编号，系统为 system" collectionFormat(multi)
@@ -75,7 +76,7 @@ func List(c echo.Context) error {
 // @Success 200 {object} auditModels.StatisticsResponse "标准审计统计"
 // @Router /v1/system/audit/statistics [get]
 func Statistics(c echo.Context) error {
-	query, err := parse(c)
+	query, err := parse(c, true)
 	if err != nil {
 		return auditSvc.Reject(c.Request().Context(), accessConstants.AuditStatistics)
 	}
@@ -109,7 +110,7 @@ func Detail(c echo.Context) error {
 	return response.Success(c, data)
 }
 
-func parse(c echo.Context) (auditModels.Query, error) {
+func parse(c echo.Context, statistics bool) (auditModels.Query, error) {
 	// 拒绝旧关键词和其他未登记参数，避免旧条件被静默忽略。
 	allowed := map[string]bool{
 		"page": true, "page_size": true,
@@ -117,6 +118,7 @@ func parse(c echo.Context) (auditModels.Query, error) {
 		"action_id": true, "result_code": true,
 		"access_type": true, "access_source_ip": true,
 		"instance_id": true, "request_id": true, "start_time": true, "end_time": true,
+		"dimension": statistics,
 	}
 	parameters := c.QueryParams()
 	for name := range parameters {
@@ -126,6 +128,7 @@ func parse(c echo.Context) (auditModels.Query, error) {
 	}
 	for _, name := range []string{
 		"user_id", "access_source_ip", "instance_id", "request_id", "start_time", "end_time",
+		"dimension",
 	} {
 		if len(parameters[name]) > 1 {
 			return auditModels.Query{}, errInvalidFilter
@@ -158,6 +161,17 @@ func parse(c echo.Context) (auditModels.Query, error) {
 		Actions:      queryfilter.Values(parameters["action_id"], false),
 		RequestID:    c.QueryParam("request_id"),
 		From:         start, Until: end,
+	}
+	if statistics {
+		query.Dimension = c.QueryParam("dimension")
+		switch query.Dimension {
+		case "":
+			query.Dimension = auditConstants.DimensionResult
+		case auditConstants.DimensionResult, auditConstants.DimensionWorkspace,
+			auditConstants.DimensionAction:
+		default:
+			return query, errInvalidFilter
+		}
 	}
 	if !parameters.Has("action_id") {
 		query.Actions = []string{auditConstants.FilterExcludeAudit}
@@ -208,7 +222,7 @@ func parse(c echo.Context) (auditModels.Query, error) {
 		if err != nil || (code != auditConstants.AccessWeb && code != auditConstants.AccessMCP) {
 			return query, errInvalidFilter
 		}
-		query.AccessTypes = append(query.AccessTypes, uint8(code))
+		query.AccessTypes = append(query.AccessTypes, int(code))
 	}
 	for _, action := range query.Actions {
 		if action != auditConstants.FilterExcludeAudit && !accessConstants.Registered(action) {

@@ -33,6 +33,32 @@ it('固定提示字段不受历史隐藏偏好影响', () => {
   expect(screen.getByRole('cell', { name: '2' })).toBeVisible();
 });
 
+it('悬浮提示让鼠标事件穿透，先按数量降序排列，其他固定在末行', () => {
+  render(
+    <ChartTooltipTable
+      tableID="fixture-chart-tooltip"
+      caption="2026-11-15"
+      columns={[
+        { id: 'series', label: '统计项' },
+        { id: 'count', label: '数量' },
+      ]}
+      rows={[
+        { id: 'first', label: '示例空间一', color: undefined, value: 2, cells: ['2'] },
+        { id: 'other', label: '其他', color: undefined, value: 8, cells: ['8'] },
+        { id: 'second', label: '示例空间二', color: undefined, value: 4, cells: ['4'] },
+      ]}
+      fixedColumns
+      lastRowID="other"
+    />,
+  );
+  expect(screen.getByRole('status')).toHaveClass('pointer-events-none');
+  expect(screen.getAllByRole('rowheader').map((header) => header.textContent)).toEqual([
+    '示例空间二',
+    '示例空间一',
+    '其他',
+  ]);
+});
+
 it('图表数据固定展示全部字段，下载 XLSX 以文本保留数值、前导零及公式前缀', async () => {
   localStorage.setItem('table-hidden-columns:project-statistics-data', '["project"]');
   const createObjectURL = vi.fn<(file: Blob) => string>(() => 'blob:fixture');
