@@ -56,7 +56,7 @@ describe('上传进度浮层自动关闭', () => {
     });
   });
 
-  it('上传按钮被隐藏或滚出可视区时自动关闭上传进度', async () => {
+  it('上传按钮滚出可视区时隐藏浮层，完成后只关闭一次', async () => {
     let notifyIntersection: ((entries: IntersectionObserverEntry[]) => void) | undefined;
     vi.stubGlobal(
       'IntersectionObserver',
@@ -71,14 +71,15 @@ describe('上传进度浮层自动关闭', () => {
     );
 
     const onDismiss = vi.fn();
-    function Example() {
-      const [progress, setProgress] = useState<UploadStatus>('complete');
+    function Example({ loading }: { loading: boolean }) {
+      const [dismissed, setDismissed] = useState(false);
       return (
         <UploadButton
-          progress={progress}
+          loading={loading}
+          progress={loading ? 50 : dismissed ? null : 'complete'}
           onDismiss={() => {
             onDismiss();
-            setProgress(null);
+            setDismissed(true);
           }}
         >
           上传
@@ -86,14 +87,18 @@ describe('上传进度浮层自动关闭', () => {
       );
     }
 
-    render(<Example />);
+    const { rerender } = render(<Example loading />);
     expect(screen.getByRole('group', { name: '文件上传状态' })).toBeVisible();
     act(() => {
       notifyIntersection?.([{ isIntersecting: false } as IntersectionObserverEntry]);
     });
     await waitFor(() => {
-      expect(onDismiss).toHaveBeenCalledOnce();
       expect(screen.queryByRole('group', { name: '文件上传状态' })).not.toBeInTheDocument();
     });
+    expect(onDismiss).not.toHaveBeenCalled();
+
+    rerender(<Example loading={false} />);
+    expect(onDismiss).toHaveBeenCalledOnce();
+    expect(screen.queryByRole('group', { name: '文件上传状态' })).not.toBeInTheDocument();
   });
 });

@@ -148,9 +148,7 @@ export function OverviewPage() {
                   aria-label={`${dateLabel}，今天`}
                   className="glass-panel overview-calendar-today"
                 >
-                  <span className="text-base tracking-widest text-muted-foreground">
-                    {weekday}
-                  </span>
+                  <span className="text-base tracking-widest text-muted-foreground">{weekday}</span>
                   <span className="overview-calendar-day">{day}</span>
                   <span className="rounded-full bg-primary/10 px-3 py-1 text-xs tracking-widest text-accent-foreground">
                     今天

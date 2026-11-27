@@ -1,6 +1,6 @@
 import { Upload, X } from 'lucide-react';
 import { Popover } from 'radix-ui';
-import { type ComponentProps, useEffect, useRef, useState } from 'react';
+import { type ComponentProps, useCallback, useEffect, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import type { UploadStatus } from '@/lib/file-upload';
@@ -31,6 +31,7 @@ export function UploadButton({
 }) {
   const anchor = useRef<HTMLSpanElement>(null);
   const onDismissRef = useRef(onDismiss);
+  const dismissed = useRef(false);
   useEffect(() => {
     onDismissRef.current = onDismiss;
   }, [onDismiss]);
@@ -39,20 +40,34 @@ export function UploadButton({
   const [hidden, setHidden] = useState(false);
   if (!active && hidden) setHidden(false);
 
+  const dismissProgress = useCallback((restoreFocus: boolean) => {
+    if (dismissed.current) return;
+    dismissed.current = true;
+    if (restoreFocus) {
+      const button = anchor.current?.querySelector<HTMLButtonElement>('button:enabled');
+      (button ?? anchor.current)?.focus();
+    }
+    onDismissRef.current();
+  }, []);
+
+  useEffect(() => {
+    if (!complete || loading) {
+      dismissed.current = false;
+    } else if (hidden) {
+      dismissProgress(false);
+    }
+  }, [complete, dismissProgress, hidden, loading]);
+
   useEffect(() => {
     const element = anchor.current;
     if (!active || !element) return;
 
     let intersected = true;
     const syncVisibility = () => {
-      const nextHidden = !intersected || isElementHidden(element);
-      setHidden(nextHidden);
-      if (nextHidden && complete && !loading) {
-        onDismissRef.current();
-      }
+      setHidden(!intersected || isElementHidden(element));
     };
 
-    // 抽屉关闭、切换分区或按钮滚出可视区时自动隐藏，上传完成后同步关闭浮层。
+    // 抽屉关闭、切换分区或按钮滚出可视区时自动隐藏。
     const mutation = new MutationObserver(syncVisibility);
     mutation.observe(document.body, {
       subtree: true,
@@ -80,7 +95,7 @@ export function UploadButton({
       mutation.disconnect();
       intersection?.disconnect();
     };
-  }, [active, complete, loading]);
+  }, [active]);
 
   const percent = complete ? 100 : progress;
   const status = complete
@@ -94,10 +109,7 @@ export function UploadButton({
     <Popover.Root
       open={active && !hidden}
       onOpenChange={(open) => {
-        if (open || !complete || loading) return;
-        const button = anchor.current?.querySelector<HTMLButtonElement>('button:enabled');
-        (button ?? anchor.current)?.focus();
-        onDismiss();
+        if (!open && complete && !loading) dismissProgress(true);
       }}
     >
       <Popover.Anchor asChild>
@@ -115,7 +127,6 @@ export function UploadButton({
           side="top"
           sideOffset={6}
           collisionPadding={16}
-          hideWhenDetached
           className="glass-panel menu-motion z-[60] w-48 space-y-1.5 rounded-lg border bg-popover px-3 py-2 text-popover-foreground shadow-popover"
           onOpenAutoFocus={(event) => {
             event.preventDefault();

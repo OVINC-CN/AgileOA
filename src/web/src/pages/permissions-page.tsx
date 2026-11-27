@@ -63,6 +63,18 @@ export function PermissionsPage() {
     placeholderData: (previous, query) =>
       query?.queryKey[3] === workspaceID ? previous : undefined,
   });
+  const total = users.data?.total ?? 0;
+  const lastPage = Math.max(1, Math.ceil(total / pageSize));
+  // 当前查询确认总数后校正页码，刷新和保存权限共用同一规则。
+  if (
+    users.isEnabled &&
+    users.isSuccess &&
+    !users.isFetching &&
+    !users.isPlaceholderData &&
+    page > lastPage
+  ) {
+    setPage(lastPage);
+  }
   const initialEnumLoading = useInitialLoading(workspaces.isPending && !workspaces.isFetched);
   const initialUsersLoading = useInitialLoading(
     users.isPending &&
@@ -271,7 +283,7 @@ export function PermissionsPage() {
               primaryColumn={{ id: 'username', getAction: (user) => getEditAction(user, 'user') }}
               columns={columns}
               data={users.data?.items ?? empty}
-              total={users.data?.total ?? 0}
+              total={total}
               page={page}
               pageSize={pageSize}
               loading={users.isPending}
@@ -322,11 +334,6 @@ export function PermissionsPage() {
             setEditing(null);
           }}
           onSaved={() => {
-            const latest = client.getQueryData(
-              accessUsersOptions(workspaceID, search, page, pageSize).queryKey,
-            );
-            const lastPage = Math.max(1, Math.ceil((latest?.total ?? 0) / pageSize));
-            if (page > lastPage) setPage(lastPage);
             setEditing(null);
             showMessage(
               `已${editing.creating ? '添加' : '更新'} ${editing.user.display_name} 的操作权限`,
