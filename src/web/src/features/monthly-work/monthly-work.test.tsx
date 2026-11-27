@@ -66,6 +66,24 @@ function respond(data: unknown) {
     JSON.stringify({ trace: '4bf92f3577b34da6a3ce929d0e0e4736', error_msg: '', data }),
   );
 }
+
+function ownerClient() {
+  const client = createClient();
+  client.setQueryData(
+    currentUserKey,
+    userSchema.parse({
+      id: record.owner_id,
+      username: record.owner_username,
+      display_name: record.owner_name,
+      email: '',
+      is_admin: false,
+      password_login_enabled: true,
+      password_change_required: false,
+    }),
+  );
+  return client;
+}
+
 afterEach(() => {
   vi.unstubAllGlobals();
 });
@@ -336,21 +354,25 @@ describe('月度工作', () => {
   it.each(['student', 'cpc'] as const)(
     '%s 负责人转交后，仍参与工作时只能查看附件',
     async (category) => {
-      const client = createClient();
-      client.setQueryData(
-        currentUserKey,
-        userSchema.parse({
-          id: record.owner_id,
-          username: record.owner_username,
-          display_name: record.owner_name,
-          email: '',
-          is_admin: true,
-          password_login_enabled: true,
-          password_change_required: false,
-        }),
-      );
-      const transferred = {
+      const client = ownerClient();
+      const attachment = {
+        id: 7,
+        filename: '虚构附件.pdf',
+        monthly_work_id: record.id,
+        category: category === 'cpc' ? 'cpc_monthly_work' : 'monthly_work',
+        state: 'ready',
+        size: 1,
+        revision: 1,
+        created_at: record.created_at,
+        updated_at: record.updated_at,
+      };
+      const itemWithAttachment = {
         ...record,
+        attachment_ids: [attachment.id],
+        attachments: [attachment],
+      };
+      const transferred = {
+        ...itemWithAttachment,
         owner_id: 3,
         owner_name: '虚构参与人甲',
         owner_username: 'fictional.first',
@@ -361,26 +383,14 @@ describe('月度工作', () => {
         ],
         revision: 2,
       };
-      let item = record;
+      let item = itemWithAttachment;
       vi.stubGlobal(
         'fetch',
         vi.fn((path: string, options: RequestInit) => {
           if (path.includes('/attachments/')) {
             return Promise.resolve(
               respond({
-                items: [
-                  {
-                    id: 7,
-                    filename: '虚构附件.pdf',
-                    monthly_work_id: record.id,
-                    category: category === 'cpc' ? 'cpc_monthly_work' : 'monthly_work',
-                    state: 'ready',
-                    size: 1,
-                    revision: 1,
-                    created_at: record.created_at,
-                    updated_at: record.updated_at,
-                  },
-                ],
+                items: [attachment],
                 total: 1,
                 page: 1,
                 page_size: 20,
@@ -421,7 +431,9 @@ describe('月度工作', () => {
         </QueryClientProvider>,
       );
       const user = userEvent.setup();
-      expect(await screen.findByRole('button', { name: '管理附件' })).toBeVisible();
+      const article = await screen.findByRole('article', { name: record.work_item });
+      expect(within(article).queryByRole('button', { name: '管理附件' })).not.toBeInTheDocument();
+      expect(within(article).getByRole('button', { name: attachment.filename })).toBeVisible();
       const more = { name: `更多操作 ${record.work_item}` };
       expect(screen.queryByRole('button', { name: '删除' })).not.toBeInTheDocument();
       await user.click(screen.getByRole('button', more));
@@ -431,6 +443,11 @@ describe('月度工作', () => {
       );
       await user.keyboard('{Escape}');
       await user.click(screen.getByRole('button', { name: '编辑' }));
+      const editor = await screen.findByRole('dialog', { name: '编辑月度工作' });
+      const files = within(within(editor).getByRole('region', { name: '附件' }));
+      expect(await files.findByRole('button', { name: attachment.filename })).toBeVisible();
+      expect(files.getByRole('button', { name: '上传' })).toBeVisible();
+      expect(files.getByRole('button', { name: '删除' })).toBeVisible();
       await user.click(screen.getByRole('combobox', { name: '负责人' }));
       await user.click(
         await screen.findByRole('option', { name: '虚构参与人甲(fictional.first)' }),
@@ -439,24 +456,138 @@ describe('月度工作', () => {
       await user.click(screen.getByRole('option', { name: '虚构负责人(fictional.owner)' }));
       await user.keyboard('{Escape}');
       await user.click(screen.getByRole('button', { name: '保存' }));
-      const readAttachments = await screen.findByRole('button', { name: '查看附件' });
-      const work = within(screen.getByRole('article', { name: record.work_item }));
+      await waitFor(() => {
+        expect(editor).not.toBeInTheDocument();
+      });
+      const work = within(await screen.findByRole('article', { name: record.work_item }));
       expect(work.queryByRole('button', { name: '编辑' })).not.toBeInTheDocument();
       expect(work.queryByRole('button', more)).not.toBeInTheDocument();
-      await user.click(readAttachments);
-      const drawer = within(await screen.findByRole('dialog', { name: '月度工作附件' }));
-      const file = await drawer.findByRole('button', { name: '虚构附件.pdf' });
-      expect(file).toBeVisible();
-      const refresh = drawer.getByRole('button', { name: '刷新' });
-      await user.click(refresh);
-      await waitFor(() => {
-        expect(refresh).toBeEnabled();
-        expect(drawer.getByRole('button', { name: '虚构附件.pdf' })).toBe(file);
-      });
-      expect(drawer.queryByRole('button', { name: '上传' })).not.toBeInTheDocument();
-      expect(drawer.queryByRole('button', { name: '删除' })).not.toBeInTheDocument();
+      expect(work.queryByRole('button', { name: '查看附件' })).not.toBeInTheDocument();
+      expect(work.getByRole('button', { name: attachment.filename })).toBeVisible();
     },
   );
+
+  it.each([true, false])('附件上传在编辑抽屉内独立完成，目录读取按权限：%s', async (canRead) => {
+    const category = 'cpc';
+    const base = `/v1/workspaces/${first}`;
+    const directory = `${base}/attachments/cpc-monthly-work`;
+    const uploadPath = `${base}/cpc-monthly-work/1/attachments`;
+    const cdnURL = 'https://example.com/fixture-attachment';
+    const uploaded = {
+      id: 7,
+      monthly_work_id: record.id,
+      filename: '虚构材料.pdf',
+      category: 'cpc_monthly_work',
+      state: 'ready',
+      size: 3,
+      revision: 2,
+      created_at: record.created_at,
+      updated_at: record.updated_at,
+    };
+    const pending = { ...uploaded, id: 8, filename: '虚构待完成.pdf', state: 'pending' };
+    const existing = { ...uploaded, id: 9, filename: '虚构已有.pdf' };
+    let attachments = [pending, existing];
+    let confirmUpload: () => void = () => {
+      throw new Error('尚未请求确认上传');
+    };
+    const fetch = vi.fn((path: string, options: RequestInit) => {
+      const url = new URL(path, 'https://example.com');
+      if (url.pathname === directory) {
+        const page = Number(url.searchParams.get('page'));
+        expect(url.searchParams.get('monthly_work_id')).toBe(String(record.id));
+        return Promise.resolve(
+          respond({
+            items: attachments.slice(page - 1, page),
+            total: attachments.length,
+            page,
+            page_size: 1,
+          }),
+        );
+      }
+      if (path === uploadPath) return Promise.resolve(respond(preparedUpload()));
+      if (path === `${uploadPath}/complete`) {
+        return new Promise<Response>((resolve) => {
+          confirmUpload = () => {
+            attachments = [uploaded, ...attachments];
+            resolve(respond(uploaded));
+          };
+        });
+      }
+      if (path === `${directory}/${String(pending.id)}?revision=${String(pending.revision)}`) {
+        expect(options.method).toBe('DELETE');
+        attachments = attachments.filter((item) => item.id !== pending.id);
+        return Promise.resolve(respond(null));
+      }
+      if (path === `${directory}/${String(uploaded.id)}/download`) {
+        return Promise.resolve(respond({ filename: uploaded.filename, url: cdnURL }));
+      }
+      if (path === cdnURL) return Promise.resolve(new Response('fixture'));
+      return Promise.resolve(listResponse(path));
+    });
+    vi.stubGlobal('fetch', fetch);
+    render(
+      <QueryClientProvider client={ownerClient()}>
+        <MonthlyWorkPage
+          workspaceID={first}
+          category={category}
+          workspaceName="虚构空间"
+          actions={[
+            'list',
+            'attachment.upload',
+            ...(canRead ? ['attachment.read', 'attachment.delete'] : []),
+          ].map((operation) => workAction(category, operation))}
+          refresh={() => Promise.resolve()}
+        />
+      </QueryClientProvider>,
+    );
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: '编辑' }));
+    const editor = within(await screen.findByRole('dialog', { name: '编辑月度工作' }));
+    const files = within(editor.getByRole('region', { name: '附件' }));
+    expect(editor.getByRole('textbox', { name: '工作项目' })).toBeDisabled();
+    expect(editor.queryByRole('button', { name: '保存' })).not.toBeInTheDocument();
+    expect(files.getByRole('button', { name: '上传' })).toBeVisible();
+    expect(editor.queryByRole('table')).not.toBeInTheDocument();
+
+    if (canRead) {
+      expect(await files.findByRole('button', { name: existing.filename })).toBeVisible();
+      expect(files.getByText(pending.filename)).toBeVisible();
+      expect(files.getByText('上传未完成')).toBeVisible();
+      expect(files.queryByRole('button', { name: pending.filename })).not.toBeInTheDocument();
+    }
+    await user.upload(files.getByLabelText('上传附件'), new File(['abc'], uploaded.filename));
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(`${uploadPath}/complete`, expect.anything());
+    });
+    expect(editor.getByRole('button', { name: '关闭抽屉' })).toBeDisabled();
+    confirmUpload();
+    await waitFor(() => {
+      expect(editor.getByRole('button', { name: '关闭抽屉' })).toBeEnabled();
+    });
+
+    if (canRead) {
+      const pendingRow = files.getByText(pending.filename).closest('li');
+      if (!pendingRow) throw new Error('缺少待完成附件');
+      await user.click(within(pendingRow).getByRole('button', { name: '删除' }));
+      expect(pendingRow).toBeInTheDocument();
+      await user.click(within(pendingRow).getByRole('button', { name: '确认' }));
+      await waitFor(() => {
+        expect(pendingRow).not.toBeInTheDocument();
+      });
+      await user.click(files.getByRole('button', { name: uploaded.filename }));
+      expect(await screen.findByRole('dialog', { name: '文件预览' })).toBeVisible();
+      await waitFor(() => {
+        expect(fetch).toHaveBeenCalledWith(
+          `${directory}/${String(uploaded.id)}/download`,
+          expect.anything(),
+        );
+      });
+    } else {
+      expect(files.queryByRole('list')).not.toBeInTheDocument();
+      expect(fetch.mock.calls.some(([path]) => path.startsWith(`${directory}?`))).toBe(false);
+    }
+    expect(fetch.mock.calls.some(([, options]) => options.method === 'PUT')).toBe(false);
+  });
 
   it.each(['student', 'cpc'] as const)(
     '%s 新增默认以本人为负责人，参与人提交数字编号，多条链接保持顺序',
