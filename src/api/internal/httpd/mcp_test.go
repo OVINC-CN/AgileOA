@@ -19,7 +19,7 @@ import (
 	"github.com/OVINC-CN/AgileOA/src/api/internal/response"
 )
 
-func TestMCPCatalogOnlyExposesWorkspaceJSONQueries(t *testing.T) {
+func TestMCPCatalogOnlyExposesRegisteredJSONQueries(t *testing.T) {
 	// 显式登记项必须匹配实际路由和内嵌 Swagger，不能扩大允许的查询范围。
 	engine := New()
 	tools, version, err := mcpQueryTools(
@@ -29,9 +29,31 @@ func TestMCPCatalogOnlyExposesWorkspaceJSONQueries(t *testing.T) {
 		t.Fatalf("查询目录生成失败：%v", err)
 	}
 	paths := make(map[string]bool, len(tools))
+	systemPaths := map[string]bool{
+		"/v1/system/users":                                                    true,
+		"/v1/system/users/statistics":                                         true,
+		"/v1/system/workspaces":                                               true,
+		"/v1/system/workspaces/enum":                                          true,
+		"/v1/system/workspaces/{workspace_id}":                                true,
+		"/v1/system/access/actions":                                           true,
+		"/v1/system/access/workspaces/{workspace_id}/users":                   true,
+		"/v1/system/access/workspaces/{workspace_id}/users/{user_id}/actions": true,
+		"/v1/system/audit/logs":                                               true,
+		"/v1/system/audit/statistics":                                         true,
+		"/v1/system/audit/logs/{id}":                                          true,
+	}
 	for _, tool := range tools {
-		if !mcpQueryPath(tool.Path) || !tool.Tool.Annotations.ReadOnlyHint {
-			t.Fatalf("暴露了非工作空间查询：%s", tool.Path)
+		if !tool.Tool.Annotations.ReadOnlyHint {
+			t.Fatalf("暴露了非只读工具：%s", tool.Path)
+		}
+		if strings.HasPrefix(tool.Path, "/v1/system/") {
+			if !systemPaths[tool.Path] || !strings.HasPrefix(tool.Tool.Name, "get_system_") {
+				t.Fatalf("系统工具超出预期范围：%s", tool.Path)
+			}
+			delete(systemPaths, tool.Path)
+		} else if tool.Path != "/v1/user-info" && tool.Path != "/v1/workspaces" &&
+			!strings.HasPrefix(tool.Path, "/v1/workspaces/") {
+			t.Fatalf("工具超出预期范围：%s", tool.Path)
 		}
 		paths[tool.Path] = true
 		input := tool.Tool.InputSchema.(map[string]any)
@@ -41,6 +63,10 @@ func TestMCPCatalogOnlyExposesWorkspaceJSONQueries(t *testing.T) {
 		if tool.Path == "/v1/workspaces" && len(tool.Parameters) != 0 {
 			t.Fatal("工作空间发现工具不应接收查询参数")
 		}
+		if tool.Path == "/v1/user-info" &&
+			(tool.Tool.Name != "get_user_info" || len(tool.Parameters) != 0) {
+			t.Fatal("当前用户查询应使用 get_user_info 且无需参数")
+		}
 		if tool.Path == mcpWorkspaceQueryPrefix+"/monthly-work" ||
 			tool.Path == mcpWorkspaceQueryPrefix+"/cpc-monthly-work" {
 			properties := input["properties"].(map[string]any)
@@ -49,8 +75,11 @@ func TestMCPCatalogOnlyExposesWorkspaceJSONQueries(t *testing.T) {
 			}
 		}
 	}
+	if len(systemPaths) != 0 {
+		t.Fatalf("遗漏了系统管理查询：%v", systemPaths)
+	}
 	for _, path := range []string{
-		"/v1/workspaces", "/v1/workspaces/{workspace_id}",
+		"/v1/user-info", "/v1/workspaces", "/v1/workspaces/{workspace_id}",
 		"/v1/workspaces/{workspace_id}/students",
 		"/v1/workspaces/{workspace_id}/students/{id}/sensitive",
 		"/v1/workspaces/{workspace_id}/cpc-people/{id}/timeline",
@@ -59,11 +88,11 @@ func TestMCPCatalogOnlyExposesWorkspaceJSONQueries(t *testing.T) {
 		"/v1/workspaces/{workspace_id}/cpc-monthly-work",
 	} {
 		if !paths[path] {
-			t.Fatalf("遗漏了工作空间查询：%s", path)
+			t.Fatalf("遗漏了查询：%s", path)
 		}
 	}
 	for _, path := range []string{
-		"/v1/user-info", "/v1/system/users", "/v1/system/users/{id}/api-token",
+		"/v1/notifications", "/v1/system/users/{id}/api-token",
 		"/v1/workspaces/{workspace_id}/students/export",
 		"/v1/workspaces/{workspace_id}/students/template",
 		"/v1/workspaces/{workspace_id}/attachments/{id}/download",
@@ -105,9 +134,15 @@ func TestMCPRejectsInvalidRegistrations(t *testing.T) {
 			},
 		},
 		{
-			name: "system-query",
+			name: "system-write-endpoint",
 			registrations: []mcpQueryRegistration{
-				{Name: "system_users", Path: "/v1/system/users"},
+				{Name: "system_user_sessions", Path: "/v1/system/users/{id}/sessions"},
+			},
+		},
+		{
+			name: "workspace-path-with-session-action",
+			registrations: []mcpQueryRegistration{
+				{Name: "student_service", Path: mcpWorkspaceQueryPrefix + "/student-service"},
 			},
 		},
 		{

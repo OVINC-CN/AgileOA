@@ -18,9 +18,12 @@ import (
 const mcpEndpointPath = "/v1/mcp"
 
 const mcpInstructions = `
-先使用 get_workspaces 获取可访问的工作空间，再显式传入 workspace_id 查询。
+查询工作空间业务时，先用 get_workspaces 获取可访问的工作空间，再显式传入 workspace_id。
 用户未指定空间且有多个可访问空间时，先确认查询范围。
 多选筛选参数使用数组，工具结果保留原接口响应。
+
+查询系统管理数据前，先用 get_user_info 查询当前账号。
+仅在响应的 data.is_admin 为 true 时调用 get_system_ 系统管理工具。
 
 查学生名单或按相同条件统计人数时，默认传入 status: ["在籍"]。
 学生专业和住宿仪表只统计在籍学生数据。
@@ -36,8 +39,9 @@ const mcpInstructions = `
 月度工作只返回当前账号负责或参与的记录。`
 
 // MCP 注册标准传输入口，实际转换由公共中间件完成。
-// @Summary 工作空间只读 MCP
+// @Summary 只读 MCP
 // @Description 使用 Streamable HTTP 无状态 JSON 模式。POST 接收 initialize、tools/list 和 tools/call；通知返回 202。GET 与 DELETE 返回 405。查询工具按名称与 GET 路径显式登记，参数和响应模型复用现有接口 Swagger，未登记接口默认不开放。调用复用认证身份、权限、校验及审计，不提供写入、导出、模板或下载工具。
+// @Description 工具目录包含当前用户、工作空间和系统管理查询。系统管理工具沿用原接口权限，权限不足时工具结果的 _meta.http_status 为 403。
 // @Tags MCP
 // @Accept json
 // @Produce json

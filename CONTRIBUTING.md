@@ -139,6 +139,8 @@ API 侧先在业务事务中保存任务所需状态和操作审计，由 app �
 调试时先执行 `initialize` 和 `tools/list`。`get_workspaces` 无需参数，与顶部工作空间切换共用
 `GET /v1/workspaces`，一次返回当前账号显式获准进入的全部启用空间。每项包含 `id`、`name` 和
 `description`。调用后把 `workspace_id` 显式传给业务查询。多选参数使用数组。
+查询系统管理数据前，先用 `get_user_info` 查看当前账号。仅在 `data.is_admin` 为 `true` 时调用
+`get_system_` 工具。工具目录共用，权限不足时原接口返回 403，由工具结果的 `_meta.http_status` 表示。
 `initialize` 的 `instructions` 指引位于 [mcp.go](src/api/internal/httpd/mcp.go)，包含多空间确认、
 学生默认在籍、党建人员默认在编及党员阶段，以及月度工作默认当年且限本人负责或参与的记录。
 这些默认筛选由客户端调用时显式传入，用户指定查询范围时以其要求为准。
