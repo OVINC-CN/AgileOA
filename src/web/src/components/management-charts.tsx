@@ -21,11 +21,9 @@ import {
 import { ChartCountTick } from '@/components/chart-count-tick';
 import { ChartTooltipTable } from '@/components/chart-tooltip-table';
 import { MetricCard as Metric } from '@/components/metric-card';
-import { TableColumnSettings } from '@/components/table-column-settings';
 import { Card } from '@/components/ui/card';
 import type { AuditStatistics, UserStatistics } from '@/features/management/api';
 import { formatNumber } from '@/lib/format';
-import { useTableColumns } from '@/lib/table-columns';
 
 const trendTooltipColumns = [
   { id: 'series', label: '统计项' },
@@ -54,6 +52,7 @@ function TrendTooltip({
       caption={label}
       columns={trendTooltipColumns}
       rows={rows}
+      fixedColumns
     />
   );
 }
@@ -73,8 +72,6 @@ function Trend({
   second: string;
   loading: boolean;
 }) {
-  const tooltipSettings = useTableColumns(tableID, trendTooltipColumns);
-
   return (
     <Card className="gap-0 p-4 sm:p-5">
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
@@ -88,7 +85,6 @@ function Trend({
             <span className="size-2 rounded-full bg-[var(--chart-2)]" />
             {second}
           </span>
-          <TableColumnSettings settings={tooltipSettings} label="提示字段" />
         </div>
       </div>
       <figure aria-label={title} className="h-60 w-full min-w-0 sm:h-64">
