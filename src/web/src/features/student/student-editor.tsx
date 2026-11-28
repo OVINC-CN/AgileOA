@@ -31,6 +31,7 @@ import { StudentFieldInput } from '@/features/student/field-input';
 import {
   birthDateFromIdentityNumber,
   fieldLabel,
+  studentContactSections,
   type StudentField,
   studentFields,
   studentRecordTabs,
@@ -59,7 +60,7 @@ const studentCreationSteps: readonly StudentEditorStep[] = [
     group: 'basic',
     sections: ['personal', 'previous-education', 'advisor'],
   },
-  { value: 'contact', label: '联系家庭', group: 'basic', sections: ['contact', 'guardians'] },
+  { value: 'contact', label: '联系家庭', group: 'basic', sections: studentContactSections },
   { value: 'accommodation', label: '住宿信息', group: 'basic', sections: ['accommodation'] },
   { value: 'sensitive', label: '敏感信息', group: 'sensitive', sections: [] },
 ];

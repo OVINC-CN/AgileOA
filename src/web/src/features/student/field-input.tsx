@@ -14,6 +14,7 @@ import { studentFormPresets } from '@/features/student/form-presets';
 import { useInitialLoading } from '@/lib/api-action';
 import { emptyValueLabel } from '@/lib/format';
 import { mergeTextFieldOptions } from '@/lib/text-field-options';
+import { cn } from '@/lib/utils';
 
 export function StudentFieldInput({
   field,
@@ -36,6 +37,7 @@ export function StudentFieldInput({
 }) {
   const id = useId();
   const [open, setOpen] = useState(false);
+  const label = field.labelInSection ?? field.label;
   const accommodation = field.key === 'accommodation_type';
   const presets = studentFormPresets(field.key);
   const query = useQuery({
@@ -49,15 +51,18 @@ export function StudentFieldInput({
     field.options.length === 0 ? value : '',
   );
   return (
-    <div className="space-y-2" data-student-field={field.key}>
+    <div
+      className={cn('space-y-2', field.fullWidthInForm && 'col-span-full')}
+      data-student-field={field.key}
+    >
       <Label htmlFor={id}>
-        {field.label}
+        {label}
         {required ? ' *' : ''}
       </Label>
       {field.type === 'month' ? (
         <DatePicker
           id={id}
-          label={field.label}
+          label={label}
           value={value}
           onValueChange={onChange}
           mode="month"
@@ -68,7 +73,7 @@ export function StudentFieldInput({
       ) : field.enumerable || presets.length > 0 ? (
         <SearchSelect
           id={id}
-          label={field.label}
+          label={label}
           className="w-full"
           options={
             required

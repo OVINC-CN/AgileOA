@@ -68,6 +68,8 @@ describe('添加学生分步填写', () => {
     await choose('性别', '女');
     await choose('民族', '汉族');
     await userEvent.click(editor.getByRole('tab', { name: '联系家庭' }));
+    for (const name of ['家长 1', '家长 2'])
+      expect(editor.getByRole('region', { name })).toBeVisible();
     fireEvent.change(editor.getByLabelText('电话号码'), { target: { value: '虚构联系电话' } });
     await userEvent.click(editor.getByRole('tab', { name: '敏感信息' }));
     expect(editor.getByRole('tab', { name: '敏感信息' })).toHaveAttribute('aria-selected', 'true');

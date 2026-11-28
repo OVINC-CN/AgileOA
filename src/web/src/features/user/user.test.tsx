@@ -612,12 +612,12 @@ describe('登录与系统管理', () => {
       '导师信息',
       '联系方式',
       '住宿信息',
-      '家庭联系',
       '毕业去向',
       '记录信息',
     ]) {
       expect(screen.queryByRole('heading', { name: heading })).not.toBeInTheDocument();
     }
+    expect(screen.queryByRole('heading', { name: /^家长 [12]/u })).not.toBeInTheDocument();
     expect(screen.queryByText('创建时间')).not.toBeInTheDocument();
     expect(screen.queryByText('更新时间')).not.toBeInTheDocument();
     expect(screen.queryByText('出生日期')).not.toBeInTheDocument();

@@ -34,6 +34,7 @@ import { BaselineNodeIcon } from '@/features/cpc-timeline/baseline-node-badge';
 import { TimelineNodeGroups } from '@/features/cpc-timeline/node-groups';
 import { useApiAction } from '@/lib/api-action';
 import { recordTimeColumns } from '@/lib/record-time-columns';
+import { cn } from '@/lib/utils';
 
 export function PersonTimelineView({
   view,
@@ -239,10 +240,14 @@ export function PersonTimelineView({
             <TimelineNodeGroups
               nodes={view.nodes}
               label="时间线视图节点"
-              renderNode={(item, index) => (
+              groupStartClassName="not-first:pt-5"
+              renderNode={(item, index, isLastInGroup) => (
                 <li
                   key={item.id}
-                  className="relative ml-3 border-l border-border pb-4 pl-6 last:border-transparent last:pb-0"
+                  className={cn(
+                    'relative ml-3 border-l pl-6',
+                    isLastInGroup ? 'border-transparent' : 'border-border pb-4',
+                  )}
                 >
                   <span
                     aria-hidden="true"

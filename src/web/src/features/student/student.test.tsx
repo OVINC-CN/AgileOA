@@ -37,6 +37,12 @@ const student = {
   building: '1号楼',
   room: '101',
   phone: 'FICTIONAL-PHONE-001',
+  guardian1_name: '虚构家长甲',
+  guardian1_relationship: '父亲',
+  guardian1_phone: '虚构电话0002',
+  guardian2_name: '虚构家长乙',
+  guardian2_relationship: '母亲',
+  guardian2_phone: '虚构电话0003',
   major: '虚构专业',
   class_name: '2026级虚构班',
   class_position: '班长',
@@ -414,8 +420,22 @@ describe('工作空间学生信息', () => {
     expect(drawer.getByText('虚构籍贯县')).toBeVisible();
     await userEvent.click(drawer.getByRole('tab', { name: '联系住宿' }));
     const contact = within(drawer.getByRole('tabpanel', { name: '联系住宿' }));
-    for (const name of ['联系方式', '家庭联系', '住宿信息'])
-      expect(contact.getByRole('heading', { name })).toBeVisible();
+    expect(contact.getAllByRole('heading').map((heading) => heading.textContent)).toEqual([
+      '联系方式',
+      '家长 1 (父亲)',
+      '家长 2 (母亲)',
+      '住宿信息',
+    ]);
+    const guardian1 = within(contact.getByRole('region', { name: '家长 1 (父亲)' }));
+    const guardian2 = within(contact.getByRole('region', { name: '家长 2 (母亲)' }));
+    for (const value of [student.guardian1_name, student.guardian1_phone])
+      expect(guardian1.getByText(value)).toBeVisible();
+    for (const value of [student.guardian2_name, student.guardian2_phone])
+      expect(guardian2.getByText(value)).toBeVisible();
+    expect(contact.queryByText('与学生关系', { selector: 'dt' })).not.toBeInTheDocument();
+    await userEvent.click(guardian1.getByRole('button', { name: '家长 1 (父亲)' }));
+    expect(guardian1.queryByText(student.guardian1_name)).not.toBeInTheDocument();
+    expect(guardian2.getByText(student.guardian2_name)).toBeVisible();
     expect(drawer.queryByRole('heading', { name: '学籍信息' })).not.toBeInTheDocument();
     expect(drawer.queryByText('宗教信仰起始年份')).not.toBeInTheDocument();
     expect(drawer.queryByRole('button', { name: '显示原始值' })).not.toBeInTheDocument();
@@ -640,6 +660,34 @@ describe('工作空间学生信息', () => {
     expect(status).toHaveAttribute('maxlength', '8');
     await userEvent.type(status, '待复核');
     await userEvent.click(screen.getByRole('option', { name: '新建“待复核”' }));
+    await userEvent.click(within(dialog).getByRole('tab', { name: '联系住宿' }));
+    const contact = within(within(dialog).getByRole('tabpanel', { name: '联系住宿' }));
+    const guardian1 = within(contact.getByRole('region', { name: '家长 1' }));
+    const guardian2 = within(contact.getByRole('region', { name: '家长 2' }));
+    for (const guardian of [guardian1, guardian2]) {
+      expect(
+        guardian.getAllByText(/./u, { selector: 'label' }).map((label) => label.textContent),
+      ).toEqual(['与学生关系', '姓名', '联系方式']);
+      const phoneField = guardian
+        .getByRole('textbox', { name: '联系方式' })
+        .closest('[data-student-field]');
+      expect(phoneField).toHaveClass('col-span-full');
+      expect(phoneField?.parentElement).toHaveClass('grid-cols-2');
+    }
+    expect(guardian1.getByRole('textbox', { name: '姓名' })).toHaveValue(student.guardian1_name);
+    expect(guardian2.getByRole('textbox', { name: '姓名' })).toHaveValue(student.guardian2_name);
+    expect(guardian1.getByRole('combobox', { name: '与学生关系' })).toHaveTextContent('父亲');
+    const relationship = guardian2.getByRole('combobox', { name: '与学生关系' });
+    expect(relationship).toHaveTextContent('母亲');
+    await userEvent.click(relationship);
+    await userEvent.type(screen.getByRole('searchbox', { name: '搜索与学生关系' }), '祖母');
+    await userEvent.click(screen.getByRole('option', { name: '新建“祖母”' }));
+    const guardianPhone = guardian1.getByRole('textbox', { name: '联系方式' });
+    expect(guardianPhone).toHaveValue(student.guardian1_phone);
+    expect(guardian2.getByRole('textbox', { name: '联系方式' })).toHaveValue(
+      student.guardian2_phone,
+    );
+    fireEvent.change(guardianPhone, { target: { value: '虚构电话0004' } });
     if (allowed) {
       await userEvent.click(within(dialog).getByRole('tab', { name: '敏感信息' }));
       const address = within(dialog).getByLabelText('家庭详细住址');
@@ -665,6 +713,8 @@ describe('工作空间学生信息', () => {
         ),
         name: '虚构学生修改',
         status: '待复核',
+        guardian1_phone: '虚构电话0004',
+        guardian2_relationship: '祖母',
         revision: 1,
         ...(allowed
           ? {
