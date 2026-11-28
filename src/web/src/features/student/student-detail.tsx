@@ -36,6 +36,7 @@ export function StudentDetail({
       <StudentFieldSections
         group={tab.group}
         {...(tab.sections.length ? { sectionIDs: tab.sections } : {})}
+        detailTitleValue={(field) => fieldLabel(field, String(student[field.key as keyof Student]))}
         accommodationDetails={
           tab.value === 'contact' && student.accommodation_type === 'off_campus' ? (
             <StudentOffCampusDetails data={student.off_campus_details ?? emptyOffCampus} />
@@ -55,7 +56,9 @@ export function StudentDetail({
                   : 'min-w-0 space-y-1.5'
               }
             >
-              <dt className="text-xs text-muted-foreground">{field.label}</dt>
+              <dt className="text-xs text-muted-foreground">
+                {field.labelInSection ?? field.label}
+              </dt>
               <DetailValue
                 label={field.label}
                 value={fieldLabel(field, value)}

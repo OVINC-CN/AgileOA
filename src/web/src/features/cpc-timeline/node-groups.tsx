@@ -31,13 +31,15 @@ export function TimelineNodeGroupDivider({
 export function TimelineNodeGroups<T extends GroupableNode>({
   nodes,
   label,
+  groupStartClassName,
   isVisible,
   renderNode,
 }: {
   nodes: T[];
   label: string;
+  groupStartClassName?: string;
   isVisible?: (node: T) => boolean;
-  renderNode: (node: T, index: number) => ReactNode;
+  renderNode: (node: T, index: number, isLastInGroup: boolean) => ReactNode;
 }) {
   // 先按原始顺序划分连续分组，再筛选内容，避免筛选改变分组边界和节点编号。
   const groups: { id: string; name: string; entries: { node: T; index: number }[] }[] = [];
@@ -61,12 +63,14 @@ export function TimelineNodeGroups<T extends GroupableNode>({
   return (
     <ol aria-label={label} className="min-w-0 space-y-0">
       {visibleGroups.map((group, groupIndex) => {
-        const children = group.entries.map(({ node, index }) => renderNode(node, index));
+        const children = group.entries.map(({ node, index }, position) =>
+          renderNode(node, index, position === group.entries.length - 1),
+        );
         if (!group.name) {
           return (
             <Fragment key={group.id}>
               {visibleGroups[groupIndex - 1]?.name ? (
-                <li role="presentation">
+                <li role="presentation" className={groupStartClassName}>
                   <TimelineNodeGroupDivider name="" className="mb-5" />
                 </li>
               ) : null}
@@ -75,7 +79,7 @@ export function TimelineNodeGroups<T extends GroupableNode>({
           );
         }
         return (
-          <li key={group.id}>
+          <li key={group.id} className={groupStartClassName}>
             <section aria-label={`分组 ${group.name}`}>
               <TimelineNodeGroupDivider name={group.name} className="mb-5" />
               <ol aria-label={`${group.name}的节点`} className="space-y-0">

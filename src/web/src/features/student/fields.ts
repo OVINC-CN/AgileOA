@@ -3,6 +3,8 @@ import { emptyValueLabel, formatValue } from '@/lib/format';
 export interface StudentField {
   key: string;
   label: string;
+  labelInSection?: string;
+  fullWidthInForm?: boolean;
   group: 'basic' | 'sensitive';
   maxLength: number;
   required?: boolean;
@@ -257,6 +259,7 @@ export const studentFields: StudentField[] = [
   {
     key: 'guardian1_name',
     label: '家长1姓名',
+    labelInSection: '姓名',
     group: 'basic',
     maxLength: 50,
     enumerable: false,
@@ -265,6 +268,7 @@ export const studentFields: StudentField[] = [
   {
     key: 'guardian1_relationship',
     label: '家长1关系',
+    labelInSection: '与学生关系',
     group: 'basic',
     maxLength: 32,
     enumerable: false,
@@ -273,6 +277,8 @@ export const studentFields: StudentField[] = [
   {
     key: 'guardian1_phone',
     label: '家长1联系方式',
+    labelInSection: '联系方式',
+    fullWidthInForm: true,
     group: 'basic',
     maxLength: 32,
     enumerable: false,
@@ -281,6 +287,7 @@ export const studentFields: StudentField[] = [
   {
     key: 'guardian2_name',
     label: '家长2姓名',
+    labelInSection: '姓名',
     group: 'basic',
     maxLength: 50,
     enumerable: false,
@@ -289,6 +296,7 @@ export const studentFields: StudentField[] = [
   {
     key: 'guardian2_relationship',
     label: '家长2关系',
+    labelInSection: '与学生关系',
     group: 'basic',
     maxLength: 32,
     enumerable: false,
@@ -297,6 +305,8 @@ export const studentFields: StudentField[] = [
   {
     key: 'guardian2_phone',
     label: '家长2联系方式',
+    labelInSection: '联系方式',
+    fullWidthInForm: true,
     group: 'basic',
     maxLength: 32,
     enumerable: false,
@@ -445,7 +455,11 @@ interface StudentSection {
   id: string;
   label: string;
   fields: string[];
+  detailTitleField?: string;
+  formGridColumns?: string;
 }
+
+export const studentContactSections = ['contact', 'guardian-1', 'guardian-2'] as const;
 
 export const studentRecordTabs = [
   {
@@ -458,7 +472,7 @@ export const studentRecordTabs = [
     value: 'contact',
     label: '联系住宿',
     group: 'basic',
-    sections: ['contact', 'guardians', 'accommodation'],
+    sections: [...studentContactSections, 'accommodation'],
   },
   { value: 'sensitive', label: '敏感信息', group: 'sensitive', sections: [] },
 ] as const;
@@ -502,16 +516,18 @@ export const studentSections: Record<StudentField['group'], StudentSection[]> = 
       fields: ['accommodation_type', 'campus', 'building', 'room', 'bed'],
     },
     {
-      id: 'guardians',
-      label: '家庭联系',
-      fields: [
-        'guardian1_name',
-        'guardian1_relationship',
-        'guardian1_phone',
-        'guardian2_name',
-        'guardian2_relationship',
-        'guardian2_phone',
-      ],
+      id: 'guardian-1',
+      label: '家长 1',
+      fields: ['guardian1_relationship', 'guardian1_name', 'guardian1_phone'],
+      detailTitleField: 'guardian1_relationship',
+      formGridColumns: 'grid-cols-2',
+    },
+    {
+      id: 'guardian-2',
+      label: '家长 2',
+      fields: ['guardian2_relationship', 'guardian2_name', 'guardian2_phone'],
+      detailTitleField: 'guardian2_relationship',
+      formGridColumns: 'grid-cols-2',
     },
   ],
   sensitive: [
